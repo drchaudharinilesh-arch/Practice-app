@@ -19,7 +19,7 @@
   <header class="bg-indigo-900 text-white p-4 sticky top-0 z-30 shadow flex justify-between items-center">
     <div>
       <h1 class="text-lg font-bold tracking-tight">Neuro Practice Log</h1>
-      <p id="currentMonthLabel" class="text-xs text-indigo-200">Hospital Tracking Active</p>
+      <p id="currentMonthLabel" class="text-xs text-indigo-200">Practice Ledger</p>
     </div>
     <button onclick="exportDataBackup()" class="p-2 bg-indigo-800 hover:bg-indigo-700 rounded-lg text-xs font-semibold flex items-center gap-1">
       💾 Backup
@@ -29,21 +29,26 @@
   <main class="max-w-md mx-auto p-4 space-y-4">
     <!-- View: Dashboard & Entries -->
     <div id="viewEntries" class="space-y-4">
-      <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
-        <div class="flex justify-between items-center mb-3 gap-2">
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Summary</span>
+      
+      <!-- Summary Card -->
+      <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-3">
+        <div class="flex justify-between items-center gap-2">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Financial Summary</span>
           <div class="flex items-center gap-1">
             <select id="viewRangeSelect" onchange="handleViewRangeChange()" class="text-xs bg-slate-100 border border-slate-300 rounded px-2 py-1 font-medium text-slate-700">
-              <option value="all">All Records</option>
               <option value="month" selected>This Month</option>
+              <option value="all">All Records</option>
             </select>
             <input type="month" id="monthFilter" onchange="loadDashboard()" class="text-xs bg-slate-100 border border-slate-300 rounded px-2 py-1 font-medium text-slate-700" />
           </div>
         </div>
-        <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 mb-3 text-center">
-          <span class="text-xs text-indigo-600 font-semibold uppercase">Total Revenue</span>
+
+        <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-center">
+          <span class="text-xs text-indigo-600 font-semibold uppercase tracking-wide">Total Revenue</span>
           <div id="statTotal" class="text-2xl font-extrabold text-indigo-950">₹0</div>
         </div>
+
+        <!-- Category Grid -->
         <div class="grid grid-cols-2 gap-2 text-xs">
           <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
             <span class="text-slate-500 font-medium">OPD / Indoor</span>
@@ -58,6 +63,17 @@
             <div id="statMr" class="text-sm font-bold text-amber-950">₹0</div>
           </div>
         </div>
+
+        <!-- Hospital Breakdown Accordion -->
+        <details class="text-xs bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 cursor-pointer">
+          <summary class="font-bold text-slate-700 flex justify-between items-center select-none">
+            <span>🏥 Hospital-wise Revenue</span>
+            <span class="text-[10px] text-indigo-600 font-semibold">View details ▼</span>
+          </summary>
+          <div id="hospitalBreakdownList" class="pt-2 space-y-1.5 border-t border-slate-200 mt-2 text-slate-600">
+            <!-- Dynamic Hospital Totals -->
+          </div>
+        </details>
       </section>
 
       <!-- Quick Action Buttons -->
@@ -73,6 +89,7 @@
         </button>
       </div>
 
+      <!-- Entries List -->
       <section class="space-y-2">
         <div class="flex justify-between items-center">
           <h2 class="text-sm font-bold text-slate-700 uppercase tracking-wide">Entries Log</h2>
@@ -111,7 +128,7 @@
     </div>
   </nav>
 
-  <!-- Entry Form Modal -->
+  <!-- Entry Form Modal (Create and Edit) -->
   <div id="entryModal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-end justify-center p-0">
     <div class="bg-white rounded-t-3xl p-5 w-full max-w-md max-h-[90vh] overflow-y-auto space-y-4">
       <div class="flex justify-between items-center border-b pb-2">
@@ -171,7 +188,7 @@
           <input type="number" id="entryAmount" step="1" placeholder="0" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 text-lg font-bold" />
         </div>
 
-        <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3.5 rounded-xl shadow-md active:bg-indigo-700 mt-2">
+        <button type="submit" id="entrySubmitBtn" class="w-full bg-indigo-600 text-white font-bold py-3.5 rounded-xl shadow-md active:bg-indigo-700 mt-2">
           Save Entry
         </button>
       </form>
@@ -182,7 +199,7 @@
   <div id="surgeryModal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-end justify-center p-0">
     <div class="bg-white rounded-t-3xl p-5 w-full max-w-md max-h-[90vh] overflow-y-auto space-y-4">
       <div class="flex justify-between items-center border-b pb-2">
-        <h3 class="text-base font-bold text-slate-900">Track Surgery Patient</h3>
+        <h3 id="surgeryModalTitle" class="text-base font-bold text-slate-900">Track Surgery Patient</h3>
         <button onclick="closeModal('surgeryModal')" class="text-slate-400 text-xl font-bold p-1">&times;</button>
       </div>
       <form id="surgeryForm" onsubmit="saveSurgeryCase(event)" class="space-y-3">
@@ -234,7 +251,6 @@
 
   <script>
     const db = new Dexie('NeuroPracticeDB');
-    // Upgrade version to store hospital field
     db.version(2).stores({
       entries: '++id, date, category, hospital, name, note, amount',
       surgeries: '++id, patientName, hospital, status, surgeryDate, notes, createdAt'
@@ -309,7 +325,6 @@
         let detectedNote = '';
         let detectedHospital = 'Orange Hospital, Navsari';
 
-        // Detect Hospital by keywords
         const lower = fullText.toLowerCase();
         if (lower.includes('orange')) detectedHospital = 'Orange Hospital, Navsari';
         else if (lower.includes('parsi')) detectedHospital = 'Parsi Hospital, Navsari';
@@ -319,7 +334,6 @@
         else if (lower.includes('atmiya') || lower.includes('mandvi')) detectedHospital = 'Atmiya Hospital, Mandvi';
         else if (lower.includes('aatithyam') || lower.includes('atithyam')) detectedHospital = 'Aatithyam Hospital, Navsari';
 
-        // Detect Date
         const dateMatch = fullText.match(/(\d{1,2})[\/\.-](\d{1,2})[\/\.-](\d{2,4})/);
         if (dateMatch) {
           let [_, d, m, y] = dateMatch;
@@ -331,13 +345,11 @@
           }
         }
 
-        // Detect Amount
         const amountMatch = fullText.match(/(?:Rs\.?|INR|₹|Total|Amount|Fee)[:\s]*([0-9,]+)/i);
         if (amountMatch) {
           detectedAmount = amountMatch[1].replace(/,/g, '');
         }
 
-        // Detect Patient Name
         for (const line of lines) {
           const nameMatch = line.match(/(?:Name|Pt|Patient|Mr\.|Mrs\.|Shri)[:\s]+([A-Za-z\s]+)/i);
           if (nameMatch && nameMatch[1].trim().length > 2) {
@@ -350,7 +362,6 @@
           if (cleanLine) detectedName = cleanLine;
         }
 
-        // Clinical notes
         const noteMatch = fullText.match(/(?:Diagnosis|Advised|Procedure|Rx|Treatment|Surgery)[:\s]+([A-Za-z0-9\s\-\,\.]+)/i);
         if (noteMatch) {
           detectedNote = noteMatch[1].trim().slice(0, 50);
@@ -388,6 +399,7 @@
       }
 
       let total = 0, opdIndoor = 0, surgery = 0, mr = 0;
+      const hospitalTotals = {};
 
       displayEntries.forEach(item => {
         const val = Number(item.amount) || 0;
@@ -395,6 +407,9 @@
         if (item.category === 'OPD' || item.category === 'Indoor') opdIndoor += val;
         else if (item.category === 'Surgery') surgery += val;
         else if (item.category === 'MR Benefit') mr += val;
+
+        const hosp = item.hospital || 'General / Other';
+        hospitalTotals[hosp] = (hospitalTotals[hosp] || 0) + val;
       });
 
       document.getElementById('statTotal').innerText = `₹${total.toLocaleString('en-IN')}`;
@@ -402,6 +417,21 @@
       document.getElementById('statSurgery').innerText = `₹${surgery.toLocaleString('en-IN')}`;
       document.getElementById('statMr').innerText = `₹${mr.toLocaleString('en-IN')}`;
 
+      // Render Hospital Breakdown
+      const hospBreakdownEl = document.getElementById('hospitalBreakdownList');
+      const hospKeys = Object.keys(hospitalTotals);
+      if (hospKeys.length === 0) {
+        hospBreakdownEl.innerHTML = `<div class="text-slate-400 text-[11px]">No hospital data yet.</div>`;
+      } else {
+        hospBreakdownEl.innerHTML = hospKeys.map(h => `
+          <div class="flex justify-between items-center text-xs py-0.5">
+            <span class="truncate max-w-[200px] text-slate-700">${escapeHtml(h)}</span>
+            <span class="font-bold text-slate-900">₹${hospitalTotals[h].toLocaleString('en-IN')}</span>
+          </div>
+        `).join('');
+      }
+
+      // Render Entries List with Edit (✏️) and Delete buttons
       const listEl = document.getElementById('entriesList');
       document.getElementById('entriesCount').innerText = `${displayEntries.length} records`;
 
@@ -412,10 +442,10 @@
 
       listEl.innerHTML = displayEntries.map(e => `
         <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-          <div class="space-y-1 max-w-[70%]">
+          <div class="space-y-1 max-w-[65%]">
             <div class="flex items-center gap-1.5 flex-wrap">
               <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${getCategoryBadge(e.category)}">${e.category}</span>
-              <span class="text-[10px] font-semibold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded truncate max-w-[130px]">
+              <span class="text-[10px] font-semibold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded truncate max-w-[120px]">
                 🏥 ${escapeHtml(e.hospital || 'General')}
               </span>
               <span class="text-[10px] text-slate-400">${e.date || ''}</span>
@@ -423,9 +453,18 @@
             <div class="text-sm font-bold text-slate-900 truncate">${escapeHtml(e.name || 'Unnamed Entry')}</div>
             ${e.note ? `<div class="text-xs text-slate-500 truncate">${escapeHtml(e.note)}</div>` : ''}
           </div>
-          <div class="text-right">
+          <div class="text-right flex flex-col items-end">
             <div class="text-sm font-extrabold text-slate-800">₹${(Number(e.amount)||0).toLocaleString('en-IN')}</div>
-            <button onclick="deleteEntry(${e.id})" class="text-red-400 text-xs mt-1 hover:text-red-600">Delete</button>
+            <div class="flex items-center gap-2 mt-1.5">
+              <!-- Edit Button -->
+              <button onclick="editEntry(${e.id})" class="text-indigo-600 font-semibold text-xs flex items-center gap-0.5 px-2 py-1 bg-indigo-50 active:bg-indigo-100 rounded-lg">
+                ✏️ Edit
+              </button>
+              <!-- Delete Button -->
+              <button onclick="deleteEntry(${e.id})" class="text-red-400 font-semibold text-xs hover:text-red-600 px-1 py-1">
+                🗑️
+              </button>
+            </div>
           </div>
         </div>
       `).join('');
@@ -435,6 +474,22 @@
       if (cat === 'Surgery') return 'bg-emerald-100 text-emerald-800';
       if (cat === 'MR Benefit') return 'bg-amber-100 text-amber-800';
       return 'bg-indigo-100 text-indigo-800';
+    }
+
+    // Edit Existing Entry
+    async function editEntry(id) {
+      const item = await db.entries.get(id);
+      if (!item) return;
+
+      openManualEntryModal({
+        id: item.id,
+        date: item.date,
+        category: item.category,
+        hospital: item.hospital,
+        name: item.name,
+        note: item.note,
+        amount: item.amount
+      });
     }
 
     async function saveEntry(event) {
@@ -508,13 +563,33 @@
           </div>
           ${c.notes ? `<p class="text-xs text-slate-600 bg-slate-50 p-2 rounded-lg">${escapeHtml(c.notes)}</p>` : ''}
           <div class="flex justify-end gap-2 pt-2 border-t border-slate-100 text-xs">
-            <button onclick="markSurgeryDone(${c.id})" class="bg-emerald-50 text-emerald-700 font-bold px-3 py-1.5 rounded-lg active:bg-emerald-100">
-              ✓ Mark Done & Log Entry
+            <button onclick="editSurgery(${c.id})" class="text-indigo-600 font-bold px-2.5 py-1.5 bg-indigo-50 rounded-lg">
+              ✏️ Edit
             </button>
-            <button onclick="deleteSurgery(${c.id})" class="text-red-500 font-semibold px-2 py-1.5">Delete</button>
+            <button onclick="markSurgeryDone(${c.id})" class="bg-emerald-50 text-emerald-700 font-bold px-3 py-1.5 rounded-lg active:bg-emerald-100">
+              ✓ Mark Done
+            </button>
+            <button onclick="deleteSurgery(${c.id})" class="text-red-500 font-semibold px-2 py-1.5">
+              Delete
+            </button>
           </div>
         </div>
       `).join('');
+    }
+
+    async function editSurgery(id) {
+      const item = await db.surgeries.get(id);
+      if (!item) return;
+
+      document.getElementById('surgeryRecordId').value = item.id;
+      document.getElementById('surgeryPatientName').value = item.patientName;
+      document.getElementById('surgeryHospital').value = item.hospital || 'Orange Hospital, Navsari';
+      document.getElementById('surgeryStatus').value = item.status;
+      document.getElementById('surgeryDate').value = item.surgeryDate || '';
+      document.getElementById('surgeryNotes').value = item.notes || '';
+      document.getElementById('surgeryModalTitle').innerText = 'Edit Surgery Case';
+      toggleScheduledDateInput();
+      document.getElementById('surgeryModal').classList.remove('hidden');
     }
 
     async function saveSurgeryCase(event) {
@@ -546,7 +621,7 @@
       await db.entries.add({
         date: item.surgeryDate || new Date().toISOString().slice(0, 10),
         category: 'Surgery',
-        hospital: item.hospital || 'General',
+        hospital: item.hospital || 'Orange Hospital, Navsari',
         name: item.patientName,
         note: item.notes || 'Surgical procedure',
         amount: Number(feeStr) || 0
@@ -570,17 +645,40 @@
       document.getElementById('entryCategory').value = prefill.category || 'OPD';
       
       const hospSelect = document.getElementById('entryHospital');
-      if (prefill.hospital) {
+      const standardHospitals = [
+        "Orange Hospital, Navsari",
+        "Parsi Hospital, Navsari",
+        "Kejal Lifeline Hospital, Navsari",
+        "Alipore Hospital",
+        "Rhythm Hospital, Vyara",
+        "Atmiya Hospital, Mandvi",
+        "Aatithyam Hospital, Navsari"
+      ];
+
+      if (prefill.hospital && standardHospitals.includes(prefill.hospital)) {
         hospSelect.value = prefill.hospital;
+        document.getElementById('customHospitalName').value = '';
+      } else if (prefill.hospital) {
+        hospSelect.value = 'Other';
+        document.getElementById('customHospitalName').value = prefill.hospital;
       } else {
         hospSelect.value = 'Orange Hospital, Navsari';
+        document.getElementById('customHospitalName').value = '';
       }
       toggleCustomHospitalInput();
 
       document.getElementById('entryName').value = prefill.name || '';
       document.getElementById('entryNote').value = prefill.note || '';
       document.getElementById('entryAmount').value = prefill.amount || '';
-      document.getElementById('entryModalTitle').innerText = prefill.name ? 'Verify & Confirm Entry' : 'Manual Entry';
+      
+      if (prefill.id) {
+        document.getElementById('entryModalTitle').innerText = 'Edit Entry';
+        document.getElementById('entrySubmitBtn').innerText = 'Update Entry';
+      } else {
+        document.getElementById('entryModalTitle').innerText = prefill.name ? 'Verify & Confirm Entry' : 'Manual Entry';
+        document.getElementById('entrySubmitBtn').innerText = 'Save Entry';
+      }
+
       document.getElementById('entryModal').classList.remove('hidden');
     }
 
@@ -591,6 +689,7 @@
       document.getElementById('surgeryStatus').value = 'Awaiting decision';
       document.getElementById('surgeryDate').value = '';
       document.getElementById('surgeryNotes').value = '';
+      document.getElementById('surgeryModalTitle').innerText = 'Track Surgery Patient';
       toggleScheduledDateInput();
       document.getElementById('surgeryModal').classList.remove('hidden');
     }
