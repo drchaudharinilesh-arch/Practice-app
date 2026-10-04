@@ -6,7 +6,6 @@
   <title>Surgical Practice Log</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
-  <!-- In-browser OCR: No API keys required -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -20,7 +19,7 @@
   <header class="bg-indigo-900 text-white p-4 sticky top-0 z-30 shadow flex justify-between items-center">
     <div>
       <h1 class="text-lg font-bold tracking-tight">Neuro Practice Log</h1>
-      <p id="currentMonthLabel" class="text-xs text-indigo-200">Offline / No-API Ready</p>
+      <p id="currentMonthLabel" class="text-xs text-indigo-200">Hospital Tracking Active</p>
     </div>
     <button onclick="exportDataBackup()" class="p-2 bg-indigo-800 hover:bg-indigo-700 rounded-lg text-xs font-semibold flex items-center gap-1">
       💾 Backup
@@ -31,9 +30,15 @@
     <!-- View: Dashboard & Entries -->
     <div id="viewEntries" class="space-y-4">
       <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
-        <div class="flex justify-between items-center mb-3">
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Monthly Summary</span>
-          <input type="month" id="monthFilter" onchange="loadDashboard()" class="text-xs bg-slate-100 border border-slate-300 rounded px-2 py-1 font-medium text-slate-700" />
+        <div class="flex justify-between items-center mb-3 gap-2">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Summary</span>
+          <div class="flex items-center gap-1">
+            <select id="viewRangeSelect" onchange="handleViewRangeChange()" class="text-xs bg-slate-100 border border-slate-300 rounded px-2 py-1 font-medium text-slate-700">
+              <option value="all">All Records</option>
+              <option value="month" selected>This Month</option>
+            </select>
+            <input type="month" id="monthFilter" onchange="loadDashboard()" class="text-xs bg-slate-100 border border-slate-300 rounded px-2 py-1 font-medium text-slate-700" />
+          </div>
         </div>
         <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 mb-3 text-center">
           <span class="text-xs text-indigo-600 font-semibold uppercase">Total Revenue</span>
@@ -115,31 +120,57 @@
       </div>
       <form id="entryForm" onsubmit="saveEntry(event)" class="space-y-3">
         <input type="hidden" id="entryRecordId" value="" />
+        
         <div>
           <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Date</label>
           <input type="date" id="entryDate" required class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-800" />
         </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Category</label>
-          <select id="entryCategory" required class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-800">
-            <option value="OPD">OPD</option>
-            <option value="Indoor">Indoor Rounds / IPD</option>
-            <option value="Surgery">Surgery</option>
-            <option value="MR Benefit">MR Benefit</option>
-          </select>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Category</label>
+            <select id="entryCategory" required class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-800 text-sm">
+              <option value="OPD">OPD</option>
+              <option value="Indoor">Indoor Rounds / IPD</option>
+              <option value="Surgery">Surgery</option>
+              <option value="MR Benefit">MR Benefit</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Hospital / Clinic</label>
+            <select id="entryHospital" onchange="toggleCustomHospitalInput()" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-800 text-sm">
+              <option value="Orange Hospital, Navsari">Orange Hospital, Navsari</option>
+              <option value="Parsi Hospital, Navsari">Parsi Hospital, Navsari</option>
+              <option value="Kejal Lifeline Hospital, Navsari">Kejal Lifeline, Navsari</option>
+              <option value="Alipore Hospital">Alipore Hospital</option>
+              <option value="Rhythm Hospital, Vyara">Rhythm Hospital, Vyara</option>
+              <option value="Atmiya Hospital, Mandvi">Atmiya Hospital, Mandvi</option>
+              <option value="Aatithyam Hospital, Navsari">Aatithyam Hospital, Navsari</option>
+              <option value="Other">+ Other / Enter Name</option>
+            </select>
+          </div>
         </div>
+
+        <div id="customHospitalContainer" class="hidden">
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Hospital Name</label>
+          <input type="text" id="customHospitalName" placeholder="Enter hospital name" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-800 text-sm" />
+        </div>
+
         <div>
           <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Patient or Rep Name</label>
           <input type="text" id="entryName" required placeholder="e.g. Ramesh Patel" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-800" />
         </div>
+
         <div>
           <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Procedure / Note</label>
           <input type="text" id="entryNote" placeholder="e.g. TLIF L4-L5 / Consultation" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-800" />
         </div>
+
         <div>
           <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Amount (₹)</label>
           <input type="number" id="entryAmount" step="1" placeholder="0" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 text-lg font-bold" />
         </div>
+
         <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3.5 rounded-xl shadow-md active:bg-indigo-700 mt-2">
           Save Entry
         </button>
@@ -159,6 +190,18 @@
         <div>
           <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Patient Name</label>
           <input type="text" id="surgeryPatientName" required placeholder="Patient full name" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Hospital / OT Location</label>
+          <select id="surgeryHospital" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-sm">
+            <option value="Orange Hospital, Navsari">Orange Hospital, Navsari</option>
+            <option value="Parsi Hospital, Navsari">Parsi Hospital, Navsari</option>
+            <option value="Kejal Lifeline Hospital, Navsari">Kejal Lifeline, Navsari</option>
+            <option value="Alipore Hospital">Alipore Hospital</option>
+            <option value="Rhythm Hospital, Vyara">Rhythm Hospital, Vyara</option>
+            <option value="Atmiya Hospital, Mandvi">Atmiya Hospital, Mandvi</option>
+            <option value="Aatithyam Hospital, Navsari">Aatithyam Hospital, Navsari</option>
+          </select>
         </div>
         <div>
           <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Status</label>
@@ -185,24 +228,45 @@
   <!-- Loading Overlay -->
   <div id="loadingOverlay" class="hidden fixed inset-0 z-50 bg-black/75 flex flex-col items-center justify-center p-6 text-white text-center">
     <div class="w-12 h-12 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin mb-4"></div>
-    <div id="loadingText" class="text-base font-bold mb-1">Processing Image On Device...</div>
-    <div class="text-xs text-slate-300 max-w-xs">No internet or API key needed. Extracting text directly.</div>
+    <div class="text-base font-bold mb-1">Reading Document...</div>
+    <div class="text-xs text-slate-300 max-w-xs">Extracting patient details, hospital, and date.</div>
   </div>
 
   <script>
     const db = new Dexie('NeuroPracticeDB');
-    db.version(1).stores({
-      entries: '++id, date, category, name, note, amount',
-      surgeries: '++id, patientName, status, surgeryDate, notes, createdAt'
+    // Upgrade version to store hospital field
+    db.version(2).stores({
+      entries: '++id, date, category, hospital, name, note, amount',
+      surgeries: '++id, patientName, hospital, status, surgeryDate, notes, createdAt'
     });
 
     document.addEventListener('DOMContentLoaded', () => {
       const today = new Date();
-      const currentMonthStr = today.toISOString().slice(0, 7);
-      document.getElementById('monthFilter').value = currentMonthStr;
+      document.getElementById('monthFilter').value = today.toISOString().slice(0, 7);
       loadDashboard();
       loadSurgeries();
     });
+
+    function toggleCustomHospitalInput() {
+      const select = document.getElementById('entryHospital');
+      const customContainer = document.getElementById('customHospitalContainer');
+      if (select.value === 'Other') {
+        customContainer.classList.remove('hidden');
+      } else {
+        customContainer.classList.add('hidden');
+      }
+    }
+
+    function handleViewRangeChange() {
+      const range = document.getElementById('viewRangeSelect').value;
+      const monthInput = document.getElementById('monthFilter');
+      if (range === 'all') {
+        monthInput.classList.add('hidden');
+      } else {
+        monthInput.classList.remove('hidden');
+      }
+      loadDashboard();
+    }
 
     function switchTab(tab) {
       const viewEntries = document.getElementById('viewEntries');
@@ -225,7 +289,6 @@
       }
     }
 
-    // Completely client-side OCR without any external API calls
     async function handleImageSelected(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -240,32 +303,41 @@
         const fullText = ret.data.text || '';
         const lines = fullText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
-        // Smart field heuristic parsing for Indian medical slips
         let detectedName = '';
         let detectedDate = new Date().toISOString().slice(0, 10);
         let detectedAmount = '';
         let detectedNote = '';
+        let detectedHospital = 'Orange Hospital, Navsari';
 
-        // 1. Detect Date (DD/MM/YYYY or YYYY-MM-DD or DD-MM-YYYY)
+        // Detect Hospital by keywords
+        const lower = fullText.toLowerCase();
+        if (lower.includes('orange')) detectedHospital = 'Orange Hospital, Navsari';
+        else if (lower.includes('parsi')) detectedHospital = 'Parsi Hospital, Navsari';
+        else if (lower.includes('kejal') || lower.includes('lifeline')) detectedHospital = 'Kejal Lifeline Hospital, Navsari';
+        else if (lower.includes('alipore')) detectedHospital = 'Alipore Hospital';
+        else if (lower.includes('rhythm') || lower.includes('vyara')) detectedHospital = 'Rhythm Hospital, Vyara';
+        else if (lower.includes('atmiya') || lower.includes('mandvi')) detectedHospital = 'Atmiya Hospital, Mandvi';
+        else if (lower.includes('aatithyam') || lower.includes('atithyam')) detectedHospital = 'Aatithyam Hospital, Navsari';
+
+        // Detect Date
         const dateMatch = fullText.match(/(\d{1,2})[\/\.-](\d{1,2})[\/\.-](\d{2,4})/);
         if (dateMatch) {
           let [_, d, m, y] = dateMatch;
           if (y.length === 2) y = '20' + y;
           if (d.length === 1) d = '0' + d;
           if (m.length === 1) m = '0' + m;
-          // Format to YYYY-MM-DD
           if (Number(m) <= 12 && Number(d) <= 31) {
             detectedDate = `${y}-${m}-${d}`;
           }
         }
 
-        // 2. Detect Amount (₹, Rs, Total, Amount, Fee)
+        // Detect Amount
         const amountMatch = fullText.match(/(?:Rs\.?|INR|₹|Total|Amount|Fee)[:\s]*([0-9,]+)/i);
         if (amountMatch) {
           detectedAmount = amountMatch[1].replace(/,/g, '');
         }
 
-        // 3. Detect Patient Name
+        // Detect Patient Name
         for (const line of lines) {
           const nameMatch = line.match(/(?:Name|Pt|Patient|Mr\.|Mrs\.|Shri)[:\s]+([A-Za-z\s]+)/i);
           if (nameMatch && nameMatch[1].trim().length > 2) {
@@ -274,12 +346,11 @@
           }
         }
         if (!detectedName && lines.length > 0) {
-          // Fallback: pick the first clean alphabetic line that isn't a hospital title
           const cleanLine = lines.find(l => l.length > 3 && l.length < 35 && !/hospital|clinic|center|dr|receipt|bill|date/i.test(l));
           if (cleanLine) detectedName = cleanLine;
         }
 
-        // 4. Clinical notes / diagnosis
+        // Clinical notes
         const noteMatch = fullText.match(/(?:Diagnosis|Advised|Procedure|Rx|Treatment|Surgery)[:\s]+([A-Za-z0-9\s\-\,\.]+)/i);
         if (noteMatch) {
           detectedNote = noteMatch[1].trim().slice(0, 50);
@@ -287,6 +358,7 @@
 
         openManualEntryModal({
           name: detectedName,
+          hospital: detectedHospital,
           date: detectedDate,
           category: /surgery|ot|operat/i.test(fullText) ? 'Surgery' : (/admit|ward|indoor|ipd/i.test(fullText) ? 'Indoor' : 'OPD'),
           note: detectedNote,
@@ -302,13 +374,22 @@
     }
 
     async function loadDashboard() {
+      const range = document.getElementById('viewRangeSelect').value;
       const selectedMonth = document.getElementById('monthFilter').value;
+      
       const allEntries = await db.entries.reverse().toArray();
-      const monthEntries = allEntries.filter(item => item.date && item.date.startsWith(selectedMonth));
+      
+      let displayEntries = allEntries;
+      if (range === 'month' && selectedMonth) {
+        displayEntries = allEntries.filter(item => item.date && item.date.startsWith(selectedMonth));
+        document.getElementById('currentMonthLabel').innerText = `Month: ${selectedMonth}`;
+      } else {
+        document.getElementById('currentMonthLabel').innerText = `All Records (${allEntries.length})`;
+      }
 
       let total = 0, opdIndoor = 0, surgery = 0, mr = 0;
 
-      monthEntries.forEach(item => {
+      displayEntries.forEach(item => {
         const val = Number(item.amount) || 0;
         total += val;
         if (item.category === 'OPD' || item.category === 'Indoor') opdIndoor += val;
@@ -322,21 +403,24 @@
       document.getElementById('statMr').innerText = `₹${mr.toLocaleString('en-IN')}`;
 
       const listEl = document.getElementById('entriesList');
-      document.getElementById('entriesCount').innerText = `${monthEntries.length} records`;
+      document.getElementById('entriesCount').innerText = `${displayEntries.length} records`;
 
-      if (monthEntries.length === 0) {
-        listEl.innerHTML = `<div class="bg-white rounded-xl p-6 text-center text-slate-400 text-xs">No entries recorded for this month.</div>`;
+      if (displayEntries.length === 0) {
+        listEl.innerHTML = `<div class="bg-white rounded-xl p-6 text-center text-slate-400 text-xs">No entries found for this view.</div>`;
         return;
       }
 
-      listEl.innerHTML = monthEntries.map(e => `
-        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-          <div class="space-y-0.5 max-w-[70%]">
-            <div class="flex items-center gap-2">
-              <span class="text-xs font-bold px-1.5 py-0.5 rounded ${getCategoryBadge(e.category)}">${e.category}</span>
-              <span class="text-xs text-slate-400">${e.date}</span>
+      listEl.innerHTML = displayEntries.map(e => `
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div class="space-y-1 max-w-[70%]">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${getCategoryBadge(e.category)}">${e.category}</span>
+              <span class="text-[10px] font-semibold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded truncate max-w-[130px]">
+                🏥 ${escapeHtml(e.hospital || 'General')}
+              </span>
+              <span class="text-[10px] text-slate-400">${e.date || ''}</span>
             </div>
-            <div class="text-sm font-bold text-slate-900 truncate">${escapeHtml(e.name)}</div>
+            <div class="text-sm font-bold text-slate-900 truncate">${escapeHtml(e.name || 'Unnamed Entry')}</div>
             ${e.note ? `<div class="text-xs text-slate-500 truncate">${escapeHtml(e.note)}</div>` : ''}
           </div>
           <div class="text-right">
@@ -356,18 +440,34 @@
     async function saveEntry(event) {
       event.preventDefault();
       const id = document.getElementById('entryRecordId').value;
+      const entryDate = document.getElementById('entryDate').value;
+      
+      let hospitalVal = document.getElementById('entryHospital').value;
+      if (hospitalVal === 'Other') {
+        hospitalVal = document.getElementById('customHospitalName').value.trim() || 'Other';
+      }
+
       const data = {
-        date: document.getElementById('entryDate').value,
+        date: entryDate,
         category: document.getElementById('entryCategory').value,
+        hospital: hospitalVal,
         name: document.getElementById('entryName').value.trim(),
         note: document.getElementById('entryNote').value.trim(),
         amount: Number(document.getElementById('entryAmount').value) || 0
       };
 
-      if (id) await db.entries.update(Number(id), data);
-      else await db.entries.add(data);
+      if (id) {
+        await db.entries.update(Number(id), data);
+      } else {
+        await db.entries.add(data);
+      }
 
       closeModal('entryModal');
+
+      if (entryDate && entryDate.length >= 7) {
+        document.getElementById('monthFilter').value = entryDate.slice(0, 7);
+      }
+      
       loadDashboard();
     }
 
@@ -391,9 +491,12 @@
         <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
           <div class="flex justify-between items-start">
             <div>
-              <span class="text-xs font-bold px-2 py-0.5 rounded-full ${c.status === 'Scheduled' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
-                ${c.status}
-              </span>
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs font-bold px-2 py-0.5 rounded-full ${c.status === 'Scheduled' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                  ${c.status}
+                </span>
+                <span class="text-[10px] text-slate-500 font-semibold">🏥 ${escapeHtml(c.hospital || 'Hospital')}</span>
+              </div>
               <h3 class="text-sm font-bold text-slate-900 mt-1">${escapeHtml(c.patientName)}</h3>
             </div>
             ${c.status === 'Scheduled' && c.surgeryDate ? `
@@ -419,6 +522,7 @@
       const id = document.getElementById('surgeryRecordId').value;
       const data = {
         patientName: document.getElementById('surgeryPatientName').value.trim(),
+        hospital: document.getElementById('surgeryHospital').value,
         status: document.getElementById('surgeryStatus').value,
         surgeryDate: document.getElementById('surgeryDate').value || null,
         notes: document.getElementById('surgeryNotes').value.trim(),
@@ -442,6 +546,7 @@
       await db.entries.add({
         date: item.surgeryDate || new Date().toISOString().slice(0, 10),
         category: 'Surgery',
+        hospital: item.hospital || 'General',
         name: item.patientName,
         note: item.notes || 'Surgical procedure',
         amount: Number(feeStr) || 0
@@ -463,6 +568,15 @@
       document.getElementById('entryRecordId').value = prefill.id || '';
       document.getElementById('entryDate').value = prefill.date || new Date().toISOString().slice(0, 10);
       document.getElementById('entryCategory').value = prefill.category || 'OPD';
+      
+      const hospSelect = document.getElementById('entryHospital');
+      if (prefill.hospital) {
+        hospSelect.value = prefill.hospital;
+      } else {
+        hospSelect.value = 'Orange Hospital, Navsari';
+      }
+      toggleCustomHospitalInput();
+
       document.getElementById('entryName').value = prefill.name || '';
       document.getElementById('entryNote').value = prefill.note || '';
       document.getElementById('entryAmount').value = prefill.amount || '';
@@ -473,6 +587,7 @@
     function openSurgeryPlannerModal() {
       document.getElementById('surgeryRecordId').value = '';
       document.getElementById('surgeryPatientName').value = '';
+      document.getElementById('surgeryHospital').value = 'Orange Hospital, Navsari';
       document.getElementById('surgeryStatus').value = 'Awaiting decision';
       document.getElementById('surgeryDate').value = '';
       document.getElementById('surgeryNotes').value = '';
