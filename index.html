@@ -20,7 +20,7 @@
       <p id="currentMonthLabel" class="text-xs text-indigo-200">Current Month</p>
     </div>
     <button onclick="openSettingsModal()" class="p-2 bg-indigo-800 hover:bg-indigo-700 rounded-lg text-sm flex items-center gap-1">
-      ⚙️️ API Key
+      ⚙️ API Key
     </button>
   </header>
 
@@ -253,19 +253,22 @@
 
       try {
         const base64Data = await resizeAndConvertToBase64(file, 1024);
-        const prompt = `You are a medical administrative assistant reviewing an Indian hospital slip, OPD card, discharge paper, surgery note, or payment receipt.
-Extract:
-1. "name": Patient full name (or medical representative / company name if an MR invoice).
-2. "date": Date on document in YYYY-MM-DD format (if none, return null).
-3. "category": Pick one: "OPD", "Indoor", "Surgery", or "MR Benefit". Default to "OPD" if unsure.
-4. "note": Clinical procedure, diagnosis, or short description (e.g., "TLIF", "Follow up").
-5. "amount": Any fee or payment amount shown as a clean number (e.g. 1500), otherwise null.
+        const prompt = `You are a medical assistant reading an Indian hospital OPD card, discharge card, receipt, or surgical note.
+Extract the following as JSON:
+{
+  "name": "Patient full name or representative name",
+  "date": "YYYY-MM-DD",
+  "category": "OPD or Indoor or Surgery or MR Benefit",
+  "note": "Clinical diagnosis, procedure, or brief note",
+  "amount": 0
+}
+Rules:
+- Respond strictly with JSON only. No markdown formatting, no backticks.
+- Amount should be an integer number without currency symbol. If not found, use 0.`;
 
-Respond ONLY with valid JSON with keys: name, date, category, note, amount.`;
-
-        // Direct call to gemini-1.5-flash-latest
+        // Direct call using v1 endpoint
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -275,8 +278,7 @@ Respond ONLY with valid JSON with keys: name, date, category, note, amount.`;
                   { text: prompt },
                   { inline_data: { mime_type: 'image/jpeg', data: base64Data } }
                 ]
-              }],
-              generationConfig: { response_mime_type: "application/json", temperature: 0.1 }
+              }]
             })
           }
         );
@@ -287,284 +289,7 @@ Respond ONLY with valid JSON with keys: name, date, category, note, amount.`;
         }
 
         const data = await response.json();
-        const extractedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        const parsed = JSON.parse(extractedText);
-
-        openManualEntryModal({
-          name: parsed.name || '',
-          date: parsed.date || new Date().toISOString().slice(0, 10),
-          category: parsed.category || 'OPD',
-          note: parsed.note || '',
-          amount: parsed.amount || ''
-        });
-
-      } catch (err) {
-        alert('Extraction failed: ' + err.message);
-      } finally {
-        showLoading(false);
-        event.target.value = '';
-      }
-    }
-
-    function resizeAndConvertToBase64(file, maxDimension) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const img = new Image();
-          img.onload = () => {
-            let width = img.width;
-            let height = img.height;
-
-            if (width > height && width > maxDimension) {
-              height = Math.round((height * maxDimension) / width);
-              width = maxDimension;
-            } else if (height > maxDimension) {
-              width = Math.round((width * maxDimension) / height);
-              height = maxDimension;
-            }
-
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-            resolve(dataUrl.split(',')[1]);
-          };
-          img.onerror = reject;
-          img.src = e.target.result;
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    }
-
-    async function loadDashboard() {
-      const selectedMonth = document.getElementById('monthFilter').value;
-      document.getElementById('currentMonthLabel').innerText = `Viewing: ${selectedMonth}`;
-
-      const allEntries = await db.entries.reverse().toArray();
-      const monthEntries = allEntries.filter(item => item.date && item.date.startsWith(selectedMonth));
-
-      let total = 0, opdIndoor = 0, surgery = 0, mr = 0;
-
-      monthEntries.forEach(item => {
-        const val = Number(item.amount) || 0;
-        total += val;
-        if (item.category === 'OPD' || item.category === 'Indoor') opdIndoor += val;
-        else if (item.category === 'Surgery') surgery += val;
-        else if (item.category === 'MR Benefit') mr += val;
-      });
-
-      document.getElementById('statTotal').innerText = `₹${total.toLocaleString('en-IN')}`;
-      document.getElementById('statOpdIndoor').innerText = `₹${opdIndoor.toLocaleString('en-IN')}`;
-      document.getElementById('statSurgery').innerText = `₹${surgery.toLocaleString('en-IN')}`;
-      document.getElementById('statMr').innerText = `₹${mr.toLocaleString('en-IN')}`;
-
-      const listEl = document.getElementById('entriesList');
-      document.getElementById('entriesCount').innerText = `${monthEntries.length} records`;
-
-      if (monthEntries.length === 0) {
-        listEl.innerHTML = `<div class="bg-white rounded-xl p-6 text-center text-slate-400 text-xs">No entries recorded for this month.</div>`;
-        return;
-      }
-
-      listEl.innerHTML = monthEntries.map(e => `
-        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-          <div class="space-y-0.5 max-w-[70%]">
-            <div class="flex items-center gap-2">
-              <span class="text-xs font-bold px-1.5 py-0.5 rounded ${getCategoryBadge(e.category)}">${e.category}</span>
-              <span class="text-xs text-slate-400">${e.date}</span>
-            </div>
-            <div class="text-sm font-bold text-slate-900 truncate">${escapeHtml(e.name)}</div>
-            ${e.note ? `<div class="text-xs text-slate-500 truncate">${escapeHtml(e.note)}</div>` : ''}
-          </div>
-          <div class="text-right">
-            <div class="text-sm font-extrabold text-slate-800">₹${(Number(e.amount)||0).toLocaleString('en-IN')}</div>
-            <button onclick="deleteEntry(${e.id})" class="text-red-400 text-xs mt-1 hover:text-red-600">Delete</button>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    function getCategoryBadge(cat) {
-      if (cat === 'Surgery') return 'bg-emerald-100 text-emerald-800';
-      if (cat === 'MR Benefit') return 'bg-amber-100 text-amber-800';
-      return 'bg-indigo-100 text-indigo-800';
-    }
-
-    async function saveEntry(event) {
-      event.preventDefault();
-      const id = document.getElementById('entryRecordId').value;
-      const data = {
-        date: document.getElementById('entryDate').value,
-        category: document.getElementById('entryCategory').value,
-        name: document.getElementById('entryName').value.trim(),
-        note: document.getElementById('entryNote').value.trim(),
-        amount: Number(document.getElementById('entryAmount').value) || 0
-      };
-
-      if (id) await db.entries.update(Number(id), data);
-      else await db.entries.add(data);
-
-      closeModal('entryModal');
-      loadDashboard();
-    }
-
-    async function deleteEntry(id) {
-      if (confirm('Delete this entry?')) {
-        await db.entries.delete(id);
-        loadDashboard();
-      }
-    }
-
-    async function loadSurgeries() {
-      const cases = await db.surgeries.toArray();
-      const listEl = document.getElementById('surgeriesList');
-
-      if (cases.length === 0) {
-        listEl.innerHTML = `<div class="bg-white rounded-xl p-8 text-center text-slate-400 text-xs">No upcoming surgery cases tracked yet.</div>`;
-        return;
-      }
-
-      listEl.innerHTML = cases.map(c => `
-        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
-          <div class="flex justify-between items-start">
-            <div>
-              <span class="text-xs font-bold px-2 py-0.5 rounded-full ${c.status === 'Scheduled' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
-                ${c.status}
-              </span>
-              <h3 class="text-sm font-bold text-slate-900 mt-1">${escapeHtml(c.patientName)}</h3>
-            </div>
-            ${c.status === 'Scheduled' && c.surgeryDate ? `
-              <div class="text-right">
-                <span class="text-[10px] text-slate-400 uppercase font-semibold">OT Date</span>
-                <div class="text-xs font-bold text-indigo-900">${c.surgeryDate}</div>
-              </div>
-            ` : ''}
-          </div>
-          ${c.notes ? `<p class="text-xs text-slate-600 bg-slate-50 p-2 rounded-lg">${escapeHtml(c.notes)}</p>` : ''}
-          <div class="flex justify-end gap-2 pt-2 border-t border-slate-100 text-xs">
-            <button onclick="markSurgeryDone(${c.id})" class="bg-emerald-50 text-emerald-700 font-bold px-3 py-1.5 rounded-lg active:bg-emerald-100">
-              ✓ Mark Done & Log Entry
-            </button>
-            <button onclick="deleteSurgery(${c.id})" class="text-red-500 font-semibold px-2 py-1.5">Delete</button>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    async function saveSurgeryCase(event) {
-      event.preventDefault();
-      const id = document.getElementById('surgeryRecordId').value;
-      const data = {
-        patientName: document.getElementById('surgeryPatientName').value.trim(),
-        status: document.getElementById('surgeryStatus').value,
-        surgeryDate: document.getElementById('surgeryDate').value || null,
-        notes: document.getElementById('surgeryNotes').value.trim(),
-        createdAt: new Date().toISOString()
-      };
-
-      if (id) await db.surgeries.update(Number(id), data);
-      else await db.surgeries.add(data);
-
-      closeModal('surgeryModal');
-      loadSurgeries();
-    }
-
-    async function markSurgeryDone(id) {
-      const item = await db.surgeries.get(id);
-      if (!item) return;
-
-      const feeStr = prompt(`Marking ${item.patientName} as Done.\nEnter professional fee (₹):`, "0");
-      if (feeStr === null) return;
-
-      await db.entries.add({
-        date: item.surgeryDate || new Date().toISOString().slice(0, 10),
-        category: 'Surgery',
-        name: item.patientName,
-        note: item.notes || 'Surgical procedure',
-        amount: Number(feeStr) || 0
-      });
-
-      await db.surgeries.delete(id);
-      alert('Case logged to Surgery Entries log.');
-      loadSurgeries();
-    }
-
-    async function deleteSurgery(id) {
-      if (confirm('Delete this case?')) {
-        await db.surgeries.delete(id);
-        loadSurgeries();
-      }
-    }
-
-    function openManualEntryModal(prefill = {}) {
-      document.getElementById('entryRecordId').value = prefill.id || '';
-      document.getElementById('entryDate').value = prefill.date || new Date().toISOString().slice(0, 10);
-      document.getElementById('entryCategory').value = prefill.category || 'OPD';
-      document.getElementById('entryName').value = prefill.name || '';
-      document.getElementById('entryNote').value = prefill.note || '';
-      document.getElementById('entryAmount').value = prefill.amount || '';
-      document.getElementById('entryModalTitle').innerText = prefill.name ? 'Verify & Confirm Entry' : 'Manual Entry';
-      document.getElementById('entryModal').classList.remove('hidden');
-    }
-
-    function openSurgeryPlannerModal() {
-      document.getElementById('surgeryRecordId').value = '';
-      document.getElementById('surgeryPatientName').value = '';
-      document.getElementById('surgeryStatus').value = 'Awaiting decision';
-      document.getElementById('surgeryDate').value = '';
-      document.getElementById('surgeryNotes').value = '';
-      toggleScheduledDateInput();
-      document.getElementById('surgeryModal').classList.remove('hidden');
-    }
-
-    function toggleScheduledDateInput() {
-      const status = document.getElementById('surgeryStatus').value;
-      const dateContainer = document.getElementById('surgeryDateContainer');
-      if (status === 'Scheduled') dateContainer.classList.remove('hidden');
-      else dateContainer.classList.add('hidden');
-    }
-
-    function openSettingsModal() {
-      document.getElementById('settingsModal').classList.remove('hidden');
-    }
-
-    function closeModal(id) {
-      document.getElementById(id).classList.add('hidden');
-    }
-
-    function saveApiKey() {
-      const key = document.getElementById('geminiApiKey').value.trim();
-      if (!key) return;
-      localStorage.setItem('gemini_api_key', key);
-      closeModal('settingsModal');
-      alert('API key saved.');
-    }
-
-    function showLoading(show) {
-      const el = document.getElementById('loadingOverlay');
-      if (show) el.classList.remove('hidden');
-      else el.classList.add('hidden');
-    }
-
-    async function exportDataBackup() {
-      const entries = await db.entries.toArray();
-      const surgeries = await db.surgeries.toArray();
-      const backup = { entries, surgeries, exportedAt: new Date().toISOString() };
-      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `practice_backup_${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-    }
-
-    function escapeHtml(str) {
-      if (!str) return '';
-      return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
-    }
-  </script>
-</body>
-</html>
+        let extractedText = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+        
+        // Strip markdown backticks if returned
+        extractedText = extractedText.replace(/```json/gi, '').replace(/
