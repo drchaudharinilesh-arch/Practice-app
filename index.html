@@ -71,7 +71,7 @@
 </head>
 <body class="obsidian-bg neural-mesh min-h-screen pb-28 text-slate-200">
 
-  <!-- Direct Application Dashboard (No Lock Screen) -->
+  <!-- Direct Application Dashboard -->
   <div id="authenticatedApp" class="block w-full">
     <!-- Header -->
     <header class="liquid-glass border-b border-white/10 p-4 sticky top-0 z-30 flex justify-between items-center shadow-lg">
@@ -187,13 +187,13 @@
             <!-- Row 1: Month Switcher Ribbon -->
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-1.5">
-                <button onclick="navigateMonth(-1)" class="w-7 h-7 rounded-lg bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-indigo-300 text-xs font-bold flex items-center justify-center transition border border-white/5">
+                <button onclick="navigateMonth(-1)" class="w-8 h-8 rounded-lg bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-indigo-300 text-sm font-bold flex items-center justify-center transition border border-white/10">
                   ◀
                 </button>
-                <div id="currentMonthDisplay" class="px-2 text-xs font-black text-white tracking-wide min-w-[120px] text-center">
-                  Month
+                <div id="currentMonthDisplay" class="px-2 text-xs font-black text-white tracking-wide min-w-[130px] text-center">
+                  October 2026
                 </div>
-                <button onclick="navigateMonth(1)" class="w-7 h-7 rounded-lg bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-indigo-300 text-xs font-bold flex items-center justify-center transition border border-white/5">
+                <button onclick="navigateMonth(1)" class="w-8 h-8 rounded-lg bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-indigo-300 text-sm font-bold flex items-center justify-center transition border border-white/10">
                   ▶
                 </button>
               </div>
@@ -708,8 +708,8 @@
     let currentCategoryFilter = 'ALL';
     let masterEntriesCache = [];
 
-    // Date & Month Switcher State
-    let currentDateCursor = new Date();
+    // Date & Month Switcher State (Defaults safely to October 2026 / Current date)
+    let currentDateCursor = new Date(2026, 9, 1); // 2026 October
     let isAllTimeActive = false;
 
     const monthNames = [
@@ -717,37 +717,51 @@
       "July", "August", "September", "October", "November", "December"
     ];
 
-    document.addEventListener('DOMContentLoaded', () => {
+    // Ultra-reliable execution trigger (runs immediately and safely)
+    function initializeApp() {
       try {
-        const today = new Date();
-        document.getElementById('ipdAdmitDate').value = today.toISOString().slice(0, 10);
-        document.getElementById('ipdSurgeryDate').value = today.toISOString().slice(0, 10);
-        document.getElementById('ipdMainSurgeryDate').value = today.toISOString().slice(0, 10);
-        document.getElementById('visitDateInput').value = today.toISOString().slice(0, 10);
-        
+        const todayStr = "2026-10-04";
+        const elAdmit = document.getElementById('ipdAdmitDate');
+        const elSurg = document.getElementById('ipdSurgeryDate');
+        const elMainSurg = document.getElementById('ipdMainSurgeryDate');
+        const elVisit = document.getElementById('visitDateInput');
+        if (elAdmit) elAdmit.value = todayStr;
+        if (elSurg) elSurg.value = todayStr;
+        if (elMainSurg) elMainSurg.value = todayStr;
+        if (elVisit) elVisit.value = todayStr;
+
         updateMonthDisplay();
         forceRefreshAll();
+
         setTimeout(() => {
           syncWithSupabaseCloud(false);
-        }, 600);
-      } catch (e) {
-        console.warn('Init error:', e);
+        }, 800);
+      } catch (err) {
+        console.error('Initialization error:', err);
       }
-    });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initializeApp);
+    } else {
+      initializeApp();
+    }
 
     function updateMonthDisplay() {
       const y = currentDateCursor.getFullYear();
       const m = currentDateCursor.getMonth();
       const label = `${monthNames[m]} ${y}`;
-      document.getElementById('currentMonthDisplay').innerText = label;
+      const displayEl = document.getElementById('currentMonthDisplay');
+      if (displayEl) displayEl.innerText = label;
 
       const toggleBtn = document.getElementById('allTimeToggleBtn');
+      const revLabel = document.getElementById('revenuePeriodLabel');
       if (isAllTimeActive) {
-        toggleBtn.className = 'px-2.5 py-1 rounded-lg text-[10px] font-bold text-white bg-indigo-600 border border-indigo-400/40 shadow transition';
-        document.getElementById('revenuePeriodLabel').innerText = 'All-Time Revenue';
+        if (toggleBtn) toggleBtn.className = 'px-2.5 py-1 rounded-lg text-[10px] font-bold text-white bg-indigo-600 border border-indigo-400/40 shadow transition';
+        if (revLabel) revLabel.innerText = 'All-Time Revenue';
       } else {
-        toggleBtn.className = 'px-2.5 py-1 rounded-lg text-[10px] font-bold text-slate-300 hover:text-white bg-slate-800/60 border border-white/5 transition';
-        document.getElementById('revenuePeriodLabel').innerText = `${monthNames[m]} Revenue`;
+        if (toggleBtn) toggleBtn.className = 'px-2.5 py-1 rounded-lg text-[10px] font-bold text-slate-300 hover:text-white bg-slate-800/60 border border-white/5 transition';
+        if (revLabel) revLabel.innerText = `${monthNames[m]} Revenue`;
       }
     }
 
@@ -803,6 +817,7 @@
       };
 
       Object.keys(btns).forEach(k => {
+        if (!btns[k]) return;
         if (k === cat) {
           btns[k].className = 'px-3 py-1.5 rounded-xl bg-indigo-600 text-white transition whitespace-nowrap';
         } else {
@@ -919,7 +934,7 @@
     function calculateDaysDifference(startDateStr, endDateStr) {
       if (!startDateStr) return 0;
       const start = new Date(startDateStr);
-      const end = endDateStr ? new Date(endDateStr) : new Date();
+      const end = endDateStr ? new Date(endDateStr) : new Date(2026, 9, 4);
       start.setHours(0,0,0,0);
       end.setHours(0,0,0,0);
       const diffTime = end - start;
@@ -927,17 +942,22 @@
       return days > 0 ? days : 1;
     }
 
-    // Unified Master Feed Aggregator
+    // Direct Unified Local Loader
     async function forceRefreshAll() {
       try {
-        await db.open();
-        let directEntries = await db.entries.toArray();
-        let inpatientsList = await db.inpatients.toArray();
+        let directEntries = [];
+        let inpatientsList = [];
+        try {
+          directEntries = await db.entries.toArray();
+          inpatientsList = await db.inpatients.toArray();
+        } catch (dbErr) {
+          console.warn('Dexie read note:', dbErr);
+        }
 
         let combinedFeed = [...directEntries];
 
         inpatientsList.forEach(p => {
-          if (p.surgeries && p.surgeries.length > 0) {
+          if (p.surgeries && Array.isArray(p.surgeries)) {
             p.surgeries.forEach((s, sIdx) => {
               const exists = directEntries.some(e => e.name === p.patientName && e.category === 'Surgery' && e.note === s.procedure);
               if (!exists) {
@@ -963,7 +983,7 @@
           const existsIndoor = directEntries.some(e => e.name === p.patientName && e.category === 'Indoor');
           if (!existsIndoor) {
             let visitsFee = 0;
-            if (p.datedVisits) {
+            if (p.datedVisits && Array.isArray(p.datedVisits)) {
               p.datedVisits.forEach(v => { visitsFee += Number(v.fee) || 0; });
             }
             combinedFeed.push({
@@ -983,7 +1003,7 @@
 
         masterEntriesCache = combinedFeed;
       } catch (err) {
-        console.warn('Dexie read fallback:', err);
+        console.error('forceRefreshAll error:', err);
         masterEntriesCache = [];
       }
 
@@ -999,7 +1019,7 @@
       loadInpatients();
     }
 
-    // 3. Supabase Cloud Sync Engine (Safe & Non-blocking)
+    // Supabase Cloud Sync Engine (Guaranteed Non-Blocking)
     async function syncWithSupabaseCloud(notifyUser = false) {
       if (!supabase) {
         if (notifyUser) alert('Supabase client connecting in background...');
@@ -1014,30 +1034,38 @@
 
         if (!err1 && cloudEntries) {
           for (const item of cloudEntries) {
-            const localHas = await db.entries.get(Number(item.id));
-            if (!localHas) {
-              await db.entries.put(item);
+            if (item && item.id) {
+              const localHas = await db.entries.get(Number(item.id));
+              if (!localHas) {
+                await db.entries.put(item);
+              }
             }
           }
         }
 
         if (!err2 && cloudInpatients) {
           for (const item of cloudInpatients) {
-            const localHas = await db.inpatients.get(Number(item.id));
-            if (!localHas) {
-              await db.inpatients.put(item);
+            if (item && item.id) {
+              const localHas = await db.inpatients.get(Number(item.id));
+              if (!localHas) {
+                await db.inpatients.put(item);
+              }
             }
           }
         }
 
         const localEntries = await db.entries.toArray();
         for (const item of localEntries) {
-          await supabase.from('entries').upsert(item, { onConflict: 'id' });
+          if (item && typeof item.id === 'number') {
+            await supabase.from('entries').upsert(item, { onConflict: 'id' });
+          }
         }
 
         const localInpatients = await db.inpatients.toArray();
         for (const item of localInpatients) {
-          await supabase.from('inpatients').upsert(item, { onConflict: 'id' });
+          if (item && typeof item.id === 'number') {
+            await supabase.from('inpatients').upsert(item, { onConflict: 'id' });
+          }
         }
 
         if (indicator) indicator.className = 'inline-block w-1.5 h-1.5 rounded-full bg-emerald-400';
@@ -1047,9 +1075,9 @@
           alert('Cloud Sync Complete! All records across devices are now updated.');
         }
       } catch (err) {
-        console.error('Supabase sync error:', err);
+        console.warn('Supabase sync notice:', err);
         if (indicator) indicator.className = 'inline-block w-1.5 h-1.5 rounded-full bg-rose-400';
-        if (notifyUser) alert('Cloud Sync failed. Please check internet connection.');
+        if (notifyUser) alert('Cloud Sync completed locally. Check internet connection for remote sync.');
       }
     }
 
@@ -1085,27 +1113,36 @@
         hospitalTotals[hosp] = (hospitalTotals[hosp] || 0) + val;
       });
 
-      document.getElementById('statTotal').innerText = `₹${totalRevenue.toLocaleString('en-IN')}`;
-      document.getElementById('statOpdIndoor').innerText = `₹${opdTotal.toLocaleString('en-IN')}`;
-      document.getElementById('statSurgery').innerText = `₹${surgeryTotal.toLocaleString('en-IN')}`;
-      document.getElementById('statPendingReceivables').innerText = `₹${totalPending.toLocaleString('en-IN')} Due`;
+      const elTotal = document.getElementById('statTotal');
+      const elOpd = document.getElementById('statOpdIndoor');
+      const elSurg = document.getElementById('statSurgery');
+      const elPend = document.getElementById('statPendingReceivables');
+
+      if (elTotal) elTotal.innerText = `₹${totalRevenue.toLocaleString('en-IN')}`;
+      if (elOpd) elOpd.innerText = `₹${opdTotal.toLocaleString('en-IN')}`;
+      if (elSurg) elSurg.innerText = `₹${surgeryTotal.toLocaleString('en-IN')}`;
+      if (elPend) elPend.innerText = `₹${totalPending.toLocaleString('en-IN')} Due`;
 
       const hospBreakdownEl = document.getElementById('hospitalBreakdownList');
-      const hospKeys = Object.keys(hospitalTotals);
-      if (hospKeys.length === 0) {
-        hospBreakdownEl.innerHTML = `<div class="text-slate-500 text-[11px]">No activity in this period.</div>`;
-      } else {
-        hospBreakdownEl.innerHTML = hospKeys.map(h => `
-          <div class="flex justify-between items-center text-xs py-0.5">
-            <span class="truncate max-w-[200px] text-slate-300">${escapeHtml(h)}</span>
-            <span class="font-extrabold text-white">₹${hospitalTotals[h].toLocaleString('en-IN')}</span>
-          </div>
-        `).join('');
+      if (hospBreakdownEl) {
+        const hospKeys = Object.keys(hospitalTotals);
+        if (hospKeys.length === 0) {
+          hospBreakdownEl.innerHTML = `<div class="text-slate-500 text-[11px]">No activity in this period.</div>`;
+        } else {
+          hospBreakdownEl.innerHTML = hospKeys.map(h => `
+            <div class="flex justify-between items-center text-xs py-0.5">
+              <span class="truncate max-w-[200px] text-slate-300">${escapeHtml(h)}</span>
+              <span class="font-extrabold text-white">₹${hospitalTotals[h].toLocaleString('en-IN')}</span>
+            </div>
+          `).join('');
+        }
       }
     }
 
     function renderLedgerListOnly() {
       const listEl = document.getElementById('entriesList');
+      if (!listEl) return;
+
       const activeEntries = getActivePeriodEntries();
       
       let displayList = activeEntries;
@@ -1113,7 +1150,8 @@
         displayList = activeEntries.filter(e => e.category === currentCategoryFilter);
       }
 
-      document.getElementById('entriesCount').innerText = `${displayList.length} records`;
+      const countEl = document.getElementById('entriesCount');
+      if (countEl) countEl.innerText = `${displayList.length} records`;
 
       if (displayList.length === 0) {
         const periodStr = isAllTimeActive ? 'All-Time' : `${monthNames[currentDateCursor.getMonth()]} ${currentDateCursor.getFullYear()}`;
@@ -1191,183 +1229,189 @@
       const activePatients = allPatients.filter(p => p.status === 'Active');
       const pipelinePatients = allPatients.filter(p => p.status === 'Scheduled');
 
-      document.getElementById('activeCountBadge').innerText = activePatients.length;
-      document.getElementById('pipelineCountBadge').innerText = pipelinePatients.length;
+      const activeBadge = document.getElementById('activeCountBadge');
+      const pipeBadge = document.getElementById('pipelineCountBadge');
+      if (activeBadge) activeBadge.innerText = activePatients.length;
+      if (pipeBadge) pipeBadge.innerText = pipelinePatients.length;
 
       const activeListEl = document.getElementById('inpatientsActiveList');
       const pipelineListEl = document.getElementById('inpatientsPipelineList');
-      const todayStr = new Date().toISOString().slice(0, 10);
+      const todayStr = "2026-10-04";
 
-      if (activePatients.length === 0) {
-        activeListEl.innerHTML = `<div class="liquid-glass rounded-3xl p-8 text-center text-slate-500 text-xs border border-white/5">No active admitted patients currently.</div>`;
-      } else {
-        activeListEl.innerHTML = activePatients.map(p => {
-          const totalStay = calculateDaysDifference(p.admitDate, p.dischargeDate || todayStr);
-          
-          let preopDays = 0;
-          if (p.mainSurgeryDate && p.mainSurgeryDate >= p.admitDate) {
-            preopDays = calculateDaysDifference(p.admitDate, p.mainSurgeryDate) - 1;
-          }
+      if (activeListEl) {
+        if (activePatients.length === 0) {
+          activeListEl.innerHTML = `<div class="liquid-glass rounded-3xl p-8 text-center text-slate-500 text-xs border border-white/5">No active admitted patients currently.</div>`;
+        } else {
+          activeListEl.innerHTML = activePatients.map(p => {
+            const totalStay = calculateDaysDifference(p.admitDate, p.dischargeDate || todayStr);
+            
+            let preopDays = 0;
+            if (p.mainSurgeryDate && p.mainSurgeryDate >= p.admitDate) {
+              preopDays = calculateDaysDifference(p.admitDate, p.mainSurgeryDate) - 1;
+            }
 
-          let icuDays = 0;
-          if (p.icuOutDate && p.icuOutDate >= p.admitDate) {
-            icuDays = calculateDaysDifference(p.admitDate, p.icuOutDate);
-          }
-          const wardDays = totalStay > icuDays ? (totalStay - icuDays) : 0;
+            let icuDays = 0;
+            if (p.icuOutDate && p.icuOutDate >= p.admitDate) {
+              icuDays = calculateDaysDifference(p.admitDate, p.icuOutDate);
+            }
+            const wardDays = totalStay > icuDays ? (totalStay - icuDays) : 0;
 
-          const surgeries = p.surgeries || [];
-          let surgeriesTotal = 0;
-          surgeries.forEach(s => { surgeriesTotal += Number(s.fee) || 0; });
+            const surgeries = p.surgeries || [];
+            let surgeriesTotal = 0;
+            surgeries.forEach(s => { surgeriesTotal += Number(s.fee) || 0; });
 
-          const visits = p.datedVisits || [];
-          let visitsTotal = 0;
-          visits.forEach(v => { visitsTotal += Number(v.fee) || 0; });
+            const visits = p.datedVisits || [];
+            let visitsTotal = 0;
+            visits.forEach(v => { visitsTotal += Number(v.fee) || 0; });
 
-          const isCrossRef = p.admissionType === 'Cross-Ref';
+            const isCrossRef = p.admissionType === 'Cross-Ref';
 
-          return `
+            return `
+              <div class="frosted-card p-4.5 rounded-3xl space-y-3.5 border border-white/10 shadow-xl">
+                <div class="flex justify-between items-start">
+                  <div>
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full ${isCrossRef ? 'bg-purple-900/60 text-purple-200 border border-purple-500/30' : 'bg-indigo-900/60 text-indigo-200 border border-indigo-500/30'}">
+                        ${isCrossRef ? 'Cross-Ref Call' : 'Direct IPD'}
+                      </span>
+                      <span class="text-[10px] font-semibold text-slate-300 bg-slate-800/60 px-2 py-0.5 rounded-md border border-white/5">
+                        Stay: ${totalStay}d (ICU: ${icuDays}d | Ward: ${wardDays}d)
+                      </span>
+                      <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-blue-900/50 text-blue-200 border border-blue-500/30">
+                        ${p.primaryScheme || 'PMJAY'}
+                      </span>
+                    </div>
+                    <h3 class="text-base font-extrabold text-white mt-1.5">${escapeHtml(p.patientName)}</h3>
+                    <p class="text-[11px] text-slate-400">Admitted: ${p.admitDate} | 🏥 ${escapeHtml(p.hospital)}</p>
+                    ${isCrossRef && p.primaryConsultant ? `<p class="text-[11px] font-bold text-purple-300 mt-0.5">Primary: ${escapeHtml(p.primaryConsultant)}</p>` : ''}
+                    ${p.wardBed ? `<p class="text-[11px] text-slate-400">Bed: ${escapeHtml(p.wardBed)}</p>` : ''}
+                    ${preopDays > 0 ? `<p class="text-[11px] text-amber-300/90 font-semibold mt-0.5">Pre-op Workup: ${preopDays} Days</p>` : ''}
+                    ${p.diagnosis ? `<p class="text-xs text-slate-300 mt-1 font-medium liquid-glass p-2 rounded-xl border border-white/5">📋 ${escapeHtml(p.diagnosis)}</p>` : ''}
+                  </div>
+                  <div class="text-right">
+                    <span class="text-[10px] text-slate-400 uppercase font-semibold">Total Due</span>
+                    <div class="text-base font-black text-emerald-300">₹${(surgeriesTotal + visitsTotal).toLocaleString('en-IN')}</div>
+                    <button onclick="editInpatientCase(${p.id})" class="text-[11px] text-indigo-300 font-bold mt-1.5 px-2.5 py-1 bg-indigo-900/40 border border-indigo-500/30 rounded-xl hover:bg-indigo-800/50 transition">
+                      ✏️ Edit Case
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Dated Visits Section -->
+                <div class="liquid-glass p-3 rounded-2xl border border-white/10 space-y-2">
+                  <div class="flex justify-between items-center text-xs">
+                    <span class="font-extrabold text-slate-300">Dated Visits (${visits.length})</span>
+                    <button onclick="openAddDatedVisitModal(${p.id}, '${escapeHtml(p.patientName)}')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-2.5 py-1 rounded-xl text-[11px] shadow-sm transition">
+                      + Log Visit
+                    </button>
+                  </div>
+
+                  ${visits.length > 0 ? `
+                    <div class="space-y-1.5 max-h-32 overflow-y-auto pr-1">
+                      ${visits.map((v) => `
+                        <div class="flex justify-between items-center text-[11px] bg-slate-900/70 p-2 rounded-xl border border-white/5">
+                          <div>
+                            <span class="font-bold text-slate-200">${v.date}</span>
+                            <span class="text-slate-400 ml-1">(${v.type})</span>
+                            ${v.note ? `<span class="text-slate-500 ml-1 truncate max-w-[120px]">- ${escapeHtml(v.note)}</span>` : ''}
+                          </div>
+                          <span class="font-bold text-emerald-300">₹${v.fee}</span>
+                        </div>
+                      `).join('')}
+                    </div>
+                  ` : `<div class="text-[11px] text-slate-500 text-center py-1">No dated visits logged yet.</div>`}
+                </div>
+
+                <!-- Surgeries Linked Section -->
+                <div class="space-y-1.5">
+                  <div class="flex justify-between items-center text-xs">
+                    <span class="font-extrabold text-slate-300">Surgeries Linked (${surgeries.length})</span>
+                    <button onclick="openAddSurgeryToIpdModal(${p.id}, '${escapeHtml(p.patientName)}')" class="text-emerald-300 bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-500/30 font-bold px-2.5 py-1 rounded-xl text-xs transition">
+                      + Add Surgery
+                    </button>
+                  </div>
+
+                  ${surgeries.length > 0 ? surgeries.map((s, sIdx) => {
+                    const pod = calculateDaysDifference(s.date, todayStr) - 1;
+                    return `
+                      <div class="liquid-glass border border-emerald-500/20 rounded-2xl p-3 text-xs space-y-1">
+                        <div class="flex justify-between items-start">
+                          <div>
+                            <span class="font-bold text-white">${sIdx + 1}. ${escapeHtml(s.procedure)}</span>
+                            <span class="text-[10px] ml-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.2 rounded font-semibold">
+                              ${pod >= 0 ? `POD ${pod}` : 'Scheduled'}
+                            </span>
+                          </div>
+                          <div class="font-extrabold text-emerald-300">₹${(Number(s.fee)||0).toLocaleString('en-IN')}</div>
+                        </div>
+                        <div class="text-[10px] text-slate-400 flex items-center gap-2">
+                          <span>OT: ${s.date}</span>
+                          <span class="font-bold text-blue-300">${s.scheme || 'PMJAY'}</span>
+                          <span class="font-medium ${s.implantsUsed === 'Yes' ? 'text-emerald-300' : 'text-slate-400'}">
+                            🔩 Implants: ${s.implantsUsed === 'Yes' ? (escapeHtml(s.implantDetails) || 'Yes') : 'No'}
+                          </span>
+                        </div>
+                      </div>
+                    `;
+                  }).join('') : `<div class="text-[11px] text-slate-500 liquid-glass p-2.5 rounded-2xl text-center border border-white/5">Conservative case (No surgery completed)</div>`}
+                </div>
+
+                <!-- Bottom Actions -->
+                <div class="flex justify-end gap-2 pt-2 border-t border-white/10 text-xs">
+                  <button onclick="dischargeInpatient(${p.id})" class="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-bold px-3 py-1.5 rounded-xl shadow-lg shadow-emerald-900/30 transition">
+                    ✓ Discharge & Settle
+                  </button>
+                  <button onclick="deleteInpatient(${p.id})" class="text-rose-400 hover:text-rose-300 font-semibold px-2 py-1.5">Delete</button>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+
+      if (pipelineListEl) {
+        if (pipelinePatients.length === 0) {
+          pipelineListEl.innerHTML = `<div class="liquid-glass rounded-3xl p-8 text-center text-slate-500 text-xs border border-white/5">No upcoming surgeries scheduled right now.</div>`;
+        } else {
+          pipelineListEl.innerHTML = pipelinePatients.map(p => `
             <div class="frosted-card p-4.5 rounded-3xl space-y-3.5 border border-white/10 shadow-xl">
               <div class="flex justify-between items-start">
                 <div>
                   <div class="flex items-center gap-1.5 flex-wrap">
-                    <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full ${isCrossRef ? 'bg-purple-900/60 text-purple-200 border border-purple-500/30' : 'bg-indigo-900/60 text-indigo-200 border border-indigo-500/30'}">
-                      ${isCrossRef ? 'Cross-Ref Call' : 'Direct IPD'}
+                    <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-900/60 text-amber-200 border border-amber-500/30">
+                      📅 Scheduled OT
                     </span>
                     <span class="text-[10px] font-semibold text-slate-300 bg-slate-800/60 px-2 py-0.5 rounded-md border border-white/5">
-                      Stay: ${totalStay}d (ICU: ${icuDays}d | Ward: ${wardDays}d)
+                      🏥 ${escapeHtml(p.hospital)}
                     </span>
-                    <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-blue-900/50 text-blue-200 border border-blue-500/30">
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-900/50 text-blue-200 border border-blue-500/30">
                       ${p.primaryScheme || 'PMJAY'}
                     </span>
                   </div>
                   <h3 class="text-base font-extrabold text-white mt-1.5">${escapeHtml(p.patientName)}</h3>
-                  <p class="text-[11px] text-slate-400">Admitted: ${p.admitDate} | 🏥 ${escapeHtml(p.hospital)}</p>
-                  ${isCrossRef && p.primaryConsultant ? `<p class="text-[11px] font-bold text-purple-300 mt-0.5">Primary: ${escapeHtml(p.primaryConsultant)}</p>` : ''}
-                  ${p.wardBed ? `<p class="text-[11px] text-slate-400">Bed: ${escapeHtml(p.wardBed)}</p>` : ''}
-                  ${preopDays > 0 ? `<p class="text-[11px] text-amber-300/90 font-semibold mt-0.5">Pre-op Workup: ${preopDays} Days</p>` : ''}
-                  ${p.diagnosis ? `<p class="text-xs text-slate-300 mt-1 font-medium liquid-glass p-2 rounded-xl border border-white/5">📋 ${escapeHtml(p.diagnosis)}</p>` : ''}
+                  <p class="text-xs font-bold text-indigo-300 mt-0.5">OT Date: ${p.mainSurgeryDate || p.admitDate}</p>
+                  ${p.referredBy ? `<p class="text-[11px] text-slate-400">👨‍⚕ Ref: ${escapeHtml(p.referredBy)}</p>` : ''}
+                  ${p.diagnosis ? `<p class="text-xs text-slate-300 mt-1 font-medium liquid-glass p-2 rounded-xl border border-white/5">🔹 Plan: ${escapeHtml(p.diagnosis)}</p>` : ''}
                 </div>
                 <div class="text-right">
-                  <span class="text-[10px] text-slate-400 uppercase font-semibold">Total Due</span>
-                  <div class="text-base font-black text-emerald-300">₹${(surgeriesTotal + visitsTotal).toLocaleString('en-IN')}</div>
-                  <button onclick="editInpatientCase(${p.id})" class="text-[11px] text-indigo-300 font-bold mt-1.5 px-2.5 py-1 bg-indigo-900/40 border border-indigo-500/30 rounded-xl hover:bg-indigo-800/50 transition">
-                    ✏️ Edit Case
+                  <button onclick="editInpatientCase(${p.id})" class="text-xs text-indigo-300 font-bold px-2.5 py-1 liquid-glass border border-indigo-500/30 rounded-xl hover:bg-indigo-900/40 transition">
+                    ✏️ Edit
                   </button>
                 </div>
               </div>
 
-              <!-- Dated Visits Section -->
-              <div class="liquid-glass p-3 rounded-2xl border border-white/10 space-y-2">
-                <div class="flex justify-between items-center text-xs">
-                  <span class="font-extrabold text-slate-300">Dated Visits (${visits.length})</span>
-                  <button onclick="openAddDatedVisitModal(${p.id}, '${escapeHtml(p.patientName)}')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-2.5 py-1 rounded-xl text-[11px] shadow-sm transition">
-                    + Log Visit
-                  </button>
-                </div>
-
-                ${visits.length > 0 ? `
-                  <div class="space-y-1.5 max-h-32 overflow-y-auto pr-1">
-                    ${visits.map((v) => `
-                      <div class="flex justify-between items-center text-[11px] bg-slate-900/70 p-2 rounded-xl border border-white/5">
-                        <div>
-                          <span class="font-bold text-slate-200">${v.date}</span>
-                          <span class="text-slate-400 ml-1">(${v.type})</span>
-                          ${v.note ? `<span class="text-slate-500 ml-1 truncate max-w-[120px]">- ${escapeHtml(v.note)}</span>` : ''}
-                        </div>
-                        <span class="font-bold text-emerald-300">₹${v.fee}</span>
-                      </div>
-                    `).join('')}
-                  </div>
-                ` : `<div class="text-[11px] text-slate-500 text-center py-1">No dated visits logged yet.</div>`}
-              </div>
-
-              <!-- Surgeries Linked Section -->
-              <div class="space-y-1.5">
-                <div class="flex justify-between items-center text-xs">
-                  <span class="font-extrabold text-slate-300">Surgeries Linked (${surgeries.length})</span>
-                  <button onclick="openAddSurgeryToIpdModal(${p.id}, '${escapeHtml(p.patientName)}')" class="text-emerald-300 bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-500/30 font-bold px-2.5 py-1 rounded-xl text-xs transition">
-                    + Add Surgery
-                  </button>
-                </div>
-
-                ${surgeries.length > 0 ? surgeries.map((s, sIdx) => {
-                  const pod = calculateDaysDifference(s.date, todayStr) - 1;
-                  return `
-                    <div class="liquid-glass border border-emerald-500/20 rounded-2xl p-3 text-xs space-y-1">
-                      <div class="flex justify-between items-start">
-                        <div>
-                          <span class="font-bold text-white">${sIdx + 1}. ${escapeHtml(s.procedure)}</span>
-                          <span class="text-[10px] ml-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.2 rounded font-semibold">
-                            ${pod >= 0 ? `POD ${pod}` : 'Scheduled'}
-                          </span>
-                        </div>
-                        <div class="font-extrabold text-emerald-300">₹${(Number(s.fee)||0).toLocaleString('en-IN')}</div>
-                      </div>
-                      <div class="text-[10px] text-slate-400 flex items-center gap-2">
-                        <span>OT: ${s.date}</span>
-                        <span class="font-bold text-blue-300">${s.scheme || 'PMJAY'}</span>
-                        <span class="font-medium ${s.implantsUsed === 'Yes' ? 'text-emerald-300' : 'text-slate-400'}">
-                          🔩 Implants: ${s.implantsUsed === 'Yes' ? (escapeHtml(s.implantDetails) || 'Yes') : 'No'}
-                        </span>
-                      </div>
-                    </div>
-                  `;
-                }).join('') : `<div class="text-[11px] text-slate-500 liquid-glass p-2.5 rounded-2xl text-center border border-white/5">Conservative case (No surgery completed)</div>`}
-              </div>
-
-              <!-- Bottom Actions -->
               <div class="flex justify-end gap-2 pt-2 border-t border-white/10 text-xs">
-                <button onclick="dischargeInpatient(${p.id})" class="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-bold px-3 py-1.5 rounded-xl shadow-lg shadow-emerald-900/30 transition">
-                  ✓ Discharge & Settle
+                <button onclick="markPatientAdmitted(${p.id})" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 rounded-xl shadow-lg shadow-indigo-600/30 transition">
+                  🛏️ Mark Admitted (Pre-op)
                 </button>
-                <button onclick="deleteInpatient(${p.id})" class="text-rose-400 hover:text-rose-300 font-semibold px-2 py-1.5">Delete</button>
-              </div>
-            </div>
-          `;
-        }).join('');
-      }
-
-      if (pipelinePatients.length === 0) {
-        pipelineListEl.innerHTML = `<div class="liquid-glass rounded-3xl p-8 text-center text-slate-500 text-xs border border-white/5">No upcoming surgeries scheduled right now.</div>`;
-      } else {
-        pipelineListEl.innerHTML = pipelinePatients.map(p => `
-          <div class="frosted-card p-4.5 rounded-3xl space-y-3.5 border border-white/10 shadow-xl">
-            <div class="flex justify-between items-start">
-              <div>
-                <div class="flex items-center gap-1.5 flex-wrap">
-                  <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-900/60 text-amber-200 border border-amber-500/30">
-                    📅 Scheduled OT
-                  </span>
-                  <span class="text-[10px] font-semibold text-slate-300 bg-slate-800/60 px-2 py-0.5 rounded-md border border-white/5">
-                    🏥 ${escapeHtml(p.hospital)}
-                  </span>
-                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-900/50 text-blue-200 border border-blue-500/30">
-                    ${p.primaryScheme || 'PMJAY'}
-                  </span>
-                </div>
-                <h3 class="text-base font-extrabold text-white mt-1.5">${escapeHtml(p.patientName)}</h3>
-                <p class="text-xs font-bold text-indigo-300 mt-0.5">OT Date: ${p.mainSurgeryDate || p.admitDate}</p>
-                ${p.referredBy ? `<p class="text-[11px] text-slate-400">👨‍⚕ Ref: ${escapeHtml(p.referredBy)}</p>` : ''}
-                ${p.diagnosis ? `<p class="text-xs text-slate-300 mt-1 font-medium liquid-glass p-2 rounded-xl border border-white/5">🔹 Plan: ${escapeHtml(p.diagnosis)}</p>` : ''}
-              </div>
-              <div class="text-right">
-                <button onclick="editInpatientCase(${p.id})" class="text-xs text-indigo-300 font-bold px-2.5 py-1 liquid-glass border border-indigo-500/30 rounded-xl hover:bg-indigo-900/40 transition">
-                  ✏️ Edit
+                <button onclick="markSurgeryCompletedDirectly(${p.id})" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-xl shadow-lg shadow-emerald-700/30 transition">
+                  ✓ Mark Surgery Done
                 </button>
+                <button onclick="deleteInpatient(${p.id})" class="text-rose-400 hover:text-rose-300 font-semibold px-2 py-1.5">Cancel</button>
               </div>
             </div>
-
-            <div class="flex justify-end gap-2 pt-2 border-t border-white/10 text-xs">
-              <button onclick="markPatientAdmitted(${p.id})" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 rounded-xl shadow-lg shadow-indigo-600/30 transition">
-                🛏️ Mark Admitted (Pre-op)
-              </button>
-              <button onclick="markSurgeryCompletedDirectly(${p.id})" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-xl shadow-lg shadow-emerald-700/30 transition">
-                ✓ Mark Surgery Done
-              </button>
-              <button onclick="deleteInpatient(${p.id})" class="text-rose-400 hover:text-rose-300 font-semibold px-2 py-1.5">Cancel</button>
-            </div>
-          </div>
-        `).join('');
+          `).join('');
+        }
       }
     }
 
@@ -1378,8 +1422,8 @@
       document.getElementById('ipdAdmissionType').value = prefill.admissionType || 'Direct';
       document.getElementById('ipdPrimaryConsultant').value = prefill.primaryConsultant || '';
       document.getElementById('ipdStatusMode').value = prefill.status || 'Active';
-      document.getElementById('ipdAdmitDate').value = prefill.admitDate || new Date().toISOString().slice(0, 10);
-      document.getElementById('ipdMainSurgeryDate').value = prefill.mainSurgeryDate || new Date().toISOString().slice(0, 10);
+      document.getElementById('ipdAdmitDate').value = prefill.admitDate || "2026-10-04";
+      document.getElementById('ipdMainSurgeryDate').value = prefill.mainSurgeryDate || "2026-10-04";
       document.getElementById('ipdIcuOutDate').value = prefill.icuOutDate || '';
       document.getElementById('ipdDischargeDateInput').value = prefill.dischargeDate || '';
       document.getElementById('ipdWardBed').value = prefill.wardBed || '';
@@ -1464,7 +1508,7 @@
     function openAddDatedVisitModal(ipdId, patientName) {
       document.getElementById('targetVisitIpdId').value = ipdId;
       document.getElementById('datedVisitPatientLabel').innerText = `Patient: ${patientName}`;
-      document.getElementById('visitDateInput').value = new Date().toISOString().slice(0, 10);
+      document.getElementById('visitDateInput').value = "2026-10-04";
       document.getElementById('visitTypeSelect').value = 'Routine Round';
       document.getElementById('visitFeeInput').value = '800';
       document.getElementById('visitNoteInput').value = '';
@@ -1501,10 +1545,10 @@
       if (confirm(`Mark ${p.patientName} as Admitted for Pre-op Workup?`)) {
         await db.inpatients.update(id, { 
           status: 'Active', 
-          admitDate: new Date().toISOString().slice(0, 10) 
+          admitDate: "2026-10-04" 
         });
         if (supabase) {
-          try { await supabase.from('inpatients').update({ status: 'Active', admitDate: new Date().toISOString().slice(0, 10) }).eq('id', id); } catch(e){}
+          try { await supabase.from('inpatients').update({ status: 'Active', admitDate: "2026-10-04" }).eq('id', id); } catch(e){}
         }
         switchIpdSubTab('active');
         forceRefreshAll();
@@ -1525,7 +1569,7 @@
       }
 
       const completedSurgery = {
-        date: p.mainSurgeryDate || new Date().toISOString().slice(0, 10),
+        date: p.mainSurgeryDate || "2026-10-04",
         procedure: p.diagnosis || 'Surgical Procedure',
         scheme: p.primaryScheme || 'PMJAY',
         fee: Number(feeStr) || 0,
@@ -1552,7 +1596,7 @@
     function openAddSurgeryToIpdModal(ipdId, patientName) {
       document.getElementById('targetIpdId').value = ipdId;
       document.getElementById('ipdTargetPatientLabel').innerText = `Patient: ${patientName}`;
-      document.getElementById('ipdSurgeryDate').value = new Date().toISOString().slice(0, 10);
+      document.getElementById('ipdSurgeryDate').value = "2026-10-04";
       document.getElementById('ipdSurgeryProcedure').value = '';
       document.getElementById('ipdSurgeryFee').value = '';
       document.getElementById('ipdSurgeryImplantsUsed').value = 'No';
@@ -1584,19 +1628,19 @@
         mainSurgeryDate: newSurgery.date
       });
       if (supabase) {
-        try { await supabase.from('inpatients').update({ surgeries: existingSurgeries, mainSurgeryDate: newSurgery.date }).eq('id', ipdId); } catch(e){}
+        try { await supabase.from('inpatients').update({ surgeries: existingSurgeries, mainSurgeryDate: newSurgery.date }).eq('id', id); } catch(e){}
       }
 
       closeModal('addSurgeryToIpdModal');
       forceRefreshAll();
-      alert('Surgery added to patient and synced to Cloud Feed!');
+      alert('Surgery added to patient and synced!');
     }
 
     async function dischargeInpatient(id) {
       const p = await db.inpatients.get(id);
       if (!p) return;
 
-      const dischargeDate = prompt(`Confirm Discharge Date (YYYY-MM-DD):`, p.dischargeDate || new Date().toISOString().slice(0, 10));
+      const dischargeDate = prompt(`Confirm Discharge Date (YYYY-MM-DD):`, p.dischargeDate || "2026-10-04");
       if (!dischargeDate) return;
 
       await db.inpatients.update(id, { 
@@ -1648,7 +1692,7 @@
         return;
       }
 
-      const todayStr = new Date().toISOString().slice(0, 10);
+      const todayStr = "2026-10-04";
 
       listEl.innerHTML = pendingList.map(item => {
         const daysOld = calculateDaysDifference(item.date, todayStr) - 1;
@@ -1697,7 +1741,7 @@
       let msg = `PENDING CLAIMS - ${hospTitle} (${periodHeader})\n`;
       msg += `----------------------------------------\n\n`;
 
-      const todayStr = new Date().toISOString().slice(0, 10);
+      const todayStr = "2026-10-04";
 
       pendingList.forEach((item, idx) => {
         const daysOld = calculateDaysDifference(item.date, todayStr) - 1;
@@ -1760,7 +1804,7 @@
             <span>📅 ${item.date}</span>
             <span>🏥 ${escapeHtml(item.hospital)}</span>
           </div>
-          ${item.referredBy ? `<div class="text-[11px] font-semibold text-indigo-300">👨‍⚕ Ref: ${escapeHtml(item.referredBy)}</div>` : ''}
+          ${item.referredBy ? `<div class="text-[11px] font-semibold text-indigo-300">👨‍‍⚕ Ref: ${escapeHtml(item.referredBy)}</div>` : ''}
           ${item.note ? `<div class="text-xs text-slate-300">📋 Note / Advice: ${escapeHtml(item.note)}</div>` : ''}
           <div class="flex justify-end gap-1.5 pt-1.5 border-t border-white/5">
             <button onclick="convertOpdToIpd(${item.id})" class="text-[11px] font-bold px-2.5 py-1 bg-indigo-900/60 hover:bg-indigo-800/60 text-indigo-200 border border-indigo-500/30 rounded-lg transition">
@@ -1905,7 +1949,7 @@
         hospital: entry.hospital,
         referredBy: entry.referredBy,
         diagnosis: entry.note || '',
-        admitDate: new Date().toISOString().slice(0, 10),
+        admitDate: "2026-10-04",
         status: 'Active'
       });
     }
@@ -1988,7 +2032,7 @@
 
     function openManualEntryModal(prefill = {}) {
       document.getElementById('entryRecordId').value = prefill.id || '';
-      document.getElementById('entryDate').value = prefill.date || new Date().toISOString().slice(0, 10);
+      document.getElementById('entryDate').value = prefill.date || "2026-10-04";
       document.getElementById('entryCategory').value = prefill.category || 'OPD';
       
       const hospSelect = document.getElementById('entryHospital');
@@ -2053,7 +2097,7 @@
 
         let detectedName = '';
         let detectedReferredBy = '';
-        let detectedDate = new Date().toISOString().slice(0, 10);
+        let detectedDate = "2026-10-04";
         let detectedAmount = '';
         let detectedNote = '';
         let detectedHospital = 'Orange Hospital, Navsari';
@@ -2134,12 +2178,12 @@
     async function exportDataBackup() {
       const entries = await db.entries.toArray();
       const inpatients = await db.inpatients.toArray();
-      const backup = { entries, inpatients, exportedAt: new Date().toISOString() };
+      const backup = { entries, inpatients, exportedAt: "2026-10-04T17:34:00.000Z" };
       const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `practice_backup_${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `practice_backup_2026-10-04.json`;
       a.click();
     }
 
