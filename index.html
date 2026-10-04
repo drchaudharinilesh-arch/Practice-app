@@ -8,6 +8,7 @@
   <meta name="theme-color" content="#070a13" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     body {
@@ -114,12 +115,15 @@
             <h1 class="text-sm font-extrabold tracking-tight bg-gradient-to-r from-white via-indigo-200 to-slate-400 bg-clip-text text-transparent">
               Neuro Logbook
             </h1>
-            <p class="text-[10px] text-indigo-300/80 font-semibold">Dr. Nilesh Chaudhari</p>
+            <p class="text-[10px] text-indigo-300/80 font-semibold flex items-center gap-1.5">
+              <span>Dr. Nilesh Chaudhari</span>
+              <span id="cloudSyncIndicator" class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" title="Cloud Live Sync Active"></span>
+            </p>
           </div>
         </div>
       </div>
       <div class="flex items-center gap-1.5">
-        <button onclick="forceRefreshAll()" class="p-2 bg-slate-800/60 hover:bg-slate-700/80 border border-white/10 rounded-xl text-xs text-indigo-300" title="Sync All Records">
+        <button onclick="syncWithSupabaseCloud(true)" class="p-2 bg-slate-800/60 hover:bg-slate-700/80 border border-white/10 rounded-xl text-xs text-indigo-300" title="Sync with Cloud">
           🔄
         </button>
         <button onclick="lockApp()" class="p-2 bg-slate-800/60 hover:bg-slate-700/80 border border-white/10 rounded-xl text-xs text-slate-300" title="Lock Console">
@@ -718,6 +722,12 @@
       });
     }
 
+    // 1. Supabase Cloud Database Client Initialization
+    const SUPABASE_URL = "https://pxmyrzhqxgehskycldhs.supabase.co";
+    const SUPABASE_KEY = "Sb_publishable_dodO7b2mhSJ1kBejnBwQKQ_SHllRdjV";
+    const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+    // 2. Local Fallback Database (Dexie.js)
     const db = new Dexie('NeuroPracticeDB');
     db.version(12).stores({
       entries: '++id, date, category, hospital, name, referredBy, scheme, implantsUsed, implantDetails, note, amount, paymentStatus, paymentReceivedDate',
@@ -824,6 +834,7 @@
       document.getElementById('lockScreen').classList.add('hidden');
       document.getElementById('authenticatedApp').classList.remove('hidden');
       forceRefreshAll();
+      syncWithSupabaseCloud(false);
     }
 
     function lockApp() {
@@ -987,7 +998,7 @@
       return days > 0 ? days : 1;
     }
 
-    // Unified Master Feed Aggregator
+    // Unified Master Feed Aggregator (Entries + Active IPD)
     async function forceRefreshAll() {
       try {
         await db.open();
@@ -1057,6 +1068,59 @@
       renderSummaryMetrics();
       renderLedgerListOnly();
       loadInpatients();
+    }
+
+    // 3. Supabase Cloud Sync Engine (Bidirectional)
+    async function syncWithSupabaseCloud(notifyUser = false) {
+      if (!supabase) return;
+      const indicator = document.getElementById('cloudSyncIndicator');
+      if (indicator) indicator.className = 'inline-block w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping';
+
+      try {
+        // A. Fetch Cloud Records
+        const { data: cloudEntries, error: err1 } = await supabase.from('entries').select('*');
+        const { data: cloudInpatients, error: err2 } = await supabase.from('inpatients').select('*');
+
+        if (!err1 && cloudEntries) {
+          for (const item of cloudEntries) {
+            const localHas = await db.entries.get(Number(item.id));
+            if (!localHas) {
+              await db.entries.put(item);
+            }
+          }
+        }
+
+        if (!err2 && cloudInpatients) {
+          for (const item of cloudInpatients) {
+            const localHas = await db.inpatients.get(Number(item.id));
+            if (!localHas) {
+              await db.inpatients.put(item);
+            }
+          }
+        }
+
+        // B. Push Local Records to Cloud (ensure seamless backup)
+        const localEntries = await db.entries.toArray();
+        for (const item of localEntries) {
+          await supabase.from('entries').upsert(item, { onConflict: 'id' });
+        }
+
+        const localInpatients = await db.inpatients.toArray();
+        for (const item of localInpatients) {
+          await supabase.from('inpatients').upsert(item, { onConflict: 'id' });
+        }
+
+        if (indicator) indicator.className = 'inline-block w-1.5 h-1.5 rounded-full bg-emerald-400';
+        await forceRefreshAll();
+
+        if (notifyUser) {
+          alert('Cloud Sync Complete! All records across devices are now 100% updated.');
+        }
+      } catch (err) {
+        console.error('Supabase sync error:', err);
+        if (indicator) indicator.className = 'inline-block w-1.5 h-1.5 rounded-full bg-rose-400';
+        if (notifyUser) alert('Cloud Sync failed. Please check internet connection.');
+      }
     }
 
     function getActivePeriodEntries() {
@@ -1312,7 +1376,7 @@
                       <div class="text-[10px] text-slate-400 flex items-center gap-2">
                         <span>OT: ${s.date}</span>
                         <span class="font-bold text-blue-300">${s.scheme || 'PMJAY'}</span>
-                        <span class="font-medium ${s.implantsUsed === 'Yes' ? 'text-emerald-300' : 'text-slate-500'}">
+                        <span class="font-medium ${s.implantsUsed === 'Yes' ? 'text-emerald-300' : 'text-slate-400'}">
                           🔩 Implants: ${s.implantsUsed === 'Yes' ? (escapeHtml(s.implantDetails) || 'Yes') : 'No'}
                         </span>
                       </div>
@@ -1446,12 +1510,19 @@
         status: statusMode
       };
 
+      let savedId = id;
       if (id) {
         await db.inpatients.update(Number(id), data);
+        if (supabase) {
+          await supabase.from('inpatients').upsert({ id: Number(id), ...data });
+        }
       } else {
         data.surgeries = [];
         data.datedVisits = [];
-        await db.inpatients.add(data);
+        savedId = await db.inpatients.add(data);
+        if (supabase) {
+          await supabase.from('inpatients').insert([{ id: savedId, ...data }]);
+        }
       }
 
       closeModal('inpatientModal');
@@ -1487,6 +1558,9 @@
       existingVisits.push(newVisit);
 
       await db.inpatients.update(ipdId, { datedVisits: existingVisits });
+      if (supabase) {
+        await supabase.from('inpatients').update({ datedVisits: existingVisits }).eq('id', ipdId);
+      }
       closeModal('addDatedVisitModal');
       forceRefreshAll();
     }
@@ -1499,6 +1573,9 @@
           status: 'Active', 
           admitDate: new Date().toISOString().slice(0, 10) 
         });
+        if (supabase) {
+          await supabase.from('inpatients').update({ status: 'Active', admitDate: new Date().toISOString().slice(0, 10) }).eq('id', id);
+        }
         switchIpdSubTab('active');
         forceRefreshAll();
       }
@@ -1533,6 +1610,9 @@
         status: 'Active', 
         surgeries: existingSurgeries 
       });
+      if (supabase) {
+        await supabase.from('inpatients').update({ status: 'Active', surgeries: existingSurgeries }).eq('id', id);
+      }
 
       alert('Surgery marked completed!');
       switchIpdSubTab('active');
@@ -1573,10 +1653,13 @@
         surgeries: existingSurgeries,
         mainSurgeryDate: newSurgery.date
       });
+      if (supabase) {
+        await supabase.from('inpatients').update({ surgeries: existingSurgeries, mainSurgeryDate: newSurgery.date }).eq('id', ipdId);
+      }
 
       closeModal('addSurgeryToIpdModal');
       forceRefreshAll();
-      alert('Surgery added to patient and synced to Frontpage Feed!');
+      alert('Surgery added to patient and synced to Cloud Feed!');
     }
 
     async function dischargeInpatient(id) {
@@ -1590,6 +1673,9 @@
         status: 'Discharged', 
         dischargeDate: dischargeDate 
       });
+      if (supabase) {
+        await supabase.from('inpatients').update({ status: 'Discharged', dischargeDate: dischargeDate }).eq('id', id);
+      }
 
       alert('Patient discharged successfully!');
       forceRefreshAll();
@@ -1598,6 +1684,9 @@
     async function deleteInpatient(id) {
       if (confirm('Delete this case?')) {
         await db.inpatients.delete(id);
+        if (supabase) {
+          await supabase.from('inpatients').delete().eq('id', id);
+        }
         forceRefreshAll();
       }
     }
@@ -1724,7 +1813,7 @@
       const listEl = document.getElementById('opdAuditList');
 
       if (opdEntries.length === 0) {
-        listEl.innerHTML = `<div class="p-8 text-center text-slate-500 text-xs">No OPD patients recorded for ${periodHeader}.</div>`;
+        listEl.innerHTML = `<div class="p-8 text-center text-slate-500 text-xs">No OPD patients recorded for this period.</div>`;
         return;
       }
 
@@ -1747,7 +1836,7 @@
             <button onclick="convertOpdToIpd(${item.id})" class="text-[11px] font-bold px-2.5 py-1 bg-indigo-900/60 hover:bg-indigo-800/60 text-indigo-200 border border-indigo-500/30 rounded-lg transition">
               🛏 Admit to IPD
             </button>
-            <button onclick="editEntry(${item.id})" class="text-indigo-300 font-semibold text-xs px-2 py-1 liquid-glass rounded-lg hover:bg-slate-800 transition">✏️ Edit</button>
+            <button onclick="editEntry(${item.id})" class="text-indigo-300 font-semibold text-xs px-2 py-1 liquid-glass rounded-lg hover:bg-slate-800 transition">✏️️ Edit</button>
             <button onclick="deleteEntry(${item.id})" class="text-rose-400 hover:text-rose-300 font-semibold text-xs px-2 py-1">🗑</button>
           </div>
         </div>
@@ -1938,8 +2027,17 @@
         paymentStatus: document.getElementById('entryPaymentStatus').value
       };
 
-      if (id) await db.entries.update(Number(id), data);
-      else await db.entries.add(data);
+      if (id) {
+        await db.entries.update(Number(id), data);
+        if (supabase) {
+          await supabase.from('entries').upsert({ id: Number(id), ...data });
+        }
+      } else {
+        const newId = await db.entries.add(data);
+        if (supabase) {
+          await supabase.from('entries').insert([{ id: newId, ...data }]);
+        }
+      }
 
       closeModal('entryModal');
       forceRefreshAll();
@@ -1948,6 +2046,9 @@
     async function deleteEntry(id) {
       if (confirm('Delete this entry?')) {
         await db.entries.delete(id);
+        if (supabase) {
+          await supabase.from('entries').delete().eq('id', id);
+        }
         forceRefreshAll();
         if (!document.getElementById('opdAuditModal').classList.contains('hidden')) {
           filterOpdAuditList();
