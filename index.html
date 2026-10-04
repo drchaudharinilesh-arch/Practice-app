@@ -8,7 +8,6 @@
   <meta name="theme-color" content="#070a13" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     body {
@@ -82,15 +81,12 @@
             <h1 class="text-sm font-extrabold tracking-tight bg-gradient-to-r from-white via-indigo-200 to-slate-400 bg-clip-text text-transparent">
               Neuro Logbook
             </h1>
-            <p class="text-[10px] text-indigo-300/80 font-semibold flex items-center gap-1.5">
-              <span>Dr. Nilesh Chaudhari</span>
-              <span id="cloudSyncIndicator" class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" title="Cloud Live Sync Active"></span>
-            </p>
+            <p class="text-[10px] text-indigo-300/80 font-semibold">Dr. Nilesh Chaudhari</p>
           </div>
         </div>
       </div>
       <div class="flex items-center gap-1.5">
-        <button onclick="syncWithSupabaseCloud(true)" class="p-2 bg-slate-800/60 hover:bg-slate-700/80 border border-white/10 rounded-xl text-xs text-indigo-300" title="Sync with Cloud">
+        <button onclick="forceRefreshAll()" class="p-2 bg-slate-800/60 hover:bg-slate-700/80 border border-white/10 rounded-xl text-xs text-indigo-300" title="Refresh Records">
           🔄
         </button>
         <button onclick="exportDataBackup()" class="p-2 bg-indigo-900/40 hover:bg-indigo-800/60 border border-indigo-500/30 rounded-xl text-xs font-semibold text-indigo-200 flex items-center gap-1">
@@ -686,19 +682,7 @@
       });
     }
 
-    // 1. Supabase Cloud Database Client Initialization
-    const SUPABASE_URL = "https://pxmyrzhqxgehskycldhs.supabase.co";
-    const SUPABASE_KEY = "Sb_publishable_dodO7b2mhSJ1kBejnBwQKQ_SHllRdjV";
-    let supabase = null;
-    try {
-      if (window.supabase && typeof window.supabase.createClient === 'function') {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-      }
-    } catch (e) {
-      console.warn('Supabase init notice:', e);
-    }
-
-    // 2. Local Fallback Database (Dexie.js)
+    // Local Database Only (Super Stable & Fast)
     const db = new Dexie('NeuroPracticeDB');
     db.version(12).stores({
       entries: '++id, date, category, hospital, name, referredBy, scheme, implantsUsed, implantDetails, note, amount, paymentStatus, paymentReceivedDate',
@@ -708,8 +692,8 @@
     let currentCategoryFilter = 'ALL';
     let masterEntriesCache = [];
 
-    // Date & Month Switcher State (Defaults safely to October 2026 / Current date)
-    let currentDateCursor = new Date(2026, 9, 1); // 2026 October
+    // Date & Month Switcher State
+    let currentDateCursor = new Date(2026, 9, 4); // October 2026
     let isAllTimeActive = false;
 
     const monthNames = [
@@ -717,8 +701,7 @@
       "July", "August", "September", "October", "November", "December"
     ];
 
-    // Ultra-reliable execution trigger (runs immediately and safely)
-    function initializeApp() {
+    document.addEventListener('DOMContentLoaded', () => {
       try {
         const todayStr = "2026-10-04";
         const elAdmit = document.getElementById('ipdAdmitDate');
@@ -732,20 +715,10 @@
 
         updateMonthDisplay();
         forceRefreshAll();
-
-        setTimeout(() => {
-          syncWithSupabaseCloud(false);
-        }, 800);
-      } catch (err) {
-        console.error('Initialization error:', err);
+      } catch (e) {
+        console.error('Init error:', e);
       }
-    }
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initializeApp);
-    } else {
-      initializeApp();
-    }
+    });
 
     function updateMonthDisplay() {
       const y = currentDateCursor.getFullYear();
@@ -942,7 +915,7 @@
       return days > 0 ? days : 1;
     }
 
-    // Direct Unified Local Loader
+    // Direct Local Master Feed Aggregator
     async function forceRefreshAll() {
       try {
         let directEntries = [];
@@ -1017,68 +990,6 @@
       renderSummaryMetrics();
       renderLedgerListOnly();
       loadInpatients();
-    }
-
-    // Supabase Cloud Sync Engine (Guaranteed Non-Blocking)
-    async function syncWithSupabaseCloud(notifyUser = false) {
-      if (!supabase) {
-        if (notifyUser) alert('Supabase client connecting in background...');
-        return;
-      }
-      const indicator = document.getElementById('cloudSyncIndicator');
-      if (indicator) indicator.className = 'inline-block w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping';
-
-      try {
-        const { data: cloudEntries, error: err1 } = await supabase.from('entries').select('*');
-        const { data: cloudInpatients, error: err2 } = await supabase.from('inpatients').select('*');
-
-        if (!err1 && cloudEntries) {
-          for (const item of cloudEntries) {
-            if (item && item.id) {
-              const localHas = await db.entries.get(Number(item.id));
-              if (!localHas) {
-                await db.entries.put(item);
-              }
-            }
-          }
-        }
-
-        if (!err2 && cloudInpatients) {
-          for (const item of cloudInpatients) {
-            if (item && item.id) {
-              const localHas = await db.inpatients.get(Number(item.id));
-              if (!localHas) {
-                await db.inpatients.put(item);
-              }
-            }
-          }
-        }
-
-        const localEntries = await db.entries.toArray();
-        for (const item of localEntries) {
-          if (item && typeof item.id === 'number') {
-            await supabase.from('entries').upsert(item, { onConflict: 'id' });
-          }
-        }
-
-        const localInpatients = await db.inpatients.toArray();
-        for (const item of localInpatients) {
-          if (item && typeof item.id === 'number') {
-            await supabase.from('inpatients').upsert(item, { onConflict: 'id' });
-          }
-        }
-
-        if (indicator) indicator.className = 'inline-block w-1.5 h-1.5 rounded-full bg-emerald-400';
-        await forceRefreshAll();
-
-        if (notifyUser) {
-          alert('Cloud Sync Complete! All records across devices are now updated.');
-        }
-      } catch (err) {
-        console.warn('Supabase sync notice:', err);
-        if (indicator) indicator.className = 'inline-block w-1.5 h-1.5 rounded-full bg-rose-400';
-        if (notifyUser) alert('Cloud Sync completed locally. Check internet connection for remote sync.');
-      }
     }
 
     function getActivePeriodEntries() {
@@ -1198,7 +1109,7 @@
                 </button>
               ` : ''}
               ${!e.isFromActiveIpd ? `
-                <button onclick="editEntry(${e.id})" class="text-indigo-300 font-semibold text-xs px-2 py-1 liquid-glass rounded-lg hover:bg-slate-800 transition">✏</button>
+                <button onclick="editEntry(${e.id})" class="text-indigo-300 font-semibold text-xs px-2 py-1 liquid-glass rounded-lg hover:bg-slate-800 transition">✏️</button>
                 <button onclick="deleteEntry(${e.id})" class="text-rose-400 hover:text-rose-300 font-semibold text-xs px-1.5 py-1">🗑</button>
               ` : `
                 <button onclick="switchTab('inpatients')" class="text-[10px] font-bold text-indigo-300 bg-indigo-950/60 px-2 py-1 rounded-lg border border-indigo-500/30">
@@ -1347,7 +1258,7 @@
                         <div class="text-[10px] text-slate-400 flex items-center gap-2">
                           <span>OT: ${s.date}</span>
                           <span class="font-bold text-blue-300">${s.scheme || 'PMJAY'}</span>
-                          <span class="font-medium ${s.implantsUsed === 'Yes' ? 'text-emerald-300' : 'text-slate-400'}">
+                          <span class="font-medium ${s.implantsUsed === 'Yes' ? 'text-emerald-300' : 'text-slate-500'}">
                             🔩 Implants: ${s.implantsUsed === 'Yes' ? (escapeHtml(s.implantDetails) || 'Yes') : 'No'}
                           </span>
                         </div>
@@ -1484,19 +1395,12 @@
         status: statusMode
       };
 
-      let savedId = id;
       if (id) {
         await db.inpatients.update(Number(id), data);
-        if (supabase) {
-          try { await supabase.from('inpatients').upsert({ id: Number(id), ...data }); } catch(e){}
-        }
       } else {
         data.surgeries = [];
         data.datedVisits = [];
-        savedId = await db.inpatients.add(data);
-        if (supabase) {
-          try { await supabase.from('inpatients').insert([{ id: savedId, ...data }]); } catch(e){}
-        }
+        await db.inpatients.add(data);
       }
 
       closeModal('inpatientModal');
@@ -1532,9 +1436,6 @@
       existingVisits.push(newVisit);
 
       await db.inpatients.update(ipdId, { datedVisits: existingVisits });
-      if (supabase) {
-        try { await supabase.from('inpatients').update({ datedVisits: existingVisits }).eq('id', ipdId); } catch(e){}
-      }
       closeModal('addDatedVisitModal');
       forceRefreshAll();
     }
@@ -1547,9 +1448,6 @@
           status: 'Active', 
           admitDate: "2026-10-04" 
         });
-        if (supabase) {
-          try { await supabase.from('inpatients').update({ status: 'Active', admitDate: "2026-10-04" }).eq('id', id); } catch(e){}
-        }
         switchIpdSubTab('active');
         forceRefreshAll();
       }
@@ -1584,9 +1482,6 @@
         status: 'Active', 
         surgeries: existingSurgeries 
       });
-      if (supabase) {
-        try { await supabase.from('inpatients').update({ status: 'Active', surgeries: existingSurgeries }).eq('id', id); } catch(e){}
-      }
 
       alert('Surgery marked completed!');
       switchIpdSubTab('active');
@@ -1627,13 +1522,10 @@
         surgeries: existingSurgeries,
         mainSurgeryDate: newSurgery.date
       });
-      if (supabase) {
-        try { await supabase.from('inpatients').update({ surgeries: existingSurgeries, mainSurgeryDate: newSurgery.date }).eq('id', id); } catch(e){}
-      }
 
       closeModal('addSurgeryToIpdModal');
       forceRefreshAll();
-      alert('Surgery added to patient and synced!');
+      alert('Surgery added to patient!');
     }
 
     async function dischargeInpatient(id) {
@@ -1647,9 +1539,6 @@
         status: 'Discharged', 
         dischargeDate: dischargeDate 
       });
-      if (supabase) {
-        try { await supabase.from('inpatients').update({ status: 'Discharged', dischargeDate: dischargeDate }).eq('id', id); } catch(e){}
-      }
 
       alert('Patient discharged successfully!');
       forceRefreshAll();
@@ -1658,9 +1547,6 @@
     async function deleteInpatient(id) {
       if (confirm('Delete this case?')) {
         await db.inpatients.delete(id);
-        if (supabase) {
-          try { await supabase.from('inpatients').delete().eq('id', id); } catch(e){}
-        }
         forceRefreshAll();
       }
     }
@@ -1804,7 +1690,7 @@
             <span>📅 ${item.date}</span>
             <span>🏥 ${escapeHtml(item.hospital)}</span>
           </div>
-          ${item.referredBy ? `<div class="text-[11px] font-semibold text-indigo-300">👨‍‍⚕ Ref: ${escapeHtml(item.referredBy)}</div>` : ''}
+          ${item.referredBy ? `<div class="text-[11px] font-semibold text-indigo-300">👨‍⚕ Ref: ${escapeHtml(item.referredBy)}</div>` : ''}
           ${item.note ? `<div class="text-xs text-slate-300">📋 Note / Advice: ${escapeHtml(item.note)}</div>` : ''}
           <div class="flex justify-end gap-1.5 pt-1.5 border-t border-white/5">
             <button onclick="convertOpdToIpd(${item.id})" class="text-[11px] font-bold px-2.5 py-1 bg-indigo-900/60 hover:bg-indigo-800/60 text-indigo-200 border border-indigo-500/30 rounded-lg transition">
@@ -2003,14 +1889,8 @@
 
       if (id) {
         await db.entries.update(Number(id), data);
-        if (supabase) {
-          try { await supabase.from('entries').upsert({ id: Number(id), ...data }); } catch(e){}
-        }
       } else {
-        const newId = await db.entries.add(data);
-        if (supabase) {
-          try { await supabase.from('entries').insert([{ id: newId, ...data }]); } catch(e){}
-        }
+        await db.entries.add(data);
       }
 
       closeModal('entryModal');
@@ -2020,9 +1900,6 @@
     async function deleteEntry(id) {
       if (confirm('Delete this entry?')) {
         await db.entries.delete(id);
-        if (supabase) {
-          try { await supabase.from('entries').delete().eq('id', id); } catch(e){}
-        }
         forceRefreshAll();
         if (!document.getElementById('opdAuditModal').classList.contains('hidden')) {
           filterOpdAuditList();
