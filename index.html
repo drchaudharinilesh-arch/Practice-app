@@ -73,7 +73,7 @@
           <div id="statTotal" class="text-2xl font-extrabold text-indigo-950">₹0</div>
         </div>
 
-        <!-- Category Grid -->
+        <!-- Category Grid & Pending Receivables -->
         <div class="grid grid-cols-2 gap-2 text-xs">
           <button onclick="openOpdAuditModal()" class="bg-slate-50 hover:bg-slate-100 active:bg-slate-200 p-2.5 rounded-lg border border-slate-200/60 text-left transition">
             <div class="flex justify-between items-center text-slate-500 font-medium">
@@ -91,10 +91,14 @@
             <div id="statSurgery" class="text-sm font-bold text-emerald-950 mt-0.5">₹0</div>
           </button>
 
-          <div class="bg-amber-50 p-2.5 rounded-lg border border-amber-100 col-span-2">
-            <span class="text-amber-700 font-medium">MR / Institutional Benefits</span>
-            <div id="statMr" class="text-sm font-bold text-amber-950 mt-0.5">₹0</div>
-          </div>
+          <!-- Pending Receivables Tracker Button -->
+          <button onclick="openPendingReceivablesModal()" class="bg-amber-50 hover:bg-amber-100 p-2.5 rounded-lg border border-amber-200 col-span-2 text-left transition">
+            <div class="flex justify-between items-center text-amber-800 font-bold">
+              <span>⏳ Pending Claims (PMJAY / TPA)</span>
+              <span class="text-[10px] text-amber-900 underline">Track & Recover ↗</span>
+            </div>
+            <div id="statPendingReceivables" class="text-base font-extrabold text-amber-950 mt-0.5">₹0 Due</div>
+          </button>
         </div>
 
         <!-- Hospital Breakdown -->
@@ -133,7 +137,7 @@
     <!-- View 2: Unified IPD & Surgeries Hub -->
     <div id="viewInpatients" class="hidden space-y-4">
       
-      <!-- Sub-tabs within IPD Hub: Pipeline vs Active Inpatients -->
+      <!-- Sub-tabs within IPD Hub -->
       <div class="bg-white p-1 rounded-2xl border border-slate-200 grid grid-cols-2 text-xs font-bold shadow-sm">
         <button onclick="switchIpdSubTab('active')" id="subTabActiveBtn" class="py-2.5 rounded-xl bg-indigo-600 text-white transition">
           🛏️ Active Inpatients (<span id="activeCountBadge">0</span>)
@@ -146,7 +150,7 @@
       <div class="flex justify-between items-center">
         <div>
           <h2 id="ipdSectionHeading" class="text-base font-bold text-slate-900">Active Inpatients (IPD)</h2>
-          <p id="ipdSectionSubheading" class="text-xs text-slate-500">Live Stay, Rounds & Completed Surgeries</p>
+          <p id="ipdSectionSubheading" class="text-xs text-slate-500">Live Stay, Dated Visits & Surgeries</p>
         </div>
         <button onclick="openInpatientModal()" class="bg-indigo-600 active:bg-indigo-700 text-white px-3 py-2 rounded-xl text-xs font-bold shadow-sm">
           + Add / Plan Patient
@@ -259,9 +263,18 @@
           <input type="text" id="entryNote" placeholder="e.g. TLIF L4-L5 / Consultation" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-800" />
         </div>
 
-        <div>
-          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Amount (₹)</label>
-          <input type="number" id="entryAmount" step="1" placeholder="0" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 text-lg font-bold" />
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Amount (₹)</label>
+            <input type="number" id="entryAmount" step="1" placeholder="0" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 text-lg font-bold" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Payment Status</label>
+            <select id="entryPaymentStatus" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-bold">
+              <option value="Received">Received</option>
+              <option value="Pending">Pending (Receivable)</option>
+            </select>
+          </div>
         </div>
 
         <button type="submit" id="entrySubmitBtn" class="w-full bg-indigo-600 text-white font-bold py-3.5 rounded-xl shadow-md active:bg-indigo-700 mt-2">
@@ -271,7 +284,7 @@
     </div>
   </div>
 
-  <!-- Inpatient (IPD) Admission & Timeline Modal (Calendar Based) -->
+  <!-- Inpatient (IPD) Admission & Timeline Modal (Supports Cross-Reference Tag) -->
   <div id="inpatientModal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-end justify-center p-0">
     <div class="bg-white rounded-t-3xl p-5 w-full max-w-md max-h-[92vh] overflow-y-auto space-y-4">
       <div class="flex justify-between items-center border-b pb-2">
@@ -284,6 +297,30 @@
         <div>
           <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Patient Name</label>
           <input type="text" id="ipdPatientName" required placeholder="Patient full name" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3" />
+        </div>
+
+        <!-- Cross-Reference Selection -->
+        <div class="p-3 bg-indigo-50/70 border border-indigo-200 rounded-2xl space-y-2">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs font-bold text-indigo-950 uppercase mb-1">Admission Type</label>
+              <select id="ipdAdmissionType" onchange="toggleCrossReferenceFields()" class="w-full bg-white border border-indigo-300 rounded-xl p-2.5 text-xs font-bold">
+                <option value="Direct">My Direct Admission</option>
+                <option value="Cross-Ref">Cross-Reference / Call</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-indigo-950 uppercase mb-1">Status Mode</label>
+              <select id="ipdStatusMode" class="w-full bg-white border border-indigo-300 rounded-xl p-2.5 text-xs font-bold text-indigo-900">
+                <option value="Active">Currently Admitted</option>
+                <option value="Scheduled">Scheduled (Upcoming OT)</option>
+              </select>
+            </div>
+          </div>
+          <div id="crossRefContainer" class="hidden">
+            <label class="block text-[10px] font-bold text-indigo-900 uppercase mb-1">Primary Consultant / Department</label>
+            <input type="text" id="ipdPrimaryConsultant" placeholder="e.g. Dr. Desai (Physician) / ICU Team" class="w-full bg-white border border-indigo-300 rounded-xl p-2 text-xs" />
+          </div>
         </div>
 
         <div class="grid grid-cols-2 gap-2">
@@ -300,20 +337,6 @@
             </select>
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Status Mode</label>
-            <select id="ipdStatusMode" onchange="toggleStatusModeFields()" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-bold text-indigo-900">
-              <option value="Active">Currently Admitted</option>
-              <option value="Scheduled">Scheduled (Upcoming OT)</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Referred By</label>
-            <input type="text" id="ipdReferredBy" placeholder="e.g. Dr. A. K. Shah / Direct" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs" />
-          </div>
-          <div>
             <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Bed / Room</label>
             <input type="text" id="ipdWardBed" placeholder="e.g. ICU-3 / Bed 12" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs" />
           </div>
@@ -322,7 +345,6 @@
         <!-- Calendar Timeline Milestones Section -->
         <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
           <label class="block text-xs font-bold text-slate-700 uppercase">Stay & Milestones (Select Dates)</label>
-          
           <div class="grid grid-cols-2 gap-2">
             <div>
               <span class="text-[10px] text-slate-500 font-semibold">Date of Admission</span>
@@ -333,10 +355,9 @@
               <input type="date" id="ipdMainSurgeryDate" class="w-full bg-white border border-slate-300 rounded-xl p-2 text-xs" />
             </div>
           </div>
-
           <div class="grid grid-cols-2 gap-2">
             <div>
-              <span class="text-[10px] text-slate-500 font-semibold">Date ICU Step-down / Out</span>
+              <span class="text-[10px] text-slate-500 font-semibold">Date ICU Step-down</span>
               <input type="date" id="ipdIcuOutDate" class="w-full bg-white border border-slate-300 rounded-xl p-2 text-xs" />
             </div>
             <div>
@@ -381,6 +402,47 @@
 
         <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3.5 rounded-xl shadow active:bg-indigo-700">
           Save Case
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Dated Visit Modal -->
+  <div id="addDatedVisitModal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-end justify-center p-0">
+    <div class="bg-white rounded-t-3xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto space-y-4">
+      <div class="flex justify-between items-center border-b pb-2">
+        <div>
+          <h3 class="text-base font-bold text-slate-900">+ Log Dated Inpatient Visit</h3>
+          <p id="datedVisitPatientLabel" class="text-xs text-indigo-600 font-semibold"></p>
+        </div>
+        <button onclick="closeModal('addDatedVisitModal')" class="text-slate-400 text-xl font-bold p-1">&times;</button>
+      </div>
+      <form id="datedVisitForm" onsubmit="saveDatedVisitToIpd(event)" class="space-y-3">
+        <input type="hidden" id="targetVisitIpdId" value="" />
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Visit Date</label>
+          <input type="date" id="visitDateInput" required class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3" />
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Visit Type</label>
+            <select id="visitTypeSelect" onchange="updateDefaultVisitFee()" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-bold">
+              <option value="Routine Round">Routine Round</option>
+              <option value="Emergency Call">Emergency / ICU Call</option>
+              <option value="Reference Review">Reference Review</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Fee (₹)</label>
+            <input type="number" id="visitFeeInput" value="800" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 font-bold" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Clinical Note (Optional)</label>
+          <input type="text" id="visitNoteInput" placeholder="e.g. Advised antiedema, GCS 14/15" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs" />
+        </div>
+        <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3.5 rounded-xl shadow active:bg-indigo-700">
+          Save Visit
         </button>
       </form>
     </div>
@@ -437,6 +499,42 @@
           Save Surgery to Patient
         </button>
       </form>
+    </div>
+  </div>
+
+  <!-- Pending Receivables (Expected Income) Tracker Modal -->
+  <div id="pendingReceivablesModal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3">
+    <div class="bg-white rounded-3xl p-5 w-full max-w-md max-h-[88vh] flex flex-col shadow-2xl">
+      <div class="flex justify-between items-center border-b pb-2 mb-3">
+        <div>
+          <h3 class="text-base font-bold text-slate-900">Pending Receivables (PMJAY / TPA)</h3>
+          <p class="text-xs text-amber-800 font-semibold" id="pendingTotalHeader">Expected Claims: ₹0</p>
+        </div>
+        <button onclick="closeModal('pendingReceivablesModal')" class="text-slate-400 text-2xl font-bold">&times;</button>
+      </div>
+
+      <div class="mb-3">
+        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Filter by Hospital for Reconciliation</label>
+        <select id="pendingHospitalFilter" onchange="renderPendingReceivablesList()" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 text-xs font-medium">
+          <option value="All">All Hospitals</option>
+          <option value="Orange Hospital, Navsari">Orange Hospital, Navsari</option>
+          <option value="Parsi Hospital, Navsari">Parsi Hospital, Navsari</option>
+          <option value="Kejal Lifeline Hospital, Navsari">Kejal Lifeline, Navsari</option>
+          <option value="Alipore Hospital">Alipore Hospital</option>
+          <option value="Rhythm Hospital, Vyara">Rhythm Hospital, Vyara</option>
+          <option value="Atmiya Hospital, Mandvi">Atmiya Hospital, Mandvi</option>
+          <option value="Aatithyam Hospital, Navsari">Aatithyam Hospital, Navsari</option>
+        </select>
+      </div>
+
+      <div id="pendingReceivablesList" class="flex-1 overflow-y-auto space-y-2.5 pr-1"></div>
+
+      <div class="pt-3 border-t mt-3 space-y-2">
+        <button onclick="sharePendingClaimsWhatsApp()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow text-sm">
+          <span>📲</span> Share Pending Statement to TPA Desk
+        </button>
+        <button onclick="closeModal('pendingReceivablesModal')" class="w-full text-slate-500 text-xs py-1">Close</button>
+      </div>
     </div>
   </div>
 
@@ -506,10 +604,10 @@
 
   <script>
     const db = new Dexie('NeuroPracticeDB');
-    // Version 9 schema: Full Calendar Milestones, OT Pipeline, and Scheme Breakdown
-    db.version(9).stores({
-      entries: '++id, date, category, hospital, name, referredBy, scheme, implantsUsed, implantDetails, note, amount',
-      inpatients: '++id, patientName, hospital, referredBy, primaryScheme, isConverted, conversionDate, admitDate, mainSurgeryDate, icuOutDate, dischargeDate, wardBed, diagnosis, surgeries, status'
+    // Version 10: Dated visits, Payment Tracking, Cross-Reference Tag
+    db.version(10).stores({
+      entries: '++id, date, category, hospital, name, referredBy, scheme, implantsUsed, implantDetails, note, amount, paymentStatus, paymentReceivedDate',
+      inpatients: '++id, patientName, hospital, admissionType, primaryConsultant, referredBy, primaryScheme, isConverted, conversionDate, admitDate, mainSurgeryDate, icuOutDate, dischargeDate, wardBed, diagnosis, datedVisits, surgeries, status'
     });
 
     const DEFAULT_PIN = "1234";
@@ -520,6 +618,7 @@
       document.getElementById('ipdAdmitDate').value = today.toISOString().slice(0, 10);
       document.getElementById('ipdSurgeryDate').value = today.toISOString().slice(0, 10);
       document.getElementById('ipdMainSurgeryDate').value = today.toISOString().slice(0, 10);
+      document.getElementById('visitDateInput').value = today.toISOString().slice(0, 10);
       
       authenticateBiometrics();
       loadDashboard();
@@ -535,7 +634,7 @@
             return;
           }
         } catch (e) {
-          console.log('Biometric error fallback:', e);
+          console.log('Biometric fallback:', e);
         }
       }
       document.getElementById('pinFallbackContainer').classList.remove('hidden');
@@ -592,7 +691,7 @@
         activeBtn.className = 'py-2.5 rounded-xl bg-indigo-600 text-white transition';
         pipelineBtn.className = 'py-2.5 rounded-xl text-slate-600 transition';
         heading.innerText = 'Active Inpatients (IPD)';
-        subheading.innerText = 'Live Stay, Rounds & Completed Surgeries';
+        subheading.innerText = 'Live Stay, Dated Visits & Surgeries';
       } else {
         activeList.classList.add('hidden');
         pipelineList.classList.remove('hidden');
@@ -621,7 +720,20 @@
     function toggleSurgerySpecificFields() {
       const cat = document.getElementById('entryCategory').value;
       const container = document.getElementById('entrySurgeryFields');
-      if (cat === 'Surgery') container.classList.remove('hidden');
+      const pStatus = document.getElementById('entryPaymentStatus');
+      if (cat === 'Surgery') {
+        container.classList.remove('hidden');
+        pStatus.value = 'Pending';
+      } else {
+        container.classList.add('hidden');
+        pStatus.value = 'Received';
+      }
+    }
+
+    function toggleCrossReferenceFields() {
+      const type = document.getElementById('ipdAdmissionType').value;
+      const container = document.getElementById('crossRefContainer');
+      if (type === 'Cross-Ref') container.classList.remove('hidden');
       else container.classList.add('hidden');
     }
 
@@ -660,8 +772,12 @@
       }
     }
 
-    function toggleStatusModeFields() {
-      // Automatic handling based on status mode selection
+    function updateDefaultVisitFee() {
+      const type = document.getElementById('visitTypeSelect').value;
+      const feeInput = document.getElementById('visitFeeInput');
+      if (type === 'Emergency Call') feeInput.value = '1500';
+      else if (type === 'Reference Review') feeInput.value = '1000';
+      else feeInput.value = '800';
     }
 
     function handleViewRangeChange() {
@@ -718,48 +834,72 @@
           let surgeriesTotal = 0;
           surgeries.forEach(s => { surgeriesTotal += Number(s.fee) || 0; });
 
-          let schemeText = p.primaryScheme || 'PMJAY';
-          if (p.isConverted === 'Yes' && p.conversionDate) {
-            const pmjayD = calculateDaysDifference(p.admitDate, p.conversionDate);
-            const cashD = totalStay > pmjayD ? (totalStay - pmjayD) : 0;
-            schemeText = `PMJAY (${pmjayD}d) ➔ Cash (${cashD}d)`;
-          }
+          const visits = p.datedVisits || [];
+          let visitsTotal = 0;
+          visits.forEach(v => { visitsTotal += Number(v.fee) || 0; });
+
+          const isCrossRef = p.admissionType === 'Cross-Ref';
 
           return `
             <div class="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm space-y-3">
               <div class="flex justify-between items-start">
                 <div>
                   <div class="flex items-center gap-1.5 flex-wrap">
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
-                      Stay: ${totalStay} Days
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${isCrossRef ? 'bg-purple-100 text-purple-900' : 'bg-indigo-100 text-indigo-900'}">
+                      ${isCrossRef ? 'Cross-Ref Call' : 'Direct IPD'}
                     </span>
                     <span class="text-[10px] font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">
-                      ICU: ${icuDays}d | Ward: ${wardDays}d
+                      Stay: ${totalStay}d (ICU: ${icuDays}d | Ward: ${wardDays}d)
                     </span>
                     <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-900">
-                      ${schemeText}
+                      ${p.primaryScheme || 'PMJAY'}
                     </span>
                   </div>
                   <h3 class="text-base font-bold text-slate-900 mt-1">${escapeHtml(p.patientName)}</h3>
                   <p class="text-[11px] text-slate-500">Admitted: ${p.admitDate} | 🏥 ${escapeHtml(p.hospital)}</p>
+                  ${isCrossRef && p.primaryConsultant ? `<p class="text-[11px] font-bold text-purple-900">Primary: ${escapeHtml(p.primaryConsultant)}</p>` : ''}
                   ${p.wardBed ? `<p class="text-[11px] text-slate-500">Bed: ${escapeHtml(p.wardBed)}</p>` : ''}
-                  ${p.referredBy ? `<p class="text-[11px] text-indigo-700 font-medium">👨‍⚕️ Ref: ${escapeHtml(p.referredBy)}</p>` : ''}
-                  ${preopDays > 0 ? `<p class="text-[11px] text-amber-800 font-semibold">Pre-op Workup: ${preopDays} Days before surgery</p>` : ''}
+                  ${preopDays > 0 ? `<p class="text-[11px] text-amber-800 font-semibold">Pre-op Workup: ${preopDays} Days</p>` : ''}
                   ${p.diagnosis ? `<p class="text-xs text-slate-700 mt-0.5 font-medium bg-slate-50 p-1.5 rounded-lg">📋 ${escapeHtml(p.diagnosis)}</p>` : ''}
                 </div>
                 <div class="text-right">
-                  <span class="text-[10px] text-slate-400 uppercase font-semibold">Surgeon Total</span>
-                  <div class="text-base font-extrabold text-emerald-950">₹${surgeriesTotal.toLocaleString('en-IN')}</div>
+                  <span class="text-[10px] text-slate-400 uppercase font-semibold">Total Due</span>
+                  <div class="text-base font-extrabold text-emerald-950">₹${(surgeriesTotal + visitsTotal).toLocaleString('en-IN')}</div>
                   <button onclick="editInpatientCase(${p.id})" class="text-[11px] text-indigo-600 font-bold mt-1 px-2 py-0.5 bg-indigo-50 rounded-lg">
                     ✏️ Edit Case
                   </button>
                 </div>
               </div>
 
+              <!-- Dated Visits Section -->
+              <div class="bg-slate-50 p-2.5 rounded-2xl border border-slate-200/80 space-y-2">
+                <div class="flex justify-between items-center text-xs">
+                  <span class="font-bold text-slate-700">Dated Inpatient Visits (${visits.length})</span>
+                  <button onclick="openAddDatedVisitModal(${p.id}, '${escapeHtml(p.patientName)}')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-2.5 py-1 rounded-lg text-[11px]">
+                    + Log Visit
+                  </button>
+                </div>
+
+                ${visits.length > 0 ? `
+                  <div class="space-y-1 max-h-32 overflow-y-auto pr-1">
+                    ${visits.map((v, vIdx) => `
+                      <div class="flex justify-between items-center text-[11px] bg-white p-1.5 rounded-lg border border-slate-200">
+                        <div>
+                          <span class="font-bold text-slate-800">${v.date}</span>
+                          <span class="text-slate-500 ml-1">(${v.type})</span>
+                          ${v.note ? `<span class="text-slate-400 ml-1 truncate max-w-[120px]">- ${escapeHtml(v.note)}</span>` : ''}
+                        </div>
+                        <span class="font-bold text-emerald-900">₹${v.fee}</span>
+                      </div>
+                    `).join('')}
+                  </div>
+                ` : `<div class="text-[11px] text-slate-400 text-center py-1">No dated visits logged yet.</div>`}
+              </div>
+
               <!-- Surgeries Linked Section -->
               <div class="space-y-1.5">
                 <div class="flex justify-between items-center text-xs">
-                  <span class="font-bold text-slate-700">Surgeries (${surgeries.length})</span>
+                  <span class="font-bold text-slate-700">Surgeries Linked (${surgeries.length})</span>
                   <button onclick="openAddSurgeryToIpdModal(${p.id}, '${escapeHtml(p.patientName)}')" class="text-emerald-700 bg-emerald-50 hover:bg-emerald-100 font-bold px-2 py-1 rounded-lg text-xs">
                     + Add Surgery
                   </button>
@@ -787,7 +927,7 @@
                       </div>
                     </div>
                   `;
-                }).join('') : `<div class="text-[11px] text-slate-400 bg-slate-50 p-2 rounded-xl text-center">Conservative case (No surgery completed yet)</div>`}
+                }).join('') : `<div class="text-[11px] text-slate-400 bg-slate-50 p-2 rounded-xl text-center">Conservative case (No surgery completed)</div>`}
               </div>
 
               <!-- Bottom Actions -->
@@ -833,7 +973,6 @@
               </div>
             </div>
 
-            <!-- Transition from Upcoming to Admitted -->
             <div class="flex justify-end gap-2 pt-2 border-t border-slate-100 text-xs">
               <button onclick="markPatientAdmitted(${p.id})" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-xl shadow-sm">
                 🛏️ Mark Admitted (Pre-op)
@@ -852,7 +991,8 @@
       document.getElementById('ipdRecordId').value = prefill.id || '';
       document.getElementById('ipdPatientName').value = prefill.name || '';
       document.getElementById('ipdHospital').value = prefill.hospital || 'Orange Hospital, Navsari';
-      document.getElementById('ipdReferredBy').value = prefill.referredBy || '';
+      document.getElementById('ipdAdmissionType').value = prefill.admissionType || 'Direct';
+      document.getElementById('ipdPrimaryConsultant').value = prefill.primaryConsultant || '';
       document.getElementById('ipdStatusMode').value = prefill.status || 'Active';
       document.getElementById('ipdAdmitDate').value = prefill.admitDate || new Date().toISOString().slice(0, 10);
       document.getElementById('ipdMainSurgeryDate').value = prefill.mainSurgeryDate || new Date().toISOString().slice(0, 10);
@@ -865,6 +1005,7 @@
       document.getElementById('ipdPrimaryScheme').value = prefill.primaryScheme || 'PMJAY';
       document.getElementById('ipdConversionDate').value = prefill.conversionDate || '';
 
+      toggleCrossReferenceFields();
       toggleSchemeConversionInputs();
       document.getElementById('ipdModalTitle').innerText = prefill.id ? 'Edit Case' : 'Inpatient Admission / OT Planning';
       document.getElementById('inpatientModal').classList.remove('hidden');
@@ -878,7 +1019,8 @@
         id: p.id,
         name: p.patientName,
         hospital: p.hospital,
-        referredBy: p.referredBy,
+        admissionType: p.admissionType,
+        primaryConsultant: p.primaryConsultant,
         status: p.status,
         admitDate: p.admitDate,
         mainSurgeryDate: p.mainSurgeryDate,
@@ -900,7 +1042,8 @@
       const data = {
         patientName: document.getElementById('ipdPatientName').value.trim(),
         hospital: document.getElementById('ipdHospital').value,
-        referredBy: document.getElementById('ipdReferredBy').value.trim(),
+        admissionType: document.getElementById('ipdAdmissionType').value,
+        primaryConsultant: document.getElementById('ipdPrimaryConsultant').value.trim(),
         admitDate: document.getElementById('ipdAdmitDate').value,
         mainSurgeryDate: document.getElementById('ipdMainSurgeryDate').value || null,
         icuOutDate: document.getElementById('ipdIcuOutDate').value || null,
@@ -917,16 +1060,46 @@
         await db.inpatients.update(Number(id), data);
       } else {
         data.surgeries = [];
+        data.datedVisits = [];
         await db.inpatients.add(data);
       }
 
       closeModal('inpatientModal');
       switchTab('inpatients');
-      if (statusMode === 'Scheduled') {
-        switchIpdSubTab('pipeline');
-      } else {
-        switchIpdSubTab('active');
-      }
+      if (statusMode === 'Scheduled') switchIpdSubTab('pipeline');
+      else switchIpdSubTab('active');
+    }
+
+    // Dated Visit Logging
+    function openAddDatedVisitModal(ipdId, patientName) {
+      document.getElementById('targetVisitIpdId').value = ipdId;
+      document.getElementById('datedVisitPatientLabel').innerText = `Patient: ${patientName}`;
+      document.getElementById('visitDateInput').value = new Date().toISOString().slice(0, 10);
+      document.getElementById('visitTypeSelect').value = 'Routine Round';
+      document.getElementById('visitFeeInput').value = '800';
+      document.getElementById('visitNoteInput').value = '';
+      document.getElementById('addDatedVisitModal').classList.remove('hidden');
+    }
+
+    async function saveDatedVisitToIpd(event) {
+      event.preventDefault();
+      const ipdId = Number(document.getElementById('targetVisitIpdId').value);
+      const patient = await db.inpatients.get(ipdId);
+      if (!patient) return;
+
+      const newVisit = {
+        date: document.getElementById('visitDateInput').value,
+        type: document.getElementById('visitTypeSelect').value,
+        fee: Number(document.getElementById('visitFeeInput').value) || 0,
+        note: document.getElementById('visitNoteInput').value.trim()
+      };
+
+      const existingVisits = patient.datedVisits || [];
+      existingVisits.push(newVisit);
+
+      await db.inpatients.update(ipdId, { datedVisits: existingVisits });
+      closeModal('addDatedVisitModal');
+      loadInpatients();
     }
 
     // Move from Pipeline to Active Inpatient
@@ -1018,7 +1191,7 @@
       loadInpatients();
     }
 
-    // Discharge & Full Settle
+    // Discharge & Full Settle (Logs Surgery as Pending if PMJAY/TPA)
     async function dischargeInpatient(id) {
       const p = await db.inpatients.get(id);
       if (!p) return;
@@ -1033,30 +1206,45 @@
       }
       const wardDays = totalStay > icuDays ? (totalStay - icuDays) : 0;
       const surgeries = p.surgeries || [];
+      const visits = p.datedVisits || [];
 
-      let schemeDetails = p.primaryScheme || 'PMJAY';
-      if (p.isConverted === 'Yes' && p.conversionDate) {
-        const pmjayD = calculateDaysDifference(p.admitDate, p.conversionDate);
-        const cashD = totalStay > pmjayD ? (totalStay - pmjayD) : 0;
-        schemeDetails = `PMJAY (${pmjayD} Days) + Cash (${cashD} Days)`;
-      }
+      let totalVisitsFee = 0;
+      visits.forEach(v => { totalVisitsFee += Number(v.fee) || 0; });
 
       const staySummaryString = `${totalStay} Days (ICU: ${icuDays}, Ward: ${wardDays})`;
 
-      if (confirm(`Discharge ${p.patientName}?\n• Total Stay: ${staySummaryString}\n• Scheme: ${schemeDetails}\n• Surgeries: ${surgeries.length}\n\nMove surgeries to Practice Ledger?`)) {
+      if (confirm(`Discharge ${p.patientName}?\n• Total Stay: ${staySummaryString}\n• Visits: ${visits.length} (₹${totalVisitsFee})\n• Surgeries: ${surgeries.length}\n\nMove records to Practice Ledger?`)) {
+        
+        // Log individual surgeries
         for (const s of surgeries) {
+          const isPendingScheme = (s.scheme === 'PMJAY' || s.scheme === 'TPA');
           await db.entries.add({
             date: s.date,
             category: 'Surgery',
             hospital: p.hospital,
             name: p.patientName,
-            referredBy: p.referredBy || '',
+            referredBy: p.referredBy || (p.admissionType === 'Cross-Ref' ? p.primaryConsultant : ''),
             scheme: s.scheme || p.primaryScheme || 'PMJAY',
             implantsUsed: s.implantsUsed || 'No',
             implantDetails: s.implantDetails || '',
             note: s.procedure,
             amount: Number(s.fee) || 0,
+            paymentStatus: isPendingScheme ? 'Pending' : 'Received',
             stayDetails: staySummaryString
+          });
+        }
+
+        // Log Inpatient visits
+        if (totalVisitsFee > 0) {
+          await db.entries.add({
+            date: dischargeDate,
+            category: 'Indoor',
+            hospital: p.hospital,
+            name: p.patientName,
+            referredBy: p.referredBy || (p.admissionType === 'Cross-Ref' ? p.primaryConsultant : ''),
+            note: `${visits.length} Dated Visits (${p.admissionType === 'Cross-Ref' ? 'Cross-Ref Call' : 'Routine/ICU'})`,
+            amount: totalVisitsFee,
+            paymentStatus: 'Received'
           });
         }
 
@@ -1065,7 +1253,7 @@
           dischargeDate: dischargeDate 
         });
 
-        alert('Patient discharged successfully and surgeries logged to Ledger.');
+        alert('Patient discharged successfully and records logged to Ledger.');
         loadInpatients();
         loadDashboard();
       }
@@ -1078,7 +1266,7 @@
       }
     }
 
-    // Ledger & Dashboard Logic
+    // Ledger & Dashboard Logic with Receivables calculation
     async function loadDashboard() {
       const range = document.getElementById('viewRangeSelect').value;
       const selectedMonth = document.getElementById('monthFilter').value;
@@ -1106,10 +1294,18 @@
         hospitalTotals[hosp] = (hospitalTotals[hosp] || 0) + val;
       });
 
+      // Pending claims calculation across all records
+      let totalPending = 0;
+      allEntries.forEach(item => {
+        if (item.paymentStatus === 'Pending') {
+          totalPending += Number(item.amount) || 0;
+        }
+      });
+
       document.getElementById('statTotal').innerText = `₹${total.toLocaleString('en-IN')}`;
       document.getElementById('statOpdIndoor').innerText = `₹${opdIndoor.toLocaleString('en-IN')}`;
       document.getElementById('statSurgery').innerText = `₹${surgery.toLocaleString('en-IN')}`;
-      document.getElementById('statMr').innerText = `₹${mr.toLocaleString('en-IN')}`;
+      document.getElementById('statPendingReceivables').innerText = `₹${totalPending.toLocaleString('en-IN')} Due`;
 
       // Hospital Breakdown
       const hospBreakdownEl = document.getElementById('hospitalBreakdownList');
@@ -1140,13 +1336,14 @@
             <div class="flex items-center gap-1.5 flex-wrap">
               <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${getCategoryBadge(e.category)}">${e.category}</span>
               ${e.scheme ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">${e.scheme}</span>` : ''}
+              ${e.paymentStatus === 'Pending' ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900">⏳ Pending</span>` : ''}
               <span class="text-[10px] font-semibold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded truncate max-w-[120px]">
                 🏥 ${escapeHtml(e.hospital || 'General')}
               </span>
               <span class="text-[10px] text-slate-400">${e.date || ''}</span>
             </div>
             <div class="text-sm font-bold text-slate-900 truncate">${escapeHtml(e.name || 'Unnamed Entry')}</div>
-            ${e.referredBy ? `<div class="text-[11px] font-semibold text-indigo-700 flex items-center gap-1 truncate">👨‍⚕️ Ref: ${escapeHtml(e.referredBy)}</div>` : ''}
+            ${e.referredBy ? `<div class="text-[11px] font-semibold text-indigo-700 flex items-center gap-1 truncate">👨‍⚕️️ Ref: ${escapeHtml(e.referredBy)}</div>` : ''}
             ${e.category === 'Surgery' ? `
               <div class="text-[10px] font-medium ${e.implantsUsed === 'Yes' ? 'text-emerald-800' : 'text-slate-500'}">
                 🔩 Implants: ${e.implantsUsed === 'Yes' ? (escapeHtml(e.implantDetails) || 'Yes') : 'No'}
@@ -1156,6 +1353,11 @@
           <div class="text-right flex flex-col items-end">
             <div class="text-sm font-extrabold text-slate-800">₹${(Number(e.amount)||0).toLocaleString('en-IN')}</div>
             <div class="flex items-center gap-1.5 mt-1.5">
+              ${e.paymentStatus === 'Pending' ? `
+                <button onclick="markPaymentReceivedDirect(${e.id})" class="text-[10px] font-bold px-1.5 py-0.5 bg-emerald-50 text-emerald-800 rounded">
+                  ✓ Paid
+                </button>
+              ` : ''}
               ${e.category === 'OPD' ? `
                 <button onclick="convertOpdToIpd(${e.id})" class="text-[11px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg">
                   🛏️ Admit
@@ -1173,6 +1375,126 @@
       if (cat === 'Surgery') return 'bg-emerald-100 text-emerald-800';
       if (cat === 'MR Benefit') return 'bg-amber-100 text-amber-800';
       return 'bg-indigo-100 text-indigo-800';
+    }
+
+    // Pending Receivables Modal Logic
+    async function openPendingReceivablesModal() {
+      document.getElementById('pendingHospitalFilter').value = 'All';
+      renderPendingReceivablesList();
+      document.getElementById('pendingReceivablesModal').classList.remove('hidden');
+    }
+
+    async function renderPendingReceivablesList() {
+      const selectedHosp = document.getElementById('pendingHospitalFilter').value;
+      const allEntries = await db.entries.reverse().toArray();
+
+      let pendingList = allEntries.filter(e => e.paymentStatus === 'Pending');
+      if (selectedHosp !== 'All') {
+        pendingList = pendingList.filter(e => e.hospital === selectedHosp);
+      }
+
+      let sumDue = 0;
+      pendingList.forEach(e => { sumDue += Number(e.amount) || 0; });
+
+      document.getElementById('pendingTotalHeader').innerText = `Total Due: ₹${sumDue.toLocaleString('en-IN')} (${pendingList.length} cases)`;
+      const listEl = document.getElementById('pendingReceivablesList');
+
+      if (pendingList.length === 0) {
+        listEl.innerHTML = `<div class="p-8 text-center text-slate-400 text-xs">No pending claims found.</div>`;
+        return;
+      }
+
+      const todayStr = new Date().toISOString().slice(0, 10);
+
+      listEl.innerHTML = pendingList.map(item => {
+        const daysOld = calculateDaysDifference(item.date, todayStr) - 1;
+        let agingBadge = 'bg-slate-100 text-slate-700';
+        if (daysOld >= 60) agingBadge = 'bg-red-100 text-red-900 font-bold';
+        else if (daysOld >= 30) agingBadge = 'bg-amber-100 text-amber-900 font-bold';
+
+        return `
+          <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-1">
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="font-bold text-sm text-slate-900">${escapeHtml(item.name)}</span>
+                <span class="text-[10px] ml-1 px-1.5 py-0.5 rounded ${agingBadge}">${daysOld}d pending</span>
+              </div>
+              <span class="font-extrabold text-sm text-emerald-950">₹${(Number(item.amount)||0).toLocaleString('en-IN')}</span>
+            </div>
+            <div class="text-xs text-slate-600">🔹 Procedure: ${escapeHtml(item.note || 'Surgery')}</div>
+            <div class="text-[11px] text-slate-500 flex items-center gap-2">
+              <span>OT: ${item.date}</span>
+              <span>🏥 ${escapeHtml(item.hospital)}</span>
+              <span class="font-bold text-blue-800">${item.scheme}</span>
+            </div>
+            <div class="flex justify-end pt-1">
+              <button onclick="markPaymentReceivedDirect(${item.id})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1 rounded-lg text-xs">
+                ✓ Mark Received
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function markPaymentReceivedDirect(id) {
+      const entry = await db.entries.get(id);
+      if (!entry) return;
+
+      const recDate = prompt(`Mark payment received for ${entry.name}:\nEnter Received Date:`, new Date().toISOString().slice(0, 10));
+      if (!recDate) return;
+
+      await db.entries.update(id, {
+        paymentStatus: 'Received',
+        paymentReceivedDate: recDate
+      });
+
+      alert('Claim marked as Received!');
+      renderPendingReceivablesList();
+      loadDashboard();
+    }
+
+    // Follow-up WhatsApp Message for TPA / Accounts
+    async function sharePendingClaimsWhatsApp() {
+      const selectedHosp = document.getElementById('pendingHospitalFilter').value;
+      const allEntries = await db.entries.reverse().toArray();
+
+      let pendingList = allEntries.filter(e => e.paymentStatus === 'Pending');
+      if (selectedHosp !== 'All') {
+        pendingList = pendingList.filter(e => e.hospital === selectedHosp);
+      }
+
+      if (pendingList.length === 0) {
+        alert('No pending claims to share.');
+        return;
+      }
+
+      const hospTitle = selectedHosp === 'All' ? 'ALL HOSPITALS' : selectedHosp.toUpperCase();
+      let totalDue = 0;
+
+      let msg = `PENDING SURGICAL CLAIMS - ${hospTitle}\n`;
+      msg += `----------------------------------------\n\n`;
+
+      const todayStr = new Date().toISOString().slice(0, 10);
+
+      pendingList.forEach((item, idx) => {
+        const daysOld = calculateDaysDifference(item.date, todayStr) - 1;
+        const fee = Number(item.amount) || 0;
+        totalDue += fee;
+
+        msg += `${idx+1}. *${item.name}*\n`;
+        msg += `Date of Surgery: ${item.date} (${daysOld} Days Pending)\n`;
+        msg += `Hospital: ${item.hospital}\n`;
+        msg += `Procedure: ${item.note || 'Surgery'}\n`;
+        msg += `Scheme: ${item.scheme}\n`;
+        msg += `Claim Due: ₹${fee.toLocaleString('en-IN')}\n\n`;
+        msg += `----------------------------------------\n\n`;
+      });
+
+      msg += `Total Pending Recoverable: ₹${totalDue.toLocaleString('en-IN')}\n`;
+
+      const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+      window.open(whatsappUrl, '_blank');
     }
 
     // Surgery Audit List
@@ -1218,7 +1540,7 @@
       `).join('');
     }
 
-    // Clean Formal WhatsApp Export (Zero Emojis, Clean Dashed Dividers, Name Bold)
+    // Clean Formal WhatsApp Export for OT Staff
     async function shareSurgeryAuditWhatsApp() {
       const selectedMonth = document.getElementById('monthFilter').value;
       const targetHospital = document.getElementById('surgeryAuditHospitalFilter').value;
@@ -1338,7 +1660,8 @@
         implantsUsed: item.implantsUsed,
         implantDetails: item.implantDetails,
         note: item.note,
-        amount: item.amount
+        amount: item.amount,
+        paymentStatus: item.paymentStatus
       });
     }
 
@@ -1364,7 +1687,8 @@
         implantsUsed: cat === 'Surgery' ? document.getElementById('entryImplantsUsed').value : 'No',
         implantDetails: cat === 'Surgery' ? document.getElementById('entryImplantDetails').value.trim() : '',
         note: document.getElementById('entryNote').value.trim(),
-        amount: Number(document.getElementById('entryAmount').value) || 0
+        amount: Number(document.getElementById('entryAmount').value) || 0,
+        paymentStatus: document.getElementById('entryPaymentStatus').value
       };
 
       if (id) await db.entries.update(Number(id), data);
@@ -1421,6 +1745,7 @@
       document.getElementById('entryImplantDetails').value = prefill.implantDetails || '';
       document.getElementById('entryNote').value = prefill.note || '';
       document.getElementById('entryAmount').value = prefill.amount || '';
+      document.getElementById('entryPaymentStatus').value = prefill.paymentStatus || 'Received';
       
       toggleSurgerySpecificFields();
       toggleEntryImplantDetails();
@@ -1509,7 +1834,8 @@
           category: isSurgery ? 'Surgery' : 'OPD',
           scheme: /pmjay|ayushman/i.test(fullText) ? 'PMJAY' : (/tpa|mediclaim/i.test(fullText) ? 'TPA' : 'Cash'),
           note: detectedNote,
-          amount: detectedAmount
+          amount: detectedAmount,
+          paymentStatus: isSurgery ? 'Pending' : 'Received'
         });
 
       } catch (err) {
