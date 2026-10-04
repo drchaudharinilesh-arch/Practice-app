@@ -94,7 +94,7 @@
       <div class="liquid-glass p-4 rounded-2xl border border-white/10 space-y-2.5">
         <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Or Unlock with PIN</label>
         <div class="flex items-center gap-2">
-          <input type="password" id="appPinInput" pattern="[0-9]*" inputmode="numeric" maxlength="6" placeholder="Enter PIN (Default: 1234)" class="w-full glass-input text-center text-base rounded-xl py-2.5 focus:outline-none tracking-widest" />
+          <input type="password" id="appPinInput" pattern="[0-9]*" inputmode="numeric" maxlength="6" placeholder="PIN (Default: 1234)" class="w-full glass-input text-center text-base rounded-xl py-2.5 focus:outline-none tracking-widest" />
           <button onclick="unlockWithPin()" class="bg-slate-800 hover:bg-slate-700 text-indigo-200 font-bold px-4 py-2.5 rounded-xl text-xs border border-white/10 transition active:scale-95">
             Submit
           </button>
@@ -104,7 +104,7 @@
     </div>
   </div>
 
-  <!-- App Wrapper (Zero data mounted until unlocked) -->
+  <!-- App Wrapper (Mounted only after unlock) -->
   <div id="authenticatedApp" class="hidden">
     <!-- Header -->
     <header class="liquid-glass border-b border-white/10 p-4 sticky top-0 z-30 flex justify-between items-center shadow-lg">
@@ -155,8 +155,8 @@
           <div class="grid grid-cols-2 gap-2 text-xs">
             <button onclick="openOpdAuditModal()" class="liquid-glass hover:bg-slate-800/60 active:scale-98 p-3 rounded-2xl text-left transition border border-white/10">
               <div class="flex justify-between items-center text-slate-400 font-medium">
-                <span>OPD / Indoor</span>
-                <span class="text-[10px] text-indigo-400 font-bold">Audit ↗</span>
+                <span>OPD Consultations</span>
+                <span class="text-[10px] text-indigo-400 font-bold">Register ↗</span>
               </div>
               <div id="statOpdIndoor" class="text-sm font-extrabold text-white mt-1">₹0</div>
             </button>
@@ -169,7 +169,7 @@
               <div id="statSurgery" class="text-sm font-extrabold text-emerald-200 mt-1">₹0</div>
             </button>
 
-            <!-- Pending Receivables Tracker Button -->
+            <!-- Pending Receivables Button -->
             <button onclick="openPendingReceivablesModal()" class="frosted-glass hover:bg-amber-950/40 active:scale-98 p-3 rounded-2xl col-span-2 text-left transition border border-amber-500/30">
               <div class="flex justify-between items-center text-amber-300 font-bold">
                 <span class="flex items-center gap-1.5">
@@ -205,19 +205,27 @@
           </button>
         </div>
 
-        <!-- Entries List -->
+        <!-- Entries Log with Category Filter Pills -->
         <section class="space-y-2.5">
           <div class="flex justify-between items-center px-1">
             <h2 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Entries Log</h2>
             <span id="entriesCount" class="text-xs text-slate-500 font-medium">0 records</span>
           </div>
+
+          <!-- Filter Pills -->
+          <div class="flex gap-1.5 overflow-x-auto pb-1 text-[11px] font-bold">
+            <button onclick="setEntriesFilter('ALL')" id="filterBtnAll" class="px-3 py-1.5 rounded-xl bg-indigo-600 text-white transition">All Records</button>
+            <button onclick="setEntriesFilter('OPD')" id="filterBtnOpd" class="px-3 py-1.5 rounded-xl liquid-glass text-slate-300 hover:text-white transition">📋 Only OPD</button>
+            <button onclick="setEntriesFilter('Surgery')" id="filterBtnSurgery" class="px-3 py-1.5 rounded-xl liquid-glass text-slate-300 hover:text-white transition">🔪 Surgeries</button>
+            <button onclick="setEntriesFilter('Indoor')" id="filterBtnIndoor" class="px-3 py-1.5 rounded-xl liquid-glass text-slate-300 hover:text-white transition">🛏 Indoor</button>
+          </div>
+
           <div id="entriesList" class="space-y-2.5"></div>
         </section>
       </div>
 
       <!-- View 2: Unified IPD & Surgeries Hub -->
       <div id="viewInpatients" class="hidden space-y-4">
-        <!-- Sub-tabs within IPD Hub -->
         <div class="liquid-glass p-1 rounded-2xl grid grid-cols-2 text-xs font-bold border border-white/10 shadow-lg">
           <button onclick="switchIpdSubTab('active')" id="subTabActiveBtn" class="py-2.5 rounded-xl bg-indigo-600 text-white shadow transition">
             🛏️ Active Inpatients (<span id="activeCountBadge">0</span>)
@@ -250,7 +258,7 @@
           <span class="text-[11px] mt-0.5">OPD & Ledger</span>
         </button>
         <button onclick="switchTab('inpatients')" id="navTabInpatients" class="flex flex-col items-center justify-center text-slate-400 font-medium text-xs rounded-2xl transition">
-          <span class="text-xl">🛏️️</span>
+          <span class="text-xl">🛏</span>
           <span class="text-[11px] mt-0.5">IPD & Surgeries Hub</span>
         </button>
       </div>
@@ -631,23 +639,40 @@
     </div>
   </div>
 
-  <!-- OPD Audit Modal -->
+  <!-- Complete OPD Consultations Register Modal -->
   <div id="opdAuditModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3">
-    <div class="frosted-glass rounded-3xl p-5 w-full max-w-md max-h-[85vh] flex flex-col shadow-2xl border border-white/20">
+    <div class="frosted-glass rounded-3xl p-5 w-full max-w-md max-h-[88vh] flex flex-col shadow-2xl border border-white/20">
       <div class="flex justify-between items-center border-b border-white/10 pb-2.5 mb-3">
         <div>
-          <h3 class="text-base font-bold text-white">OPD & Indoor Audit</h3>
-          <p id="opdAuditSubtitle" class="text-xs text-slate-400"></p>
+          <h3 class="text-base font-bold text-white">OPD Consultations Register</h3>
+          <p id="opdAuditSubtitle" class="text-xs text-indigo-300"></p>
         </div>
         <button onclick="closeModal('opdAuditModal')" class="text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
       </div>
 
-      <div id="opdAuditList" class="flex-1 overflow-y-auto space-y-3 pr-1"></div>
+      <!-- Hospital filter for OPD -->
+      <div class="mb-3">
+        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Filter by Hospital</label>
+        <select id="opdAuditHospitalFilter" onchange="filterOpdAuditList()" class="w-full glass-input rounded-xl p-2 text-xs font-medium">
+          <option value="All">All Hospitals</option>
+          <option value="Orange Hospital, Navsari">Orange Hospital, Navsari</option>
+          <option value="Parsi Hospital, Navsari">Parsi Hospital, Navsari</option>
+          <option value="Kejal Lifeline Hospital, Navsari">Kejal Lifeline, Navsari</option>
+          <option value="Alipore Hospital">Alipore Hospital</option>
+          <option value="Rhythm Hospital, Vyara">Rhythm Hospital, Vyara</option>
+          <option value="Atmiya Hospital, Mandvi">Atmiya Hospital, Mandvi</option>
+          <option value="Aatithyam Hospital, Navsari">Aatithyam Hospital, Navsari</option>
+        </select>
+      </div>
 
-      <div class="pt-3 border-t border-white/10 mt-3">
-        <button onclick="closeModal('opdAuditModal')" class="w-full liquid-glass hover:bg-slate-800 text-slate-300 font-bold py-2.5 rounded-xl text-xs border border-white/10">
-          Close
+      <!-- Patient Cards List Container -->
+      <div id="opdAuditList" class="flex-1 overflow-y-auto space-y-2.5 pr-1"></div>
+
+      <div class="pt-3 border-t border-white/10 mt-3 space-y-2">
+        <button onclick="shareOpdAuditWhatsApp()" class="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold py-3 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-indigo-700/30 text-sm active:scale-95 transition">
+          <span>📲</span> Share OPD Statement on WhatsApp
         </button>
+        <button onclick="closeModal('opdAuditModal')" class="w-full text-slate-400 hover:text-white text-xs py-1">Close</button>
       </div>
     </div>
   </div>
@@ -660,7 +685,6 @@
   </div>
 
   <script>
-    // PWA Service Worker Registration
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW registration error:', err));
@@ -674,8 +698,8 @@
     });
 
     const DEFAULT_PIN = "1234";
+    let currentCategoryFilter = 'ALL';
 
-    // Immediate security evaluation without mounting clinical data
     document.addEventListener('DOMContentLoaded', () => {
       const today = new Date();
       document.getElementById('monthFilter').value = today.toISOString().slice(0, 7);
@@ -687,7 +711,6 @@
       requestBiometrics();
     });
 
-    // Auto-lock when minimized or switched out
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
         lockApp();
@@ -703,7 +726,7 @@
             return;
           }
         } catch (e) {
-          console.log('Biometric auth prompt fallback:', e);
+          console.log('Biometric auth fallback:', e);
         }
       }
     }
@@ -755,6 +778,26 @@
         navEntries.className = 'flex flex-col items-center justify-center text-slate-400 font-medium text-xs rounded-2xl transition';
         loadInpatients();
       }
+    }
+
+    function setEntriesFilter(cat) {
+      currentCategoryFilter = cat;
+      const btns = {
+        'ALL': document.getElementById('filterBtnAll'),
+        'OPD': document.getElementById('filterBtnOpd'),
+        'Surgery': document.getElementById('filterBtnSurgery'),
+        'Indoor': document.getElementById('filterBtnIndoor')
+      };
+
+      Object.keys(btns).forEach(k => {
+        if (k === cat) {
+          btns[k].className = 'px-3 py-1.5 rounded-xl bg-indigo-600 text-white transition';
+        } else {
+          btns[k].className = 'px-3 py-1.5 rounded-xl liquid-glass text-slate-300 hover:text-white transition';
+        }
+      });
+
+      loadDashboard();
     }
 
     function switchIpdSubTab(subTab) {
@@ -892,7 +935,6 @@
       const pipelineListEl = document.getElementById('inpatientsPipelineList');
       const todayStr = new Date().toISOString().slice(0, 10);
 
-      // Render Active Inpatients
       if (activePatients.length === 0) {
         activeListEl.innerHTML = `<div class="liquid-glass rounded-3xl p-8 text-center text-slate-500 text-xs border border-white/5">No active admitted patients currently.</div>`;
       } else {
@@ -1022,7 +1064,6 @@
         }).join('');
       }
 
-      // Render Upcoming Pipeline
       if (pipelinePatients.length === 0) {
         pipelineListEl.innerHTML = `<div class="liquid-glass rounded-3xl p-8 text-center text-slate-500 text-xs border border-white/5">No upcoming surgeries scheduled right now.</div>`;
       } else {
@@ -1290,6 +1331,7 @@
       const staySummaryString = `${totalStay} Days (ICU: ${icuDays}, Ward: ${wardDays})`;
 
       if (confirm(`Discharge ${p.patientName}?\n• Total Stay: ${staySummaryString}\n• Visits: ${visits.length} (₹${totalVisitsFee})\n• Surgeries: ${surgeries.length}\n\nMove records to Practice Ledger?`)) {
+        
         for (const s of surgeries) {
           const isPendingScheme = (s.scheme === 'PMJAY' || s.scheme === 'TPA');
           await db.entries.add({
@@ -1352,13 +1394,13 @@
         document.getElementById('currentMonthLabel').innerText = `All Records (${allEntries.length})`;
       }
 
-      let total = 0, opdIndoor = 0, surgery = 0;
+      let total = 0, opdTotal = 0, surgery = 0;
       const hospitalTotals = {};
 
       displayEntries.forEach(item => {
         const val = Number(item.amount) || 0;
         total += val;
-        if (item.category === 'OPD' || item.category === 'Indoor') opdIndoor += val;
+        if (item.category === 'OPD' || item.category === 'Indoor') opdTotal += val;
         else if (item.category === 'Surgery') surgery += val;
 
         const hosp = item.hospital || 'General / Other';
@@ -1373,7 +1415,7 @@
       });
 
       document.getElementById('statTotal').innerText = `₹${total.toLocaleString('en-IN')}`;
-      document.getElementById('statOpdIndoor').innerText = `₹${opdIndoor.toLocaleString('en-IN')}`;
+      document.getElementById('statOpdIndoor').innerText = `₹${opdTotal.toLocaleString('en-IN')}`;
       document.getElementById('statSurgery').innerText = `₹${surgery.toLocaleString('en-IN')}`;
       document.getElementById('statPendingReceivables').innerText = `₹${totalPending.toLocaleString('en-IN')} Due`;
 
@@ -1390,15 +1432,21 @@
         `).join('');
       }
 
-      const listEl = document.getElementById('entriesList');
-      document.getElementById('entriesCount').innerText = `${displayEntries.length} records`;
+      // Filter entries by currentCategoryFilter for the main log list
+      let filteredLogEntries = displayEntries;
+      if (currentCategoryFilter !== 'ALL') {
+        filteredLogEntries = displayEntries.filter(e => e.category === currentCategoryFilter);
+      }
 
-      if (displayEntries.length === 0) {
-        listEl.innerHTML = `<div class="liquid-glass rounded-3xl p-6 text-center text-slate-500 text-xs border border-white/5">No entries found for this view.</div>`;
+      const listEl = document.getElementById('entriesList');
+      document.getElementById('entriesCount').innerText = `${filteredLogEntries.length} records`;
+
+      if (filteredLogEntries.length === 0) {
+        listEl.innerHTML = `<div class="liquid-glass rounded-3xl p-6 text-center text-slate-500 text-xs border border-white/5">No ${currentCategoryFilter === 'ALL' ? '' : currentCategoryFilter} entries found for this view.</div>`;
         return;
       }
 
-      listEl.innerHTML = displayEntries.map(e => `
+      listEl.innerHTML = filteredLogEntries.map(e => `
         <div class="frosted-card p-3.5 rounded-2xl flex items-center justify-between border border-white/10 shadow-lg">
           <div class="space-y-1 max-w-[65%]">
             <div class="flex items-center gap-1.5 flex-wrap">
@@ -1427,8 +1475,8 @@
                 </button>
               ` : ''}
               ${e.category === 'OPD' ? `
-                <button onclick="convertOpdToIpd(${e.id})" class="text-[11px] font-bold px-2 py-1 bg-indigo-900/60 hover:bg-indigo-800/60 text-indigo-200 border border-indigo-500/30 rounded-lg transition">
-                  🛏️️ Admit
+                <button onclick="convertOpdToIpd(${e.id})" class="text-[11px] font-bold px-2 py-1 bg-indigo-900/60 hover:bg-indigo-800/60 text-indigo-200 border border-indigo-500/30 rounded-lg transition" title="Admit patient to IPD">
+                  🛏 Admit
                 </button>
               ` : ''}
               <button onclick="editEntry(${e.id})" class="text-indigo-300 font-semibold text-xs px-2 py-1 liquid-glass rounded-lg hover:bg-slate-800 transition">✏️</button>
@@ -1563,6 +1611,103 @@
       window.open(whatsappUrl, '_blank');
     }
 
+    // OPD Consultations Register Modal Logic
+    async function openOpdAuditModal() {
+      document.getElementById('opdAuditHospitalFilter').value = 'All';
+      filterOpdAuditList();
+      document.getElementById('opdAuditModal').classList.remove('hidden');
+    }
+
+    async function filterOpdAuditList() {
+      const selectedMonth = document.getElementById('monthFilter').value;
+      const targetHospital = document.getElementById('opdAuditHospitalFilter').value;
+      const allEntries = await db.entries.reverse().toArray();
+
+      let opdEntries = allEntries.filter(item => item.category === 'OPD' && item.date && item.date.startsWith(selectedMonth));
+      if (targetHospital !== 'All') {
+        opdEntries = opdEntries.filter(s => s.hospital === targetHospital);
+      }
+
+      let totalFee = 0;
+      opdEntries.forEach(item => { totalFee += Number(item.amount) || 0; });
+
+      document.getElementById('opdAuditSubtitle').innerText = `${selectedMonth} | ${opdEntries.length} Patients (₹${totalFee.toLocaleString('en-IN')})`;
+      const listEl = document.getElementById('opdAuditList');
+
+      if (opdEntries.length === 0) {
+        listEl.innerHTML = `<div class="p-8 text-center text-slate-500 text-xs">No OPD patients recorded for this selection.</div>`;
+        return;
+      }
+
+      listEl.innerHTML = opdEntries.map((item, idx) => `
+        <div class="p-3.5 liquid-glass rounded-2xl space-y-1.5 border border-white/10">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="font-extrabold text-sm text-white">${idx+1}. ${escapeHtml(item.name)}</span>
+              <span class="text-[10px] ml-1.5 px-2 py-0.5 rounded-full bg-indigo-900/60 text-indigo-200 border border-indigo-500/20">OPD</span>
+            </div>
+            <span class="font-black text-sm text-emerald-300">₹${(Number(item.amount)||0).toLocaleString('en-IN')}</span>
+          </div>
+          <div class="text-[11px] text-slate-400 flex items-center gap-2">
+            <span>📅 ${item.date}</span>
+            <span>🏥 ${escapeHtml(item.hospital)}</span>
+          </div>
+          ${item.referredBy ? `<div class="text-[11px] font-semibold text-indigo-300">👨‍⚕ Ref: ${escapeHtml(item.referredBy)}</div>` : ''}
+          ${item.note ? `<div class="text-xs text-slate-300">📋 Note / Advice: ${escapeHtml(item.note)}</div>` : ''}
+          <div class="flex justify-end gap-1.5 pt-1.5 border-t border-white/5">
+            <button onclick="convertOpdToIpd(${item.id})" class="text-[11px] font-bold px-2.5 py-1 bg-indigo-900/60 hover:bg-indigo-800/60 text-indigo-200 border border-indigo-500/30 rounded-lg transition">
+              🛏 Admit to IPD
+            </button>
+            <button onclick="editEntry(${item.id})" class="text-indigo-300 font-semibold text-xs px-2 py-1 liquid-glass rounded-lg hover:bg-slate-800 transition">✏️ Edit</button>
+            <button onclick="deleteEntry(${item.id})" class="text-rose-400 hover:text-rose-300 font-semibold text-xs px-2 py-1">🗑</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Share Clean OPD Consultation Statement on WhatsApp
+    async function shareOpdAuditWhatsApp() {
+      const selectedMonth = document.getElementById('monthFilter').value;
+      const targetHospital = document.getElementById('opdAuditHospitalFilter').value;
+      const allEntries = await db.entries.reverse().toArray();
+
+      let opdEntries = allEntries.filter(item => item.category === 'OPD' && item.date && item.date.startsWith(selectedMonth));
+      if (targetHospital !== 'All') {
+        opdEntries = opdEntries.filter(s => s.hospital === targetHospital);
+      }
+
+      if (opdEntries.length === 0) {
+        alert('No OPD patients found to share.');
+        return;
+      }
+
+      const hospTitle = targetHospital === 'All' ? 'ALL HOSPITALS' : targetHospital.toUpperCase();
+      let totalFee = 0;
+
+      let msg = `OPD CONSULTATION REGISTER - ${hospTitle} (${selectedMonth})\n`;
+      msg += `----------------------------------------\n\n`;
+
+      opdEntries.forEach((s, idx) => {
+        const fee = Number(s.amount) || 0;
+        totalFee += fee;
+
+        msg += `${idx+1}. *${s.name}*\n`;
+        msg += `Hospital: ${s.hospital || 'General'}\n`;
+        msg += `Date: ${s.date}\n`;
+        if (s.referredBy) msg += `Referred By: ${s.referredBy}\n`;
+        if (s.note) msg += `Advice / Diagnosis: ${s.note}\n`;
+        msg += `Fee: ₹${fee.toLocaleString('en-IN')}\n\n`;
+        msg += `----------------------------------------\n\n`;
+      });
+
+      msg += `Total Patients: ${opdEntries.length}\n`;
+      msg += `Total OPD Amount: ₹${totalFee.toLocaleString('en-IN')}\n`;
+
+      const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+      window.open(whatsappUrl, '_blank');
+    }
+
+    // Surgery Audit List
     async function openSurgeryAuditModal() {
       document.getElementById('surgeryAuditHospitalFilter').value = 'All';
       filterSurgeryAuditList();
@@ -1647,57 +1792,11 @@
       window.open(whatsappUrl, '_blank');
     }
 
-    async function openOpdAuditModal() {
-      const selectedMonth = document.getElementById('monthFilter').value;
-      const allEntries = await db.entries.reverse().toArray();
-      const opdEntries = allEntries.filter(item => (item.category === 'OPD' || item.category === 'Indoor') && item.date && item.date.startsWith(selectedMonth));
-
-      document.getElementById('opdAuditSubtitle').innerText = `Month: ${selectedMonth} (${opdEntries.length} consultations)`;
-      
-      const hospCounters = {};
-      let totalOpdRev = 0;
-
-      opdEntries.forEach(item => {
-        const h = item.hospital || 'Other';
-        const fee = Number(item.amount) || 0;
-        totalOpdRev += fee;
-        if (!hospCounters[h]) hospCounters[h] = { count: 0, rev: 0 };
-        hospCounters[h].count++;
-        hospCounters[h].rev += fee;
-      });
-
-      const listEl = document.getElementById('opdAuditList');
-      const hospKeys = Object.keys(hospCounters);
-
-      if (hospKeys.length === 0) {
-        listEl.innerHTML = `<div class="p-6 text-center text-slate-500 text-xs">No OPD / Indoor entries recorded this month.</div>`;
-      } else {
-        listEl.innerHTML = `
-          <div class="space-y-2">
-            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Hospital Breakdown</h4>
-            ${hospKeys.map(h => `
-              <div class="flex justify-between items-center p-3 liquid-glass rounded-2xl border border-white/10 text-xs">
-                <div>
-                  <div class="font-extrabold text-white">${escapeHtml(h)}</div>
-                  <div class="text-slate-400">${hospCounters[h].count} Consultations / Rounds</div>
-                </div>
-                <div class="font-black text-emerald-300 text-sm">₹${hospCounters[h].rev.toLocaleString('en-IN')}</div>
-              </div>
-            `).join('')}
-          </div>
-          <div class="p-3 liquid-glass border border-indigo-500/30 rounded-2xl text-center font-black text-indigo-200 text-sm">
-            Total Consultations: ₹${totalOpdRev.toLocaleString('en-IN')}
-          </div>
-        `;
-      }
-
-      document.getElementById('opdAuditModal').classList.remove('hidden');
-    }
-
     async function convertOpdToIpd(id) {
       const entry = await db.entries.get(id);
       if (!entry) return;
 
+      closeModal('opdAuditModal');
       openInpatientModal({
         name: entry.name,
         hospital: entry.hospital,
@@ -1712,6 +1811,7 @@
       const item = await db.entries.get(id);
       if (!item) return;
 
+      closeModal('opdAuditModal');
       openManualEntryModal({
         id: item.id,
         date: item.date,
@@ -1770,6 +1870,9 @@
       if (confirm('Delete this entry?')) {
         await db.entries.delete(id);
         loadDashboard();
+        if (!document.getElementById('opdAuditModal').classList.contains('hidden')) {
+          filterOpdAuditList();
+        }
       }
     }
 
