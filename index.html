@@ -514,7 +514,7 @@
     </div>
   </div>
 
-  <!-- Add Surgery inside IPD Modal -->
+  <!-- Add Surgery inside IPD Modal (NOW IMMEDIATELY SYNCED TO MAIN LEDGER) -->
   <div id="addSurgeryToIpdModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end justify-center p-0">
     <div class="frosted-card rounded-t-3xl p-5 w-full max-w-md max-h-[90vh] overflow-y-auto space-y-4 border-t border-white/20">
       <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
@@ -651,7 +651,6 @@
         <button onclick="closeModal('opdAuditModal')" class="text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
       </div>
 
-      <!-- Hospital filter for OPD -->
       <div class="mb-3">
         <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Filter by Hospital</label>
         <select id="opdAuditHospitalFilter" onchange="filterOpdAuditList()" class="w-full glass-input rounded-xl p-2 text-xs font-medium">
@@ -666,7 +665,6 @@
         </select>
       </div>
 
-      <!-- Patient Cards List Container -->
       <div id="opdAuditList" class="flex-1 overflow-y-auto space-y-2.5 pr-1"></div>
 
       <div class="pt-3 border-t border-white/10 mt-3 space-y-2">
@@ -1265,14 +1263,33 @@
       const existingSurgeries = p.surgeries || [];
       existingSurgeries.push(completedSurgery);
 
+      // Save into IPD object
       await db.inpatients.update(id, { 
         status: 'Active', 
         surgeries: existingSurgeries 
       });
 
-      alert('Surgery marked completed! Patient is now active in IPD post-op tracking.');
+      // ALSO IMMEDIATELY ADD TO MAIN LEDGER
+      const isPendingScheme = (completedSurgery.scheme === 'PMJAY' || completedSurgery.scheme === 'TPA');
+      await db.entries.add({
+        date: completedSurgery.date,
+        category: 'Surgery',
+        hospital: p.hospital,
+        name: p.patientName,
+        referredBy: p.referredBy || (p.admissionType === 'Cross-Ref' ? p.primaryConsultant : ''),
+        scheme: completedSurgery.scheme,
+        implantsUsed: completedSurgery.implantsUsed,
+        implantDetails: completedSurgery.implantDetails,
+        note: completedSurgery.procedure,
+        amount: completedSurgery.fee,
+        paymentStatus: isPendingScheme ? 'Pending' : 'Received',
+        stayDetails: 'Admitted Patient Surgery'
+      });
+
+      alert('Surgery recorded and synced to Main Ledger immediately!');
       switchIpdSubTab('active');
       loadInpatients();
+      loadDashboard();
     }
 
     function openAddSurgeryToIpdModal(ipdId, patientName) {
@@ -1305,13 +1322,33 @@
       const existingSurgeries = patient.surgeries || [];
       existingSurgeries.push(newSurgery);
 
+      // Save inside inpatient
       await db.inpatients.update(ipdId, { 
         surgeries: existingSurgeries,
         mainSurgeryDate: newSurgery.date
       });
 
+      // ALSO IMMEDIATELY ADD TO MAIN LEDGER
+      const isPendingScheme = (newSurgery.scheme === 'PMJAY' || newSurgery.scheme === 'TPA');
+      await db.entries.add({
+        date: newSurgery.date,
+        category: 'Surgery',
+        hospital: patient.hospital,
+        name: patient.patientName,
+        referredBy: patient.referredBy || (patient.admissionType === 'Cross-Ref' ? patient.primaryConsultant : ''),
+        scheme: newSurgery.scheme,
+        implantsUsed: newSurgery.implantsUsed,
+        implantDetails: newSurgery.implantDetails,
+        note: newSurgery.procedure,
+        amount: newSurgery.fee,
+        paymentStatus: isPendingScheme ? 'Pending' : 'Received',
+        stayDetails: 'Admitted Patient Surgery'
+      });
+
       closeModal('addSurgeryToIpdModal');
       loadInpatients();
+      loadDashboard();
+      alert('Surgery added and synced to Ledger!');
     }
 
     async function dischargeInpatient(id) {
@@ -1327,7 +1364,6 @@
         icuDays = calculateDaysDifference(p.admitDate, p.icuOutDate);
       }
       const wardDays = totalStay > icuDays ? (totalStay - icuDays) : 0;
-      const surgeries = p.surgeries || [];
       const visits = p.datedVisits || [];
 
       let totalVisitsFee = 0;
@@ -1335,26 +1371,7 @@
 
       const staySummaryString = `${totalStay} Days (ICU: ${icuDays}, Ward: ${wardDays})`;
 
-      if (confirm(`Discharge ${p.patientName}?\n• Total Stay: ${staySummaryString}\n• Visits: ${visits.length} (₹${totalVisitsFee})\n• Surgeries: ${surgeries.length}\n\nMove records to Practice Ledger?`)) {
-        
-        for (const s of surgeries) {
-          const isPendingScheme = (s.scheme === 'PMJAY' || s.scheme === 'TPA');
-          await db.entries.add({
-            date: s.date,
-            category: 'Surgery',
-            hospital: p.hospital,
-            name: p.patientName,
-            referredBy: p.referredBy || (p.admissionType === 'Cross-Ref' ? p.primaryConsultant : ''),
-            scheme: s.scheme || p.primaryScheme || 'PMJAY',
-            implantsUsed: s.implantsUsed || 'No',
-            implantDetails: s.implantDetails || '',
-            note: s.procedure,
-            amount: Number(s.fee) || 0,
-            paymentStatus: isPendingScheme ? 'Pending' : 'Received',
-            stayDetails: staySummaryString
-          });
-        }
-
+      if (confirm(`Discharge ${p.patientName}?\n• Total Stay: ${staySummaryString}\n• Visits: ${visits.length} (₹${totalVisitsFee})\n\nSettle indoor rounds to Practice Ledger?`)) {
         if (totalVisitsFee > 0) {
           await db.entries.add({
             date: dischargeDate,
@@ -1373,7 +1390,7 @@
           dischargeDate: dischargeDate 
         });
 
-        alert('Patient discharged successfully and records logged to Ledger.');
+        alert('Patient discharged successfully!');
         loadInpatients();
         loadDashboard();
       }
@@ -1386,119 +1403,129 @@
       }
     }
 
-    // Rock-Solid loadDashboard Fix (Zero date blockage)
+    // Bulletproof loadDashboard (Zero crashes, guaranteed rendering)
     async function loadDashboard() {
-      const range = document.getElementById('viewRangeSelect').value;
-      const monthInput = document.getElementById('monthFilter');
-      const selectedMonth = monthInput.value;
-      
-      const allEntries = await db.entries.toArray();
-      // Sort newest date first
-      allEntries.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
-      
-      let displayEntries = allEntries;
-      if (range === 'month' && selectedMonth) {
-        displayEntries = allEntries.filter(item => {
-          if (!item.date) return false;
-          return item.date.replace(/\//g, '-').startsWith(selectedMonth);
+      try {
+        const range = document.getElementById('viewRangeSelect').value;
+        const monthInput = document.getElementById('monthFilter');
+        const selectedMonth = monthInput ? monthInput.value : '';
+        
+        const allEntries = await db.entries.toArray();
+        
+        // Safe sort
+        allEntries.sort((a, b) => {
+          const da = a.date ? new Date(a.date) : new Date(0);
+          const db = b.date ? new Date(b.date) : new Date(0);
+          return db - da;
         });
-        document.getElementById('currentMonthLabel').innerText = `Month: ${selectedMonth}`;
-      } else {
-        document.getElementById('currentMonthLabel').innerText = `All Records (${allEntries.length})`;
-      }
-
-      let totalRevenue = 0, opdTotal = 0, surgeryTotal = 0;
-      const hospitalTotals = {};
-
-      displayEntries.forEach(item => {
-        const val = Number(item.amount) || 0;
-        totalRevenue += val;
-        if (item.category === 'OPD' || item.category === 'Indoor') opdTotal += val;
-        else if (item.category === 'Surgery') surgeryTotal += val;
-
-        const hosp = item.hospital || 'General / Other';
-        hospitalTotals[hosp] = (hospitalTotals[hosp] || 0) + val;
-      });
-
-      let totalPending = 0;
-      allEntries.forEach(item => {
-        if (item.paymentStatus === 'Pending') {
-          totalPending += Number(item.amount) || 0;
+        
+        let displayEntries = allEntries;
+        if (range === 'month' && selectedMonth) {
+          displayEntries = allEntries.filter(item => {
+            if (!item || !item.date) return false;
+            const cleanD = String(item.date).replace(/\//g, '-');
+            return cleanD.startsWith(selectedMonth);
+          });
+          document.getElementById('currentMonthLabel').innerText = `Month: ${selectedMonth}`;
+        } else {
+          document.getElementById('currentMonthLabel').innerText = `All Records (${allEntries.length})`;
         }
-      });
 
-      document.getElementById('statTotal').innerText = `₹${totalRevenue.toLocaleString('en-IN')}`;
-      document.getElementById('statOpdIndoor').innerText = `₹${opdTotal.toLocaleString('en-IN')}`;
-      document.getElementById('statSurgery').innerText = `₹${surgeryTotal.toLocaleString('en-IN')}`;
-      document.getElementById('statPendingReceivables').innerText = `₹${totalPending.toLocaleString('en-IN')} Due`;
+        let totalRevenue = 0, opdTotal = 0, surgeryTotal = 0;
+        const hospitalTotals = {};
 
-      // Hospital breakdown
-      const hospBreakdownEl = document.getElementById('hospitalBreakdownList');
-      const hospKeys = Object.keys(hospitalTotals);
-      if (hospKeys.length === 0) {
-        hospBreakdownEl.innerHTML = `<div class="text-slate-500 text-[11px]">No hospital data for this selection.</div>`;
-      } else {
-        hospBreakdownEl.innerHTML = hospKeys.map(h => `
-          <div class="flex justify-between items-center text-xs py-0.5">
-            <span class="truncate max-w-[200px] text-slate-300">${escapeHtml(h)}</span>
-            <span class="font-extrabold text-white">₹${hospitalTotals[h].toLocaleString('en-IN')}</span>
+        displayEntries.forEach(item => {
+          const val = Number(item.amount) || 0;
+          totalRevenue += val;
+          if (item.category === 'OPD' || item.category === 'Indoor') opdTotal += val;
+          else if (item.category === 'Surgery') surgeryTotal += val;
+
+          const hosp = item.hospital || 'General / Other';
+          hospitalTotals[hosp] = (hospitalTotals[hosp] || 0) + val;
+        });
+
+        let totalPending = 0;
+        allEntries.forEach(item => {
+          if (item.paymentStatus === 'Pending') {
+            totalPending += Number(item.amount) || 0;
+          }
+        });
+
+        document.getElementById('statTotal').innerText = `₹${totalRevenue.toLocaleString('en-IN')}`;
+        document.getElementById('statOpdIndoor').innerText = `₹${opdTotal.toLocaleString('en-IN')}`;
+        document.getElementById('statSurgery').innerText = `₹${surgeryTotal.toLocaleString('en-IN')}`;
+        document.getElementById('statPendingReceivables').innerText = `₹${totalPending.toLocaleString('en-IN')} Due`;
+
+        // Hospital breakdown
+        const hospBreakdownEl = document.getElementById('hospitalBreakdownList');
+        const hospKeys = Object.keys(hospitalTotals);
+        if (hospKeys.length === 0) {
+          hospBreakdownEl.innerHTML = `<div class="text-slate-500 text-[11px]">No hospital data for this selection.</div>`;
+        } else {
+          hospBreakdownEl.innerHTML = hospKeys.map(h => `
+            <div class="flex justify-between items-center text-xs py-0.5">
+              <span class="truncate max-w-[200px] text-slate-300">${escapeHtml(h)}</span>
+              <span class="font-extrabold text-white">₹${hospitalTotals[h].toLocaleString('en-IN')}</span>
+            </div>
+          `).join('');
+        }
+
+        // Filter entries by category pill
+        let filteredLogEntries = displayEntries;
+        if (currentCategoryFilter !== 'ALL') {
+          filteredLogEntries = displayEntries.filter(e => e.category === currentCategoryFilter);
+        }
+
+        const listEl = document.getElementById('entriesList');
+        document.getElementById('entriesCount').innerText = `${filteredLogEntries.length} records`;
+
+        if (filteredLogEntries.length === 0) {
+          listEl.innerHTML = `<div class="liquid-glass rounded-3xl p-6 text-center text-slate-500 text-xs border border-white/5">No ${currentCategoryFilter === 'ALL' ? '' : currentCategoryFilter} entries found.</div>`;
+          return;
+        }
+
+        listEl.innerHTML = filteredLogEntries.map(e => `
+          <div class="frosted-card p-3.5 rounded-2xl flex items-center justify-between border border-white/10 shadow-lg">
+            <div class="space-y-1 max-w-[65%]">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full ${getCategoryBadge(e.category)}">${e.category}</span>
+                ${e.scheme ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-900/60 text-blue-200 border border-blue-500/20">${e.scheme}</span>` : ''}
+                ${e.paymentStatus === 'Pending' ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-900/60 text-amber-200 border border-amber-500/20">⏳ Pending</span>` : ''}
+                <span class="text-[10px] font-semibold bg-slate-800/60 text-slate-300 px-1.5 py-0.5 rounded truncate max-w-[120px]">
+                  🏥 ${escapeHtml(e.hospital || 'General')}
+                </span>
+                <span class="text-[10px] text-slate-400">${e.date || ''}</span>
+              </div>
+              <div class="text-sm font-extrabold text-white truncate">${escapeHtml(e.name || 'Unnamed Entry')}</div>
+              ${e.referredBy ? `<div class="text-[11px] font-semibold text-indigo-300 flex items-center gap-1 truncate">👨‍⚕ Ref: ${escapeHtml(e.referredBy)}</div>` : ''}
+              ${e.category === 'Surgery' ? `
+                <div class="text-[10px] font-medium ${e.implantsUsed === 'Yes' ? 'text-emerald-300' : 'text-slate-400'}">
+                  🔩 Implants: ${e.implantsUsed === 'Yes' ? (escapeHtml(e.implantDetails) || 'Yes') : 'No'}
+                </div>` : ''}
+              ${e.note ? `<div class="text-xs text-slate-300 truncate">${escapeHtml(e.note)}</div>` : ''}
+            </div>
+            <div class="text-right flex flex-col items-end">
+              <div class="text-sm font-black text-white">₹${(Number(e.amount)||0).toLocaleString('en-IN')}</div>
+              <div class="flex items-center gap-1.5 mt-1.5">
+                ${e.paymentStatus === 'Pending' ? `
+                  <button onclick="markPaymentReceivedDirect(${e.id})" class="text-[10px] font-bold px-2 py-1 bg-emerald-900/60 text-emerald-200 border border-emerald-500/30 rounded-lg hover:bg-emerald-800/60 transition">
+                    ✓ Paid
+                  </button>
+                ` : ''}
+                ${e.category === 'OPD' ? `
+                  <button onclick="convertOpdToIpd(${e.id})" class="text-[11px] font-bold px-2 py-1 bg-indigo-900/60 hover:bg-indigo-800/60 text-indigo-200 border border-indigo-500/30 rounded-lg transition" title="Admit patient to IPD">
+                    🛏 Admit
+                  </button>
+                ` : ''}
+                <button onclick="editEntry(${e.id})" class="text-indigo-300 font-semibold text-xs px-2 py-1 liquid-glass rounded-lg hover:bg-slate-800 transition">✏️</button>
+                <button onclick="deleteEntry(${e.id})" class="text-rose-400 hover:text-rose-300 font-semibold text-xs px-1.5 py-1">🗑</button>
+              </div>
+            </div>
           </div>
         `).join('');
+      } catch (err) {
+        console.error('loadDashboard error:', err);
       }
-
-      // Filter entries by category pill
-      let filteredLogEntries = displayEntries;
-      if (currentCategoryFilter !== 'ALL') {
-        filteredLogEntries = displayEntries.filter(e => e.category === currentCategoryFilter);
-      }
-
-      const listEl = document.getElementById('entriesList');
-      document.getElementById('entriesCount').innerText = `${filteredLogEntries.length} records`;
-
-      if (filteredLogEntries.length === 0) {
-        listEl.innerHTML = `<div class="liquid-glass rounded-3xl p-6 text-center text-slate-500 text-xs border border-white/5">No ${currentCategoryFilter === 'ALL' ? '' : currentCategoryFilter} entries found.</div>`;
-        return;
-      }
-
-      listEl.innerHTML = filteredLogEntries.map(e => `
-        <div class="frosted-card p-3.5 rounded-2xl flex items-center justify-between border border-white/10 shadow-lg">
-          <div class="space-y-1 max-w-[65%]">
-            <div class="flex items-center gap-1.5 flex-wrap">
-              <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full ${getCategoryBadge(e.category)}">${e.category}</span>
-              ${e.scheme ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-900/60 text-blue-200 border border-blue-500/20">${e.scheme}</span>` : ''}
-              ${e.paymentStatus === 'Pending' ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-900/60 text-amber-200 border border-amber-500/20">⏳ Pending</span>` : ''}
-              <span class="text-[10px] font-semibold bg-slate-800/60 text-slate-300 px-1.5 py-0.5 rounded truncate max-w-[120px]">
-                🏥 ${escapeHtml(e.hospital || 'General')}
-              </span>
-              <span class="text-[10px] text-slate-400">${e.date || ''}</span>
-            </div>
-            <div class="text-sm font-extrabold text-white truncate">${escapeHtml(e.name || 'Unnamed Entry')}</div>
-            ${e.referredBy ? `<div class="text-[11px] font-semibold text-indigo-300 flex items-center gap-1 truncate">👨‍⚕ Ref: ${escapeHtml(e.referredBy)}</div>` : ''}
-            ${e.category === 'Surgery' ? `
-              <div class="text-[10px] font-medium ${e.implantsUsed === 'Yes' ? 'text-emerald-300' : 'text-slate-400'}">
-                🔩 Implants: ${e.implantsUsed === 'Yes' ? (escapeHtml(e.implantDetails) || 'Yes') : 'No'}
-              </div>` : ''}
-            ${e.note ? `<div class="text-xs text-slate-300 truncate">${escapeHtml(e.note)}</div>` : ''}
-          </div>
-          <div class="text-right flex flex-col items-end">
-            <div class="text-sm font-black text-white">₹${(Number(e.amount)||0).toLocaleString('en-IN')}</div>
-            <div class="flex items-center gap-1.5 mt-1.5">
-              ${e.paymentStatus === 'Pending' ? `
-                <button onclick="markPaymentReceivedDirect(${e.id})" class="text-[10px] font-bold px-2 py-1 bg-emerald-900/60 text-emerald-200 border border-emerald-500/30 rounded-lg hover:bg-emerald-800/60 transition">
-                  ✓ Paid
-                </button>
-              ` : ''}
-              ${e.category === 'OPD' ? `
-                <button onclick="convertOpdToIpd(${e.id})" class="text-[11px] font-bold px-2 py-1 bg-indigo-900/60 hover:bg-indigo-800/60 text-indigo-200 border border-indigo-500/30 rounded-lg transition" title="Admit patient to IPD">
-                  🛏 Admit
-                </button>
-              ` : ''}
-              <button onclick="editEntry(${e.id})" class="text-indigo-300 font-semibold text-xs px-2 py-1 liquid-glass rounded-lg hover:bg-slate-800 transition">✏️</button>
-              <button onclick="deleteEntry(${e.id})" class="text-rose-400 hover:text-rose-300 font-semibold text-xs px-1.5 py-1">🗑</button>
-            </div>
-          </div>
-        </div>
-      `).join('');
     }
 
     function getCategoryBadge(cat) {
@@ -1625,7 +1652,7 @@
       window.open(whatsappUrl, '_blank');
     }
 
-    // OPD Consultations Register Modal Logic
+    // OPD Register Modal
     async function openOpdAuditModal() {
       document.getElementById('opdAuditHospitalFilter').value = 'All';
       filterOpdAuditList();
@@ -1672,7 +1699,7 @@
             <button onclick="convertOpdToIpd(${item.id})" class="text-[11px] font-bold px-2.5 py-1 bg-indigo-900/60 hover:bg-indigo-800/60 text-indigo-200 border border-indigo-500/30 rounded-lg transition">
               🛏 Admit to IPD
             </button>
-            <button onclick="editEntry(${item.id})" class="text-indigo-300 font-semibold text-xs px-2 py-1 liquid-glass rounded-lg hover:bg-slate-800 transition">✏️ Edit</button>
+            <button onclick="editEntry(${item.id})" class="text-indigo-300 font-semibold text-xs px-2 py-1 liquid-glass rounded-lg hover:bg-slate-800 transition">✏️️ Edit</button>
             <button onclick="deleteEntry(${item.id})" class="text-rose-400 hover:text-rose-300 font-semibold text-xs px-2 py-1">🗑</button>
           </div>
         </div>
@@ -1727,7 +1754,6 @@
     }
 
     async function filterSurgeryAuditList() {
-      const selectedMonth = document.getElementById('monthFilter').value;
       const targetHospital = document.getElementById('surgeryAuditHospitalFilter').value;
       const allEntries = await db.entries.toArray();
       allEntries.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
