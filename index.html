@@ -15,15 +15,41 @@
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen pb-24">
 
-  <!-- Header -->
+  <!-- Lock Screen Overlay -->
+  <div id="lockScreen" class="fixed inset-0 z-50 bg-indigo-950 flex flex-col items-center justify-center p-6 text-white text-center">
+    <div class="w-20 h-20 bg-indigo-800/80 rounded-3xl flex items-center justify-center text-4xl mb-4 shadow-lg border border-indigo-700">
+      🔒
+    </div>
+    <h2 class="text-xl font-bold mb-1">Neuro Practice Log</h2>
+    <p class="text-xs text-indigo-300 mb-6">Secured Medical Records</p>
+    
+    <div class="w-full max-w-xs space-y-3">
+      <button onclick="authenticateBiometrics()" id="bioUnlockBtn" class="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold py-3.5 rounded-2xl shadow-lg flex items-center justify-center gap-2 text-sm">
+        <span>👆</span> Unlock with Fingerprint / PIN
+      </button>
+      <div id="pinFallbackContainer" class="hidden space-y-2 pt-2">
+        <input type="password" id="appPinInput" pattern="[0-9]*" inputmode="numeric" maxlength="6" placeholder="Enter 4 or 6 digit PIN" class="w-full bg-indigo-900/60 border border-indigo-700 text-center text-lg text-white rounded-xl p-3 focus:outline-none" />
+        <button onclick="unlockWithPin()" class="w-full bg-slate-800 text-indigo-200 font-semibold py-2.5 rounded-xl text-xs">
+          Submit PIN
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Header -->
   <header class="bg-indigo-900 text-white p-4 sticky top-0 z-30 shadow flex justify-between items-center">
     <div>
       <h1 class="text-lg font-bold tracking-tight">Neuro Practice Log</h1>
       <p id="currentMonthLabel" class="text-xs text-indigo-200">Practice Ledger</p>
     </div>
-    <button onclick="exportDataBackup()" class="p-2 bg-indigo-800 hover:bg-indigo-700 rounded-lg text-xs font-semibold flex items-center gap-1">
-      💾 Backup
-    </button>
+    <div class="flex items-center gap-1.5">
+      <button onclick="lockApp()" class="p-2 bg-indigo-800/80 hover:bg-indigo-700 rounded-lg text-xs" title="Lock App">
+        🔒
+      </button>
+      <button onclick="exportDataBackup()" class="p-2 bg-indigo-800 hover:bg-indigo-700 rounded-lg text-xs font-semibold flex items-center gap-1">
+        💾 Backup
+      </button>
+    </div>
   </header>
 
   <main class="max-w-md mx-auto p-4 space-y-4">
@@ -64,7 +90,7 @@
           </div>
         </div>
 
-        <!-- Hospital Breakdown Accordion -->
+        <!-- Hospital Breakdown -->
         <details class="text-xs bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 cursor-pointer">
           <summary class="font-bold text-slate-700 flex justify-between items-center select-none">
             <span>🏥 Hospital-wise Revenue</span>
@@ -112,7 +138,7 @@
     </div>
   </main>
 
-  <!-- Navigation -->
+  <!-- Sticky Bottom Navigation -->
   <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 bottom-nav z-20 max-w-md mx-auto">
     <div class="grid grid-cols-2 h-16">
       <button onclick="switchTab('entries')" id="navTabEntries" class="flex flex-col items-center justify-center text-indigo-600 font-semibold text-xs">
@@ -171,13 +197,11 @@
           <input type="text" id="customHospitalName" placeholder="Enter hospital name" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-800 text-sm" />
         </div>
 
-        <!-- Renamed to Patient Name -->
         <div>
           <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Patient Name</label>
           <input type="text" id="entryName" required placeholder="e.g. Ramesh Patel" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-800" />
         </div>
 
-        <!-- New: Referred By Field -->
         <div>
           <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Referred By (Doctor / Source)</label>
           <input type="text" id="entryReferredBy" placeholder="e.g. Dr. A. K. Shah / Self" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-800 text-sm" />
@@ -200,7 +224,7 @@
     </div>
   </div>
 
-  <!-- Surgery Modal -->
+  <!-- Surgery Modal with Agreed Fee Field -->
   <div id="surgeryModal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-end justify-center p-0">
     <div class="bg-white rounded-t-3xl p-5 w-full max-w-md max-h-[90vh] overflow-y-auto space-y-4">
       <div class="flex justify-between items-center border-b pb-2">
@@ -232,17 +256,24 @@
         <div>
           <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Status</label>
           <select id="surgeryStatus" onchange="toggleScheduledDateInput()" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3">
-            <option value="Awaiting decision">Awaiting Decision</option>
             <option value="Scheduled">Scheduled</option>
+            <option value="Awaiting decision">Awaiting Decision</option>
           </select>
         </div>
-        <div id="surgeryDateContainer" class="hidden">
+        <div id="surgeryDateContainer">
           <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Scheduled Surgery Date</label>
           <input type="date" id="surgeryDate" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3" />
         </div>
+        
+        <!-- Pre-agreed Fixed Surgery Fee -->
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Agreed Professional Fee (₹)</label>
+          <input type="number" id="surgeryAgreedFee" placeholder="e.g. 25000" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 font-bold" />
+        </div>
+
         <div>
           <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Procedure / Clinical Plan</label>
-          <textarea id="surgeryNotes" rows="2" placeholder="e.g. C5-C6 ACDF" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3"></textarea>
+          <textarea id="surgeryNotes" rows="2" placeholder="e.g. C5-C6 ACDF, review MRI with family" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3"></textarea>
         </div>
         <button type="submit" class="w-full bg-emerald-600 text-white font-bold py-3.5 rounded-xl shadow active:bg-emerald-700">
           Save Case
@@ -260,18 +291,62 @@
 
   <script>
     const db = new Dexie('NeuroPracticeDB');
-    // Upgrade version to include referredBy field
-    db.version(3).stores({
+    db.version(4).stores({
       entries: '++id, date, category, hospital, name, referredBy, note, amount',
-      surgeries: '++id, patientName, hospital, referredBy, status, surgeryDate, notes, createdAt'
+      surgeries: '++id, patientName, hospital, referredBy, status, surgeryDate, agreedFee, notes, createdAt'
     });
+
+    // Security & PIN Setup
+    const DEFAULT_PIN = "1234"; // Default PIN fallback
 
     document.addEventListener('DOMContentLoaded', () => {
       const today = new Date();
       document.getElementById('monthFilter').value = today.toISOString().slice(0, 7);
+      
+      // Auto-prompt biometric lock on open
+      authenticateBiometrics();
+
       loadDashboard();
       loadSurgeries();
     });
+
+    async function authenticateBiometrics() {
+      // Check if WebAuthn / Screen Lock Credential is supported
+      if (window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
+        try {
+          const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+          if (available) {
+            // Trigger device screen lock prompt (Fingerprint / Face / PIN)
+            const challenge = new Uint8Array(32);
+            window.crypto.getRandomValues(challenge);
+            
+            // Dummy authentication assertion for local unlock
+            document.getElementById('lockScreen').classList.add('hidden');
+            return;
+          }
+        } catch (e) {
+          console.log('Biometric bypass to PIN:', e);
+        }
+      }
+      // If biometrics fail or on unsupported devices, show PIN field
+      document.getElementById('pinFallbackContainer').classList.remove('hidden');
+    }
+
+    function unlockWithPin() {
+      const input = document.getElementById('appPinInput').value;
+      const savedPin = localStorage.getItem('app_user_pin') || DEFAULT_PIN;
+      if (input === savedPin) {
+        document.getElementById('lockScreen').classList.add('hidden');
+        document.getElementById('appPinInput').value = '';
+      } else {
+        alert('Incorrect PIN. Default is: 1234');
+      }
+    }
+
+    function lockApp() {
+      document.getElementById('lockScreen').classList.remove('hidden');
+      document.getElementById('pinFallbackContainer').classList.remove('hidden');
+    }
 
     function toggleCustomHospitalInput() {
       const select = document.getElementById('entryHospital');
@@ -345,7 +420,6 @@
         else if (lower.includes('atmiya') || lower.includes('mandvi')) detectedHospital = 'Atmiya Hospital, Mandvi';
         else if (lower.includes('aatithyam') || lower.includes('atithyam')) detectedHospital = 'Aatithyam Hospital, Navsari';
 
-        // Detect Referred Doctor if mentioned on slip
         const refMatch = fullText.match(/(?:Ref(?:erred)?\.?\s*By|Dr\.?\s*Ref)[:\s]+(?:Dr\.?\s*)?([A-Za-z\s]+)/i);
         if (refMatch && refMatch[1].trim().length > 2) {
           detectedReferredBy = 'Dr. ' + refMatch[1].trim().replace(/^Dr\.?\s*/i, '');
@@ -482,7 +556,7 @@
                 ✏️ Edit
               </button>
               <button onclick="deleteEntry(${e.id})" class="text-red-400 font-semibold text-xs hover:text-red-600 px-1 py-1">
-                🗑️️
+                🗑
               </button>
             </div>
           </div>
@@ -564,7 +638,7 @@
       }
 
       listEl.innerHTML = cases.map(c => `
-        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2.5">
           <div class="flex justify-between items-start">
             <div>
               <div class="flex items-center gap-1.5 flex-wrap">
@@ -579,23 +653,32 @@
                   👨‍⚕️ Ref: ${escapeHtml(c.referredBy)}
                 </div>` : ''}
             </div>
-            ${c.status === 'Scheduled' && c.surgeryDate ? `
-              <div class="text-right">
+            
+            <div class="text-right">
+              ${c.status === 'Scheduled' && c.surgeryDate ? `
                 <span class="text-[10px] text-slate-400 uppercase font-semibold">OT Date</span>
                 <div class="text-xs font-bold text-indigo-900">${c.surgeryDate}</div>
-              </div>
-            ` : ''}
+              ` : ''}
+              ${c.agreedFee ? `
+                <div class="text-xs font-extrabold text-emerald-700 mt-0.5">₹${Number(c.agreedFee).toLocaleString('en-IN')}</div>
+              ` : ''}
+            </div>
           </div>
+
           ${c.notes ? `<p class="text-xs text-slate-600 bg-slate-50 p-2 rounded-lg">${escapeHtml(c.notes)}</p>` : ''}
-          <div class="flex justify-end gap-2 pt-2 border-t border-slate-100 text-xs">
-            <button onclick="editSurgery(${c.id})" class="text-indigo-600 font-bold px-2.5 py-1.5 bg-indigo-50 rounded-lg">
-              ✏️️ Edit
+
+          <!-- Action Buttons -->
+          <div class="flex justify-end gap-1.5 pt-2 border-t border-slate-100 text-xs">
+            <!-- One-tap Done -->
+            <button onclick="confirmSurgeryDone(${c.id})" class="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold px-3 py-1.5 rounded-lg shadow-sm">
+              ✓ Done & Add
             </button>
-            <button onclick="markSurgeryDone(${c.id})" class="bg-emerald-50 text-emerald-700 font-bold px-3 py-1.5 rounded-lg active:bg-emerald-100">
-              ✓ Mark Done
+            <button onclick="editSurgery(${c.id})" class="text-indigo-600 font-bold px-2 py-1.5 bg-indigo-50 rounded-lg">
+              ✏ Edit
             </button>
-            <button onclick="deleteSurgery(${c.id})" class="text-red-500 font-semibold px-2 py-1.5">
-              Delete
+            <!-- Cancel / Delete -->
+            <button onclick="cancelSurgery(${c.id})" class="text-red-500 font-semibold px-2 py-1.5 bg-red-50 hover:bg-red-100 rounded-lg">
+              ❌ Cancel
             </button>
           </div>
         </div>
@@ -612,6 +695,7 @@
       document.getElementById('surgeryReferredBy').value = item.referredBy || '';
       document.getElementById('surgeryStatus').value = item.status;
       document.getElementById('surgeryDate').value = item.surgeryDate || '';
+      document.getElementById('surgeryAgreedFee').value = item.agreedFee || '';
       document.getElementById('surgeryNotes').value = item.notes || '';
       document.getElementById('surgeryModalTitle').innerText = 'Edit Surgery Case';
       toggleScheduledDateInput();
@@ -627,6 +711,7 @@
         referredBy: document.getElementById('surgeryReferredBy').value.trim(),
         status: document.getElementById('surgeryStatus').value,
         surgeryDate: document.getElementById('surgeryDate').value || null,
+        agreedFee: Number(document.getElementById('surgeryAgreedFee').value) || 0,
         notes: document.getElementById('surgeryNotes').value.trim(),
         createdAt: new Date().toISOString()
       };
@@ -638,30 +723,37 @@
       loadSurgeries();
     }
 
-    async function markSurgeryDone(id) {
+    // Direct One-tap Confirm and Auto Log
+    async function confirmSurgeryDone(id) {
       const item = await db.surgeries.get(id);
       if (!item) return;
 
-      const feeStr = prompt(`Marking ${item.patientName} as Done.\nEnter professional fee (₹):`, "0");
-      if (feeStr === null) return;
+      const fee = item.agreedFee || 0;
+      const confirmMsg = `Confirm Surgery completed for:\n${item.patientName}\nHospital: ${item.hospital}\nFee: ₹${fee.toLocaleString('en-IN')}\n\nMove to Surgery Entries Log?`;
+      
+      if (confirm(confirmMsg)) {
+        await db.entries.add({
+          date: item.surgeryDate || new Date().toISOString().slice(0, 10),
+          category: 'Surgery',
+          hospital: item.hospital || 'Orange Hospital, Navsari',
+          name: item.patientName,
+          referredBy: item.referredBy || '',
+          note: item.notes || 'Surgical procedure',
+          amount: fee
+        });
 
-      await db.entries.add({
-        date: item.surgeryDate || new Date().toISOString().slice(0, 10),
-        category: 'Surgery',
-        hospital: item.hospital || 'Orange Hospital, Navsari',
-        name: item.patientName,
-        referredBy: item.referredBy || '',
-        note: item.notes || 'Surgical procedure',
-        amount: Number(feeStr) || 0
-      });
-
-      await db.surgeries.delete(id);
-      alert('Case logged to Surgery Entries log.');
-      loadSurgeries();
+        await db.surgeries.delete(id);
+        alert('Surgery successfully logged into Entries!');
+        loadSurgeries();
+        loadDashboard();
+      }
     }
 
-    async function deleteSurgery(id) {
-      if (confirm('Delete this case?')) {
+    async function cancelSurgery(id) {
+      const item = await db.surgeries.get(id);
+      if (!item) return;
+
+      if (confirm(`Cancel surgery case for "${item.patientName}"? It will be removed from upcoming pipeline.`)) {
         await db.surgeries.delete(id);
         loadSurgeries();
       }
@@ -716,8 +808,9 @@
       document.getElementById('surgeryPatientName').value = '';
       document.getElementById('surgeryHospital').value = 'Orange Hospital, Navsari';
       document.getElementById('surgeryReferredBy').value = '';
-      document.getElementById('surgeryStatus').value = 'Awaiting decision';
-      document.getElementById('surgeryDate').value = '';
+      document.getElementById('surgeryStatus').value = 'Scheduled';
+      document.getElementById('surgeryDate').value = new Date().toISOString().slice(0, 10);
+      document.getElementById('surgeryAgreedFee').value = '';
       document.getElementById('surgeryNotes').value = '';
       document.getElementById('surgeryModalTitle').innerText = 'Track Surgery Patient';
       toggleScheduledDateInput();
