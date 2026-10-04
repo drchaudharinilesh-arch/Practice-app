@@ -70,7 +70,7 @@
 </head>
 <body class="obsidian-bg neural-mesh min-h-screen pb-28 text-slate-200">
 
-  <!-- Full-Screen Security Shield -->
+  <!-- Full-Screen Ironclad Security Shield -->
   <div id="lockScreen" class="fixed inset-0 z-50 bg-[#070a13] flex flex-col items-center justify-center p-6 text-white text-center">
     <div class="relative mb-5">
       <div class="w-24 h-24 bg-gradient-to-tr from-indigo-950 via-slate-900 to-indigo-900/60 border border-indigo-500/30 rounded-3xl flex items-center justify-center text-5xl shadow-2xl shadow-indigo-500/20">
@@ -90,7 +90,6 @@
         <span class="text-lg">👆</span> Authenticate with Fingerprint
       </button>
 
-      <!-- PIN Fallback Box -->
       <div class="liquid-glass p-4 rounded-2xl border border-white/10 space-y-2.5">
         <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Or Unlock with PIN</label>
         <div class="flex items-center gap-2">
@@ -136,99 +135,117 @@
       <!-- View 1: Main Ledger & Financial Summary -->
       <div id="viewEntries" class="space-y-4">
         
-        <!-- Month Switcher Ribbon (iOS / Clean Arrow Style) -->
-        <div class="liquid-glass rounded-2xl p-1.5 flex items-center justify-between border border-white/10 shadow-lg">
-          <div class="flex items-center gap-1">
-            <button onclick="navigateMonth(-1)" class="w-8 h-8 rounded-xl bg-slate-800/60 hover:bg-slate-700/80 active:scale-95 text-indigo-300 font-bold flex items-center justify-center transition border border-white/5">
-              ◀
-            </button>
-            <div id="currentMonthDisplay" class="px-2.5 py-1 text-xs font-black text-white tracking-wide">
-              Month Loading...
-            </div>
-            <button onclick="navigateMonth(1)" class="w-8 h-8 rounded-xl bg-slate-800/60 hover:bg-slate-700/80 active:scale-95 text-indigo-300 font-bold flex items-center justify-center transition border border-white/5">
-              ▶
-            </button>
-          </div>
-          <button onclick="toggleAllTimeView()" id="allTimeToggleBtn" class="px-3 py-1.5 rounded-xl text-[11px] font-bold text-slate-300 hover:text-white bg-slate-800/60 border border-white/5 transition">
-            All-Time
-          </button>
-        </div>
-
-        <section class="frosted-glass rounded-3xl p-4.5 space-y-3.5">
-          <!-- Total Revenue Hero -->
-          <div class="liquid-glass rounded-2xl p-4 text-center border border-indigo-500/20 relative overflow-hidden">
-            <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-indigo-500/10 rounded-full blur-xl pointer-events-none"></div>
-            <span id="revenuePeriodLabel" class="text-[11px] text-indigo-300 font-semibold uppercase tracking-wider">Practice Revenue</span>
-            <div id="statTotal" class="text-3xl font-black text-white tracking-tight mt-0.5">₹0</div>
-          </div>
-
-          <!-- Category Grid & Pending Receivables -->
-          <div class="grid grid-cols-2 gap-2 text-xs">
-            <button onclick="openOpdAuditModal()" class="liquid-glass hover:bg-slate-800/60 active:scale-98 p-3 rounded-2xl text-left transition border border-white/10">
-              <div class="flex justify-between items-center text-slate-400 font-medium">
-                <span>OPD Consultations</span>
-                <span class="text-[10px] text-indigo-400 font-bold">Register ↗</span>
-              </div>
-              <div id="statOpdIndoor" class="text-sm font-extrabold text-white mt-1">₹0</div>
-            </button>
+        <!-- Symmetrical 2x2 Glass Matrix Cards -->
+        <section class="frosted-glass rounded-3xl p-4 space-y-3 shadow-xl">
+          <div class="grid grid-cols-2 gap-2.5">
             
-            <button onclick="openSurgeryAuditModal()" class="liquid-glass hover:bg-emerald-950/40 active:scale-98 p-3 rounded-2xl text-left transition border border-emerald-500/20">
-              <div class="flex justify-between items-center text-emerald-400 font-medium">
-                <span>Surgeries</span>
-                <span class="text-[10px] text-emerald-300 font-bold">OT List ↗</span>
+            <!-- Card 1: Total Revenue -->
+            <div class="liquid-glass rounded-2xl p-3.5 border border-indigo-500/20 relative overflow-hidden flex flex-col justify-between h-28">
+              <div class="flex justify-between items-start">
+                <span id="revenuePeriodLabel" class="text-[10px] font-bold text-indigo-300 uppercase tracking-wider">Revenue</span>
+                <span class="text-xs">💰</span>
               </div>
-              <div id="statSurgery" class="text-sm font-extrabold text-emerald-200 mt-1">₹0</div>
+              <div>
+                <div id="statTotal" class="text-xl font-black text-white tracking-tight">₹0</div>
+                <p class="text-[10px] text-slate-400 font-medium mt-0.5">Total Practice</p>
+              </div>
+            </div>
+
+            <!-- Card 2: Pending Claims -->
+            <button onclick="openPendingReceivablesModal()" class="liquid-glass hover:bg-amber-950/30 active:scale-98 rounded-2xl p-3.5 border border-amber-500/25 relative overflow-hidden flex flex-col justify-between text-left transition h-28">
+              <div class="flex justify-between items-start">
+                <span class="text-[10px] font-bold text-amber-300 uppercase tracking-wider">Pending Claims</span>
+                <span class="text-[10px] text-amber-400 font-bold">Track ↗</span>
+              </div>
+              <div>
+                <div id="statPendingReceivables" class="text-xl font-black text-amber-200 tracking-tight">₹0</div>
+                <p class="text-[10px] text-amber-300/70 font-medium mt-0.5">PMJAY / TPA Due</p>
+              </div>
             </button>
 
-            <!-- Pending Receivables Button -->
-            <button onclick="openPendingReceivablesModal()" class="frosted-glass hover:bg-amber-950/40 active:scale-98 p-3 rounded-2xl col-span-2 text-left transition border border-amber-500/30">
-              <div class="flex justify-between items-center text-amber-300 font-bold">
-                <span class="flex items-center gap-1.5">
-                  <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
-                  <span>Pending Claims (PMJAY / TPA)</span>
-                </span>
-                <span class="text-[10px] text-amber-400 underline">Track & Recover ↗</span>
+            <!-- Card 3: OPD Consultations -->
+            <button onclick="openOpdAuditModal()" class="liquid-glass hover:bg-blue-950/30 active:scale-98 rounded-2xl p-3.5 border border-blue-500/20 relative overflow-hidden flex flex-col justify-between text-left transition h-28">
+              <div class="flex justify-between items-start">
+                <span class="text-[10px] font-bold text-blue-300 uppercase tracking-wider">OPD Cons.</span>
+                <span class="text-[10px] text-blue-400 font-bold">Register ↗</span>
               </div>
-              <div id="statPendingReceivables" class="text-base font-black text-amber-200 mt-1">₹0 Due</div>
+              <div>
+                <div id="statOpdIndoor" class="text-xl font-black text-white tracking-tight">₹0</div>
+                <p class="text-[10px] text-blue-300/70 font-medium mt-0.5">Outpatient Rounds</p>
+              </div>
             </button>
+
+            <!-- Card 4: Surgeries Done -->
+            <button onclick="openSurgeryAuditModal()" class="liquid-glass hover:bg-emerald-950/30 active:scale-98 rounded-2xl p-3.5 border border-emerald-500/25 relative overflow-hidden flex flex-col justify-between text-left transition h-28">
+              <div class="flex justify-between items-start">
+                <span class="text-[10px] font-bold text-emerald-300 uppercase tracking-wider">Surgeries</span>
+                <span class="text-[10px] text-emerald-400 font-bold">OT List ↗</span>
+              </div>
+              <div>
+                <div id="statSurgery" class="text-xl font-black text-emerald-200 tracking-tight">₹0</div>
+                <p class="text-[10px] text-emerald-300/70 font-medium mt-0.5">Operated Cases</p>
+              </div>
+            </button>
+
           </div>
 
-          <!-- Hospital Breakdown -->
-          <details class="text-xs liquid-glass p-3 rounded-2xl cursor-pointer">
-            <summary class="font-bold text-slate-300 flex justify-between items-center select-none">
-              <span>🏥 Hospital-wise Revenue</span>
-              <span class="text-[10px] text-indigo-400 font-semibold">Details ▼</span>
+          <!-- Hospital Breakdown Accordion -->
+          <details class="text-xs liquid-glass p-2.5 rounded-2xl cursor-pointer">
+            <summary class="font-bold text-slate-300 flex justify-between items-center select-none text-[11px]">
+              <span>🏥 Hospital-wise Breakdown</span>
+              <span class="text-[10px] text-indigo-400 font-semibold">View details ▼</span>
             </summary>
-            <div id="hospitalBreakdownList" class="pt-2.5 space-y-1.5 border-t border-white/10 mt-2 text-slate-400"></div>
+            <div id="hospitalBreakdownList" class="pt-2 space-y-1.5 border-t border-white/10 mt-2 text-slate-400 text-xs"></div>
           </details>
         </section>
 
         <!-- Quick Action Buttons -->
         <div class="grid grid-cols-2 gap-3">
-          <label class="flex flex-col items-center justify-center bg-gradient-to-br from-indigo-600 to-indigo-800 hover:from-indigo-500 hover:to-indigo-700 active:scale-95 text-white rounded-3xl p-4 shadow-xl shadow-indigo-950/50 cursor-pointer min-h-[76px] border border-indigo-400/30 transition">
-            <span class="text-2xl">📷</span>
-            <span class="text-xs font-extrabold mt-1 tracking-wide">Scan Doc / Slip</span>
+          <label class="flex flex-col items-center justify-center bg-gradient-to-br from-indigo-600 to-indigo-800 hover:from-indigo-500 hover:to-indigo-700 active:scale-95 text-white rounded-3xl p-3.5 shadow-xl shadow-indigo-950/50 cursor-pointer min-h-[72px] border border-indigo-400/30 transition">
+            <span class="text-xl">📷</span>
+            <span class="text-xs font-extrabold mt-0.5 tracking-wide">Scan Doc / Slip</span>
             <input type="file" id="scanInput" accept="image/*" class="hidden" onchange="handleImageSelected(event)" />
           </label>
-          <button onclick="openManualEntryModal()" class="flex flex-col items-center justify-center liquid-glass hover:bg-slate-800/80 active:scale-95 text-white rounded-3xl p-4 shadow-xl shadow-black/40 min-h-[76px] border border-white/10 transition">
-            <span class="text-2xl">✍️</span>
-            <span class="text-xs font-extrabold mt-1 tracking-wide">Manual Entry</span>
+          <button onclick="openManualEntryModal()" class="flex flex-col items-center justify-center liquid-glass hover:bg-slate-800/80 active:scale-95 text-white rounded-3xl p-3.5 shadow-xl shadow-black/40 min-h-[72px] border border-white/10 transition">
+            <span class="text-xl">✍️</span>
+            <span class="text-xs font-extrabold mt-0.5 tracking-wide">Manual Entry</span>
           </button>
         </div>
 
-        <!-- Entries Log with Category Filter Pills -->
+        <!-- Unified Control Deck: Month Switcher + Category Filters (Thumb Zone) -->
         <section class="space-y-2.5">
-          <div class="flex justify-between items-center px-1">
-            <h2 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Entries Log</h2>
-            <span id="entriesCount" class="text-xs text-indigo-400 font-bold">Loading...</span>
-          </div>
+          <div class="liquid-glass rounded-3xl p-3 space-y-2.5 border border-white/10 shadow-lg">
+            
+            <!-- Row 1: Month Switcher Ribbon -->
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-1.5">
+                <button onclick="navigateMonth(-1)" class="w-7 h-7 rounded-lg bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-indigo-300 text-xs font-bold flex items-center justify-center transition border border-white/5">
+                  ◀
+                </button>
+                <div id="currentMonthDisplay" class="px-2 text-xs font-black text-white tracking-wide min-w-[120px] text-center">
+                  Month
+                </div>
+                <button onclick="navigateMonth(1)" class="w-7 h-7 rounded-lg bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-indigo-300 text-xs font-bold flex items-center justify-center transition border border-white/5">
+                  ▶
+                </button>
+              </div>
 
-          <!-- Filter Pills -->
-          <div class="flex gap-1.5 overflow-x-auto pb-1 text-[11px] font-bold">
-            <button onclick="setEntriesFilter('ALL')" id="filterBtnAll" class="px-3 py-1.5 rounded-xl bg-indigo-600 text-white transition">All Records</button>
-            <button onclick="setEntriesFilter('OPD')" id="filterBtnOpd" class="px-3 py-1.5 rounded-xl liquid-glass text-slate-300 hover:text-white transition">📋 Only OPD</button>
-            <button onclick="setEntriesFilter('Surgery')" id="filterBtnSurgery" class="px-3 py-1.5 rounded-xl liquid-glass text-slate-300 hover:text-white transition">🔪 Surgeries</button>
-            <button onclick="setEntriesFilter('Indoor')" id="filterBtnIndoor" class="px-3 py-1.5 rounded-xl liquid-glass text-slate-300 hover:text-white transition">🛏 Indoor</button>
+              <div class="flex items-center gap-2">
+                <button onclick="toggleAllTimeView()" id="allTimeToggleBtn" class="px-2.5 py-1 rounded-lg text-[10px] font-bold text-slate-300 hover:text-white bg-slate-800/60 border border-white/5 transition">
+                  All-Time
+                </button>
+                <span id="entriesCount" class="text-[11px] text-indigo-300 font-bold">0 records</span>
+              </div>
+            </div>
+
+            <!-- Row 2: Category Filters -->
+            <div class="flex gap-1.5 overflow-x-auto pb-0.5 text-[11px] font-bold pt-1 border-t border-white/5">
+              <button onclick="setEntriesFilter('ALL')" id="filterBtnAll" class="px-3 py-1.5 rounded-xl bg-indigo-600 text-white transition whitespace-nowrap">All Records</button>
+              <button onclick="setEntriesFilter('OPD')" id="filterBtnOpd" class="px-3 py-1.5 rounded-xl liquid-glass text-slate-300 hover:text-white transition whitespace-nowrap">📋 Only OPD</button>
+              <button onclick="setEntriesFilter('Surgery')" id="filterBtnSurgery" class="px-3 py-1.5 rounded-xl liquid-glass text-slate-300 hover:text-white transition whitespace-nowrap">🔪 Surgeries</button>
+              <button onclick="setEntriesFilter('Indoor')" id="filterBtnIndoor" class="px-3 py-1.5 rounded-xl liquid-glass text-slate-300 hover:text-white transition whitespace-nowrap">🛏 Indoor</button>
+            </div>
+
           </div>
 
           <!-- Entries Container -->
@@ -712,7 +729,7 @@
     let masterEntriesCache = [];
 
     // Date & Month Switcher State
-    let currentDateCursor = new Date(); // Starts at current date
+    let currentDateCursor = new Date();
     let isAllTimeActive = false;
 
     const monthNames = [
@@ -745,10 +762,10 @@
 
       const toggleBtn = document.getElementById('allTimeToggleBtn');
       if (isAllTimeActive) {
-        toggleBtn.className = 'px-3 py-1.5 rounded-xl text-[11px] font-bold text-white bg-indigo-600 border border-indigo-400/40 shadow transition';
-        document.getElementById('revenuePeriodLabel').innerText = 'All-Time Practice Revenue';
+        toggleBtn.className = 'px-2.5 py-1 rounded-lg text-[10px] font-bold text-white bg-indigo-600 border border-indigo-400/40 shadow transition';
+        document.getElementById('revenuePeriodLabel').innerText = 'All-Time Revenue';
       } else {
-        toggleBtn.className = 'px-3 py-1.5 rounded-xl text-[11px] font-bold text-slate-300 hover:text-white bg-slate-800/60 border border-white/5 transition';
+        toggleBtn.className = 'px-2.5 py-1 rounded-lg text-[10px] font-bold text-slate-300 hover:text-white bg-slate-800/60 border border-white/5 transition';
         document.getElementById('revenuePeriodLabel').innerText = `${monthNames[m]} Revenue`;
       }
     }
@@ -847,9 +864,9 @@
 
       Object.keys(btns).forEach(k => {
         if (k === cat) {
-          btns[k].className = 'px-3 py-1.5 rounded-xl bg-indigo-600 text-white transition';
+          btns[k].className = 'px-3 py-1.5 rounded-xl bg-indigo-600 text-white transition whitespace-nowrap';
         } else {
-          btns[k].className = 'px-3 py-1.5 rounded-xl liquid-glass text-slate-300 hover:text-white transition';
+          btns[k].className = 'px-3 py-1.5 rounded-xl liquid-glass text-slate-300 hover:text-white transition whitespace-nowrap';
         }
       });
 
@@ -970,7 +987,7 @@
       return days > 0 ? days : 1;
     }
 
-    // Unified Master Feed Aggregator (Entries + Active IPD)
+    // Unified Master Feed Aggregator
     async function forceRefreshAll() {
       try {
         await db.open();
@@ -1295,7 +1312,7 @@
                       <div class="text-[10px] text-slate-400 flex items-center gap-2">
                         <span>OT: ${s.date}</span>
                         <span class="font-bold text-blue-300">${s.scheme || 'PMJAY'}</span>
-                        <span class="font-medium ${s.implantsUsed === 'Yes' ? 'text-emerald-300' : 'text-slate-400'}">
+                        <span class="font-medium ${s.implantsUsed === 'Yes' ? 'text-emerald-300' : 'text-slate-500'}">
                           🔩 Implants: ${s.implantsUsed === 'Yes' ? (escapeHtml(s.implantDetails) || 'Yes') : 'No'}
                         </span>
                       </div>
@@ -1707,7 +1724,7 @@
       const listEl = document.getElementById('opdAuditList');
 
       if (opdEntries.length === 0) {
-        listEl.innerHTML = `<div class="p-8 text-center text-slate-500 text-xs">No OPD patients recorded for ${periodStr}.</div>`;
+        listEl.innerHTML = `<div class="p-8 text-center text-slate-500 text-xs">No OPD patients recorded for ${periodHeader}.</div>`;
         return;
       }
 
