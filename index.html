@@ -70,7 +70,7 @@
 </head>
 <body class="obsidian-bg neural-mesh min-h-screen pb-28 text-slate-200">
 
-  <!-- Lock Screen Overlay -->
+  <!-- Full-Screen Security Shield -->
   <div id="lockScreen" class="fixed inset-0 z-50 bg-[#070a13] flex flex-col items-center justify-center p-6 text-white text-center">
     <div class="relative mb-5">
       <div class="w-24 h-24 bg-gradient-to-tr from-indigo-950 via-slate-900 to-indigo-900/60 border border-indigo-500/30 rounded-3xl flex items-center justify-center text-5xl shadow-2xl shadow-indigo-500/20">
@@ -90,6 +90,7 @@
         <span class="text-lg">👆</span> Authenticate with Fingerprint
       </button>
 
+      <!-- PIN Fallback Box -->
       <div class="liquid-glass p-4 rounded-2xl border border-white/10 space-y-2.5">
         <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Or Unlock with PIN</label>
         <div class="flex items-center gap-2">
@@ -134,11 +135,30 @@
     <main class="max-w-md mx-auto p-4 space-y-4">
       <!-- View 1: Main Ledger & Financial Summary -->
       <div id="viewEntries" class="space-y-4">
+        
+        <!-- Month Switcher Ribbon (iOS / Clean Arrow Style) -->
+        <div class="liquid-glass rounded-2xl p-1.5 flex items-center justify-between border border-white/10 shadow-lg">
+          <div class="flex items-center gap-1">
+            <button onclick="navigateMonth(-1)" class="w-8 h-8 rounded-xl bg-slate-800/60 hover:bg-slate-700/80 active:scale-95 text-indigo-300 font-bold flex items-center justify-center transition border border-white/5">
+              ◀
+            </button>
+            <div id="currentMonthDisplay" class="px-2.5 py-1 text-xs font-black text-white tracking-wide">
+              Month Loading...
+            </div>
+            <button onclick="navigateMonth(1)" class="w-8 h-8 rounded-xl bg-slate-800/60 hover:bg-slate-700/80 active:scale-95 text-indigo-300 font-bold flex items-center justify-center transition border border-white/5">
+              ▶
+            </button>
+          </div>
+          <button onclick="toggleAllTimeView()" id="allTimeToggleBtn" class="px-3 py-1.5 rounded-xl text-[11px] font-bold text-slate-300 hover:text-white bg-slate-800/60 border border-white/5 transition">
+            All-Time
+          </button>
+        </div>
+
         <section class="frosted-glass rounded-3xl p-4.5 space-y-3.5">
           <!-- Total Revenue Hero -->
           <div class="liquid-glass rounded-2xl p-4 text-center border border-indigo-500/20 relative overflow-hidden">
             <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-indigo-500/10 rounded-full blur-xl pointer-events-none"></div>
-            <span class="text-[11px] text-indigo-300 font-semibold uppercase tracking-wider">Total Practice Revenue</span>
+            <span id="revenuePeriodLabel" class="text-[11px] text-indigo-300 font-semibold uppercase tracking-wider">Practice Revenue</span>
             <div id="statTotal" class="text-3xl font-black text-white tracking-tight mt-0.5">₹0</div>
           </div>
 
@@ -691,6 +711,15 @@
     let currentCategoryFilter = 'ALL';
     let masterEntriesCache = [];
 
+    // Date & Month Switcher State
+    let currentDateCursor = new Date(); // Starts at current date
+    let isAllTimeActive = false;
+
+    const monthNames = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ];
+
     document.addEventListener('DOMContentLoaded', () => {
       const today = new Date();
       document.getElementById('ipdAdmitDate').value = today.toISOString().slice(0, 10);
@@ -698,6 +727,7 @@
       document.getElementById('ipdMainSurgeryDate').value = today.toISOString().slice(0, 10);
       document.getElementById('visitDateInput').value = today.toISOString().slice(0, 10);
       
+      updateMonthDisplay();
       requestBiometrics();
     });
 
@@ -706,6 +736,43 @@
         lockApp();
       }
     });
+
+    function updateMonthDisplay() {
+      const y = currentDateCursor.getFullYear();
+      const m = currentDateCursor.getMonth();
+      const label = `${monthNames[m]} ${y}`;
+      document.getElementById('currentMonthDisplay').innerText = label;
+
+      const toggleBtn = document.getElementById('allTimeToggleBtn');
+      if (isAllTimeActive) {
+        toggleBtn.className = 'px-3 py-1.5 rounded-xl text-[11px] font-bold text-white bg-indigo-600 border border-indigo-400/40 shadow transition';
+        document.getElementById('revenuePeriodLabel').innerText = 'All-Time Practice Revenue';
+      } else {
+        toggleBtn.className = 'px-3 py-1.5 rounded-xl text-[11px] font-bold text-slate-300 hover:text-white bg-slate-800/60 border border-white/5 transition';
+        document.getElementById('revenuePeriodLabel').innerText = `${monthNames[m]} Revenue`;
+      }
+    }
+
+    function navigateMonth(direction) {
+      isAllTimeActive = false;
+      currentDateCursor.setMonth(currentDateCursor.getMonth() + direction);
+      updateMonthDisplay();
+      renderSummaryMetrics();
+      renderLedgerListOnly();
+    }
+
+    function toggleAllTimeView() {
+      isAllTimeActive = !isAllTimeActive;
+      updateMonthDisplay();
+      renderSummaryMetrics();
+      renderLedgerListOnly();
+    }
+
+    function getSelectedYearMonthKey() {
+      const y = currentDateCursor.getFullYear();
+      const m = String(currentDateCursor.getMonth() + 1).padStart(2, '0');
+      return `${y}-${m}`;
+    }
 
     async function requestBiometrics() {
       if (window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
@@ -903,21 +970,18 @@
       return days > 0 ? days : 1;
     }
 
-    // Unified Data Aggregator (Directly reads IPD patients & surgeries into Frontpage Feed)
+    // Unified Master Feed Aggregator (Entries + Active IPD)
     async function forceRefreshAll() {
       try {
         await db.open();
         let directEntries = await db.entries.toArray();
         let inpatientsList = await db.inpatients.toArray();
 
-        // Synthesize Active IPD cases & linked surgeries into Unified Ledger Feed
         let combinedFeed = [...directEntries];
 
         inpatientsList.forEach(p => {
-          // 1. Synthesize linked surgeries from active IPD cases
           if (p.surgeries && p.surgeries.length > 0) {
             p.surgeries.forEach((s, sIdx) => {
-              // Avoid duplicates if already explicitly in entries
               const exists = directEntries.some(e => e.name === p.patientName && e.category === 'Surgery' && e.note === s.procedure);
               if (!exists) {
                 combinedFeed.push({
@@ -939,7 +1003,6 @@
             });
           }
 
-          // 2. Synthesize Indoor Admission Card into Indoor filter
           const existsIndoor = directEntries.some(e => e.name === p.patientName && e.category === 'Indoor');
           if (!existsIndoor) {
             let visitsFee = 0;
@@ -973,16 +1036,31 @@
         return db_ - da;
       });
 
+      updateMonthDisplay();
       renderSummaryMetrics();
       renderLedgerListOnly();
       loadInpatients();
     }
 
+    function getActivePeriodEntries() {
+      if (isAllTimeActive) {
+        return masterEntriesCache;
+      }
+      const targetYm = getSelectedYearMonthKey();
+      return masterEntriesCache.filter(item => {
+        if (!item || !item.date) return false;
+        const cleanD = String(item.date).replace(/\//g, '-');
+        return cleanD.startsWith(targetYm);
+      });
+    }
+
     function renderSummaryMetrics() {
+      const activeEntries = getActivePeriodEntries();
+
       let totalRevenue = 0, opdTotal = 0, surgeryTotal = 0, totalPending = 0;
       const hospitalTotals = {};
 
-      masterEntriesCache.forEach(item => {
+      activeEntries.forEach(item => {
         const val = Number(item.amount) || 0;
         totalRevenue += val;
         if (item.category === 'OPD' || item.category === 'Indoor') opdTotal += val;
@@ -1004,7 +1082,7 @@
       const hospBreakdownEl = document.getElementById('hospitalBreakdownList');
       const hospKeys = Object.keys(hospitalTotals);
       if (hospKeys.length === 0) {
-        hospBreakdownEl.innerHTML = `<div class="text-slate-500 text-[11px]">No hospital data recorded yet.</div>`;
+        hospBreakdownEl.innerHTML = `<div class="text-slate-500 text-[11px]">No activity in this period.</div>`;
       } else {
         hospBreakdownEl.innerHTML = hospKeys.map(h => `
           <div class="flex justify-between items-center text-xs py-0.5">
@@ -1017,18 +1095,20 @@
 
     function renderLedgerListOnly() {
       const listEl = document.getElementById('entriesList');
-      let displayList = masterEntriesCache;
-
+      const activeEntries = getActivePeriodEntries();
+      
+      let displayList = activeEntries;
       if (currentCategoryFilter !== 'ALL') {
-        displayList = masterEntriesCache.filter(e => e.category === currentCategoryFilter);
+        displayList = activeEntries.filter(e => e.category === currentCategoryFilter);
       }
 
       document.getElementById('entriesCount').innerText = `${displayList.length} records`;
 
       if (displayList.length === 0) {
+        const periodStr = isAllTimeActive ? 'All-Time' : `${monthNames[currentDateCursor.getMonth()]} ${currentDateCursor.getFullYear()}`;
         listEl.innerHTML = `
           <div class="liquid-glass rounded-3xl p-8 text-center text-slate-400 text-xs border border-white/5 space-y-2">
-            <div>No ${currentCategoryFilter === 'ALL' ? '' : currentCategoryFilter} records found.</div>
+            <div>No ${currentCategoryFilter === 'ALL' ? '' : currentCategoryFilter} records for ${periodStr}.</div>
             <button onclick="openManualEntryModal()" class="px-3 py-1.5 bg-indigo-600 text-white rounded-xl font-bold text-xs">+ Add Patient</button>
           </div>
         `;
@@ -1514,7 +1594,9 @@
 
     async function renderPendingReceivablesList() {
       const selectedHosp = document.getElementById('pendingHospitalFilter').value;
-      let pendingList = masterEntriesCache.filter(e => e.paymentStatus === 'Pending');
+      const activeEntries = getActivePeriodEntries();
+
+      let pendingList = activeEntries.filter(e => e.paymentStatus === 'Pending');
       if (selectedHosp !== 'All') {
         pendingList = pendingList.filter(e => e.hospital === selectedHosp);
       }
@@ -1560,7 +1642,9 @@
 
     async function sharePendingClaimsWhatsApp() {
       const selectedHosp = document.getElementById('pendingHospitalFilter').value;
-      let pendingList = masterEntriesCache.filter(e => e.paymentStatus === 'Pending');
+      const activeEntries = getActivePeriodEntries();
+
+      let pendingList = activeEntries.filter(e => e.paymentStatus === 'Pending');
       if (selectedHosp !== 'All') {
         pendingList = pendingList.filter(e => e.hospital === selectedHosp);
       }
@@ -1570,10 +1654,11 @@
         return;
       }
 
+      const periodHeader = isAllTimeActive ? 'ALL RECORDS' : `${monthNames[currentDateCursor.getMonth()]} ${currentDateCursor.getFullYear()}`.toUpperCase();
       const hospTitle = selectedHosp === 'All' ? 'ALL HOSPITALS' : selectedHosp.toUpperCase();
       let totalDue = 0;
 
-      let msg = `PENDING SURGICAL CLAIMS - ${hospTitle}\n`;
+      let msg = `PENDING CLAIMS - ${hospTitle} (${periodHeader})\n`;
       msg += `----------------------------------------\n\n`;
 
       const todayStr = new Date().toISOString().slice(0, 10);
@@ -1598,7 +1683,7 @@
       window.open(whatsappUrl, '_blank');
     }
 
-    // OPD Register
+    // OPD Register Modal
     async function openOpdAuditModal() {
       document.getElementById('opdAuditHospitalFilter').value = 'All';
       filterOpdAuditList();
@@ -1607,7 +1692,9 @@
 
     async function filterOpdAuditList() {
       const targetHospital = document.getElementById('opdAuditHospitalFilter').value;
-      let opdEntries = masterEntriesCache.filter(item => item.category === 'OPD');
+      const activeEntries = getActivePeriodEntries();
+
+      let opdEntries = activeEntries.filter(item => item.category === 'OPD');
       if (targetHospital !== 'All') {
         opdEntries = opdEntries.filter(s => s.hospital === targetHospital);
       }
@@ -1615,11 +1702,12 @@
       let totalFee = 0;
       opdEntries.forEach(item => { totalFee += Number(item.amount) || 0; });
 
-      document.getElementById('opdAuditSubtitle').innerText = `${opdEntries.length} Patients (₹${totalFee.toLocaleString('en-IN')})`;
+      const periodHeader = isAllTimeActive ? 'All-Time' : `${monthNames[currentDateCursor.getMonth()]} ${currentDateCursor.getFullYear()}`;
+      document.getElementById('opdAuditSubtitle').innerText = `${periodHeader} | ${opdEntries.length} Patients (₹${totalFee.toLocaleString('en-IN')})`;
       const listEl = document.getElementById('opdAuditList');
 
       if (opdEntries.length === 0) {
-        listEl.innerHTML = `<div class="p-8 text-center text-slate-500 text-xs">No OPD patients recorded for this selection.</div>`;
+        listEl.innerHTML = `<div class="p-8 text-center text-slate-500 text-xs">No OPD patients recorded for ${periodStr}.</div>`;
         return;
       }
 
@@ -1651,7 +1739,9 @@
 
     async function shareOpdAuditWhatsApp() {
       const targetHospital = document.getElementById('opdAuditHospitalFilter').value;
-      let opdEntries = masterEntriesCache.filter(item => item.category === 'OPD');
+      const activeEntries = getActivePeriodEntries();
+
+      let opdEntries = activeEntries.filter(item => item.category === 'OPD');
       if (targetHospital !== 'All') {
         opdEntries = opdEntries.filter(s => s.hospital === targetHospital);
       }
@@ -1661,10 +1751,11 @@
         return;
       }
 
+      const periodHeader = isAllTimeActive ? 'ALL RECORDS' : `${monthNames[currentDateCursor.getMonth()]} ${currentDateCursor.getFullYear()}`.toUpperCase();
       const hospTitle = targetHospital === 'All' ? 'ALL HOSPITALS' : targetHospital.toUpperCase();
       let totalFee = 0;
 
-      let msg = `OPD CONSULTATION REGISTER - ${hospTitle}\n`;
+      let msg = `OPD CONSULTATION REGISTER - ${hospTitle} (${periodHeader})\n`;
       msg += `----------------------------------------\n\n`;
 
       opdEntries.forEach((s, idx) => {
@@ -1687,7 +1778,7 @@
       window.open(whatsappUrl, '_blank');
     }
 
-    // Surgery Register
+    // Surgery Register Modal
     async function openSurgeryAuditModal() {
       document.getElementById('surgeryAuditHospitalFilter').value = 'All';
       filterSurgeryAuditList();
@@ -1696,16 +1787,19 @@
 
     async function filterSurgeryAuditList() {
       const targetHospital = document.getElementById('surgeryAuditHospitalFilter').value;
-      let surgeryEntries = masterEntriesCache.filter(item => item.category === 'Surgery');
+      const activeEntries = getActivePeriodEntries();
+
+      let surgeryEntries = activeEntries.filter(item => item.category === 'Surgery');
       if (targetHospital !== 'All') {
         surgeryEntries = surgeryEntries.filter(s => s.hospital === targetHospital);
       }
 
-      document.getElementById('surgeryAuditSubtitle').innerText = `${surgeryEntries.length} cases`;
+      const periodHeader = isAllTimeActive ? 'All-Time' : `${monthNames[currentDateCursor.getMonth()]} ${currentDateCursor.getFullYear()}`;
+      document.getElementById('surgeryAuditSubtitle').innerText = `${periodHeader} | ${surgeryEntries.length} cases`;
       const listEl = document.getElementById('surgeryAuditList');
 
       if (surgeryEntries.length === 0) {
-        listEl.innerHTML = `<div class="p-8 text-center text-slate-500 text-xs">No surgeries found for this selection.</div>`;
+        listEl.innerHTML = `<div class="p-8 text-center text-slate-500 text-xs">No surgeries found for ${periodHeader}.</div>`;
         return;
       }
 
@@ -1729,7 +1823,9 @@
 
     async function shareSurgeryAuditWhatsApp() {
       const targetHospital = document.getElementById('surgeryAuditHospitalFilter').value;
-      let surgeryEntries = masterEntriesCache.filter(item => item.category === 'Surgery');
+      const activeEntries = getActivePeriodEntries();
+
+      let surgeryEntries = activeEntries.filter(item => item.category === 'Surgery');
       if (targetHospital !== 'All') {
         surgeryEntries = surgeryEntries.filter(s => s.hospital === targetHospital);
       }
@@ -1739,8 +1835,9 @@
         return;
       }
 
+      const periodHeader = isAllTimeActive ? 'ALL RECORDS' : `${monthNames[currentDateCursor.getMonth()]} ${currentDateCursor.getFullYear()}`.toUpperCase();
       const hospTitle = targetHospital === 'All' ? 'ALL HOSPITALS' : targetHospital.toUpperCase();
-      let msg = `SURGICAL CASE LIST - ${hospTitle}\n`;
+      let msg = `SURGICAL CASE LIST - ${hospTitle} (${periodHeader})\n`;
       msg += `----------------------------------------\n\n`;
 
       surgeryEntries.forEach((s, idx) => {
