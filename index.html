@@ -17,7 +17,7 @@
   <header class="bg-indigo-900 text-white p-4 sticky top-0 z-30 shadow flex justify-between items-center">
     <div>
       <h1 class="text-lg font-bold tracking-tight">Neuro Practice Log</h1>
-      <p id="currentMonthLabel" class="text-xs text-indigo-200">Current Month</p>
+      <p id="currentMonthLabel" class="text-xs text-indigo-200">v4 Active</p>
     </div>
     <button onclick="openSettingsModal()" class="p-2 bg-indigo-800 hover:bg-indigo-700 rounded-lg text-sm flex items-center gap-1">
       ⚙️ API Key
@@ -179,7 +179,7 @@
       <p class="text-xs text-slate-500">Your Google AI Studio key is saved locally in your phone storage.</p>
       <div>
         <label class="block text-xs font-semibold text-slate-600 mb-1">Gemini API Key</label>
-        <input type="password" id="geminiApiKey" placeholder="AIzaSy..." class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm" />
+        <input type="password" id="geminiApiKey" placeholder="AQ.Ab8RN6..." class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm" />
       </div>
       <div class="pt-2 border-t flex flex-col gap-2">
         <button onclick="saveApiKey()" class="w-full bg-indigo-600 text-white font-bold py-2 rounded-lg text-sm">Save Key</button>
@@ -253,30 +253,33 @@
 
       try {
         const base64Data = await resizeAndConvertToBase64(file, 1024);
-        const prompt = `You are a medical assistant reading an Indian hospital slip, OPD card, discharge summary, or payment receipt.
-Extract strictly in this JSON format:
+        const prompt = `You are a medical administrative assistant. Read this Indian hospital slip, OPD card, discharge card, receipt, or surgery note.
+Extract strictly in this JSON structure:
 {
-  "name": "Patient full name",
+  "name": "Patient full name or company name",
   "date": "YYYY-MM-DD",
-  "category": "OPD or Indoor or Surgery or MR Benefit",
+  "category": "OPD",
   "note": "Diagnosis or surgery/procedure name",
   "amount": 0
 }
-No markdown formatting, no explanations. JSON only.`;
+Rules:
+- Category MUST be one of: OPD, Indoor, Surgery, MR Benefit.
+- Output JSON ONLY. No explanation, no markdown.`;
 
-        // Multi-model fallback list
-        const endpoints = [
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent?key=${apiKey}`
+        // Modern models supported by current API Keys
+        const candidateModels = [
+          'gemini-2.5-flash',
+          'gemini-2.0-flash',
+          'gemini-2.0-flash-exp'
         ];
 
-        let response = null;
-        let lastError = '';
+        let successData = null;
+        let lastErrorMsg = '';
 
-        for (const url of endpoints) {
+        for (const model of candidateModels) {
           try {
-            response = await fetch(url, {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+            const res = await fetch(url, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -289,23 +292,25 @@ No markdown formatting, no explanations. JSON only.`;
               })
             });
 
-            if (response.ok) break;
-            const errData = await response.json();
-            lastError = errData.error?.message || 'API call failed';
+            if (res.ok) {
+              successData = await res.json();
+              break;
+            } else {
+              const err = await res.json();
+              lastErrorMsg = err.error?.message || `HTTP ${res.status}`;
+            }
           } catch (e) {
-            lastError = e.message;
+            lastErrorMsg = e.message;
           }
         }
 
-        if (!response || !response.ok) {
-          throw new Error(lastError || 'All Gemini model endpoints failed.');
+        if (!successData) {
+          throw new Error(lastErrorMsg || 'Unable to connect with Gemini API.');
         }
 
-        const data = await response.json();
-        let extractedText = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-        
-        extractedText = extractedText.replace(/```json/gi, '').replace(/```/g, '').trim();
-        const parsed = JSON.parse(extractedText);
+        const rawText = successData.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+        const cleaned = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+        const parsed = JSON.parse(cleaned);
 
         openManualEntryModal({
           name: parsed.name || '',
@@ -358,8 +363,6 @@ No markdown formatting, no explanations. JSON only.`;
 
     async function loadDashboard() {
       const selectedMonth = document.getElementById('monthFilter').value;
-      document.getElementById('currentMonthLabel').innerText = `Viewing: ${selectedMonth}`;
-
       const allEntries = await db.entries.reverse().toArray();
       const monthEntries = allEntries.filter(item => item.date && item.date.startsWith(selectedMonth));
 
