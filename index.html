@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Surgical Practice Log - Obsidian Neuro Suite</title>
+  <title>Neuro Logbook by Dr. Nilesh Chaudhari</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#070a13" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -14,8 +16,6 @@
       background-color: #070a13;
       color: #e2e8f0;
     }
-    
-    /* Obsidian Ambient Canvas & Neural Glow */
     .obsidian-bg {
       background: radial-gradient(circle at 15% 15%, rgba(45, 212, 191, 0.08) 0%, transparent 40%),
                   radial-gradient(circle at 85% 65%, rgba(99, 102, 241, 0.10) 0%, transparent 45%),
@@ -23,14 +23,10 @@
                   #070a13;
       background-attachment: fixed;
     }
-
-    /* Subdued Cortical Contour Pattern */
     .neural-mesh {
       background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
       background-size: 24px 24px;
     }
-
-    /* Liquid Glass (Secondary Elements & Containers) */
     .liquid-glass {
       background: rgba(15, 23, 42, 0.55);
       backdrop-filter: blur(16px);
@@ -38,8 +34,6 @@
       border: 1px solid rgba(255, 255, 255, 0.08);
       box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.4);
     }
-
-    /* Frosted Acrylic Glass (Key Metrics & High Hierarchy) */
     .frosted-glass {
       background: rgba(30, 41, 59, 0.65);
       backdrop-filter: blur(28px) saturate(190%);
@@ -47,7 +41,6 @@
       border: 1px solid rgba(255, 255, 255, 0.16);
       box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), inset 0 1px 1px 0 rgba(255, 255, 255, 0.15);
     }
-
     .frosted-card {
       background: rgba(15, 23, 42, 0.72);
       backdrop-filter: blur(20px);
@@ -55,8 +48,6 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
       box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
     }
-
-    /* Floating Bottom Dock */
     .floating-glass-dock {
       background: rgba(11, 15, 26, 0.82);
       backdrop-filter: blur(24px) saturate(180%);
@@ -64,8 +55,6 @@
       border: 1px solid rgba(255, 255, 255, 0.14);
       box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15);
     }
-
-    /* Glass Inputs */
     .glass-input {
       background: rgba(15, 23, 42, 0.65) !important;
       border: 1px solid rgba(255, 255, 255, 0.12) !important;
@@ -76,184 +65,199 @@
       outline: none;
       box-shadow: 0 0 12px rgba(99, 102, 241, 0.25);
     }
-
     input, select, textarea { font-size: 16px !important; }
   </style>
 </head>
 <body class="obsidian-bg neural-mesh min-h-screen pb-28 text-slate-200">
 
-  <!-- Lock Screen Overlay -->
-  <div id="lockScreen" class="fixed inset-0 z-50 bg-[#070a13]/95 backdrop-blur-2xl flex flex-col items-center justify-center p-6 text-white text-center">
-    <div class="w-20 h-20 bg-indigo-500/10 border border-indigo-500/30 rounded-3xl flex items-center justify-center text-4xl mb-4 shadow-2xl shadow-indigo-500/20">
-      🔒
+  <!-- Full-Screen Ironclad Security Shield -->
+  <div id="lockScreen" class="fixed inset-0 z-50 bg-[#070a13] flex flex-col items-center justify-center p-6 text-white text-center">
+    <div class="relative mb-5">
+      <div class="w-24 h-24 bg-gradient-to-tr from-indigo-950 via-slate-900 to-indigo-900/60 border border-indigo-500/30 rounded-3xl flex items-center justify-center text-5xl shadow-2xl shadow-indigo-500/20">
+        🧠
+      </div>
+      <div class="absolute -bottom-1 -right-1 w-8 h-8 bg-indigo-600 border-2 border-[#070a13] rounded-full flex items-center justify-center text-xs shadow">
+        🔒
+      </div>
     </div>
-    <h2 class="text-xl font-bold tracking-tight text-white mb-0.5">Neuro Practice Suite</h2>
-    <p class="text-xs text-indigo-300/80 mb-6 font-medium">Secured Surgical Console</p>
     
-    <div class="w-full max-w-xs space-y-3">
-      <button onclick="authenticateBiometrics()" id="bioUnlockBtn" class="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 active:scale-95 transition text-white font-bold py-3.5 rounded-2xl shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 text-sm border border-indigo-400/20">
-        <span>👆</span> Unlock with Biometrics / PIN
+    <h2 class="text-xl font-black tracking-tight text-white">Neuro Logbook</h2>
+    <p class="text-xs font-semibold text-indigo-300 mt-0.5 tracking-wide">by Dr. Nilesh Chaudhari</p>
+    <p class="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-mono">Secured Surgical Console</p>
+    
+    <div class="w-full max-w-xs space-y-3.5 mt-8">
+      <button onclick="requestBiometrics()" id="bioUnlockBtn" class="w-full bg-gradient-to-r from-indigo-600 via-indigo-700 to-indigo-800 hover:from-indigo-500 hover:to-indigo-600 active:scale-95 transition text-white font-bold py-3.5 rounded-2xl shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 text-sm border border-indigo-400/20">
+        <span class="text-lg">👆</span> Authenticate with Fingerprint
       </button>
-      <div id="pinFallbackContainer" class="hidden space-y-2 pt-2">
-        <input type="password" id="appPinInput" pattern="[0-9]*" inputmode="numeric" maxlength="6" placeholder="Enter PIN" class="w-full glass-input text-center text-lg rounded-xl p-3 focus:outline-none" />
-        <button onclick="unlockWithPin()" class="w-full bg-slate-800/80 hover:bg-slate-700 text-indigo-200 font-semibold py-2.5 rounded-xl text-xs border border-slate-700">
-          Submit PIN
-        </button>
+
+      <!-- PIN Fallback Box -->
+      <div class="liquid-glass p-4 rounded-2xl border border-white/10 space-y-2.5">
+        <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Or Unlock with PIN</label>
+        <div class="flex items-center gap-2">
+          <input type="password" id="appPinInput" pattern="[0-9]*" inputmode="numeric" maxlength="6" placeholder="Enter PIN (Default: 1234)" class="w-full glass-input text-center text-base rounded-xl py-2.5 focus:outline-none tracking-widest" />
+          <button onclick="unlockWithPin()" class="bg-slate-800 hover:bg-slate-700 text-indigo-200 font-bold px-4 py-2.5 rounded-xl text-xs border border-white/10 transition active:scale-95">
+            Submit
+          </button>
+        </div>
+        <p id="lockErrorMsg" class="text-[11px] text-rose-400 font-semibold hidden"></p>
       </div>
     </div>
   </div>
 
-  <!-- Header -->
-  <header class="liquid-glass border-b border-white/10 p-4 sticky top-0 z-30 flex justify-between items-center shadow-lg">
-    <div>
-      <div class="flex items-center gap-2">
-        <span class="text-lg">🧠</span>
-        <h1 class="text-base font-extrabold tracking-tight bg-gradient-to-r from-white via-indigo-200 to-slate-400 bg-clip-text text-transparent">
-          Neuro Practice Log
-        </h1>
-      </div>
-      <p id="currentMonthLabel" class="text-[11px] text-indigo-300/70 font-medium">Obsidian Practice Hub</p>
-    </div>
-    <div class="flex items-center gap-1.5">
-      <button onclick="lockApp()" class="p-2 bg-slate-800/60 hover:bg-slate-700/80 border border-white/10 rounded-xl text-xs text-slate-300" title="Lock App">
-        🔒
-      </button>
-      <button onclick="exportDataBackup()" class="p-2 bg-indigo-900/40 hover:bg-indigo-800/60 border border-indigo-500/30 rounded-xl text-xs font-semibold text-indigo-200 flex items-center gap-1">
-        💾 Backup
-      </button>
-    </div>
-  </header>
-
-  <main class="max-w-md mx-auto p-4 space-y-4">
-    
-    <!-- View 1: Main Ledger & Financial Summary -->
-    <div id="viewEntries" class="space-y-4">
-      <section class="frosted-glass rounded-3xl p-4.5 space-y-3.5">
-        <div class="flex justify-between items-center gap-2">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-300/60">Practice Overview</span>
-          <div class="flex items-center gap-1">
-            <select id="viewRangeSelect" onchange="handleViewRangeChange()" class="text-xs glass-input rounded-lg px-2 py-1 font-medium">
-              <option value="month" selected>This Month</option>
-              <option value="all">All Records</option>
-            </select>
-            <input type="month" id="monthFilter" onchange="loadDashboard()" class="text-xs glass-input rounded-lg px-2 py-1 font-medium" />
+  <!-- App Wrapper (Zero data mounted until unlocked) -->
+  <div id="authenticatedApp" class="hidden">
+    <!-- Header -->
+    <header class="liquid-glass border-b border-white/10 p-4 sticky top-0 z-30 flex justify-between items-center shadow-lg">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="text-lg">🧠</span>
+          <div>
+            <h1 class="text-sm font-extrabold tracking-tight bg-gradient-to-r from-white via-indigo-200 to-slate-400 bg-clip-text text-transparent">
+              Neuro Logbook
+            </h1>
+            <p class="text-[10px] text-indigo-300/80 font-semibold">Dr. Nilesh Chaudhari</p>
           </div>
         </div>
-
-        <!-- Total Revenue Hero -->
-        <div class="liquid-glass rounded-2xl p-4 text-center border border-indigo-500/20 relative overflow-hidden">
-          <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-indigo-500/10 rounded-full blur-xl pointer-events-none"></div>
-          <span class="text-[11px] text-indigo-300 font-semibold uppercase tracking-wider">Total Practice Revenue</span>
-          <div id="statTotal" class="text-3xl font-black text-white tracking-tight mt-0.5">₹0</div>
-        </div>
-
-        <!-- Category Grid & Pending Receivables -->
-        <div class="grid grid-cols-2 gap-2 text-xs">
-          <button onclick="openOpdAuditModal()" class="liquid-glass hover:bg-slate-800/60 active:scale-98 p-3 rounded-2xl text-left transition border border-white/10">
-            <div class="flex justify-between items-center text-slate-400 font-medium">
-              <span>OPD / Indoor</span>
-              <span class="text-[10px] text-indigo-400 font-bold">Audit ↗</span>
-            </div>
-            <div id="statOpdIndoor" class="text-sm font-extrabold text-white mt-1">₹0</div>
-          </button>
-          
-          <button onclick="openSurgeryAuditModal()" class="liquid-glass hover:bg-emerald-950/40 active:scale-98 p-3 rounded-2xl text-left transition border border-emerald-500/20">
-            <div class="flex justify-between items-center text-emerald-400 font-medium">
-              <span>Surgeries</span>
-              <span class="text-[10px] text-emerald-300 font-bold">OT List ↗</span>
-            </div>
-            <div id="statSurgery" class="text-sm font-extrabold text-emerald-200 mt-1">₹0</div>
-          </button>
-
-          <!-- Pending Receivables Tracker Button -->
-          <button onclick="openPendingReceivablesModal()" class="frosted-glass hover:bg-amber-950/40 active:scale-98 p-3 rounded-2xl col-span-2 text-left transition border border-amber-500/30">
-            <div class="flex justify-between items-center text-amber-300 font-bold">
-              <span class="flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
-                <span>Pending Claims (PMJAY / TPA)</span>
-              </span>
-              <span class="text-[10px] text-amber-400 underline">Track & Recover ↗</span>
-            </div>
-            <div id="statPendingReceivables" class="text-base font-black text-amber-200 mt-1">₹0 Due</div>
-          </button>
-        </div>
-
-        <!-- Hospital Breakdown -->
-        <details class="text-xs liquid-glass p-3 rounded-2xl cursor-pointer">
-          <summary class="font-bold text-slate-300 flex justify-between items-center select-none">
-            <span>🏥 Hospital-wise Revenue</span>
-            <span class="text-[10px] text-indigo-400 font-semibold">Details ▼</span>
-          </summary>
-          <div id="hospitalBreakdownList" class="pt-2.5 space-y-1.5 border-t border-white/10 mt-2 text-slate-400"></div>
-        </details>
-      </section>
-
-      <!-- Quick Action Buttons -->
-      <div class="grid grid-cols-2 gap-3">
-        <label class="flex flex-col items-center justify-center bg-gradient-to-br from-indigo-600 to-indigo-800 hover:from-indigo-500 hover:to-indigo-700 active:scale-95 text-white rounded-3xl p-4 shadow-xl shadow-indigo-950/50 cursor-pointer min-h-[76px] border border-indigo-400/30 transition">
-          <span class="text-2xl">📷</span>
-          <span class="text-xs font-extrabold mt-1 tracking-wide">Scan Doc / Slip</span>
-          <input type="file" id="scanInput" accept="image/*" class="hidden" onchange="handleImageSelected(event)" />
-        </label>
-        <button onclick="openManualEntryModal()" class="flex flex-col items-center justify-center liquid-glass hover:bg-slate-800/80 active:scale-95 text-white rounded-3xl p-4 shadow-xl shadow-black/40 min-h-[76px] border border-white/10 transition">
-          <span class="text-2xl">✍️</span>
-          <span class="text-xs font-extrabold mt-1 tracking-wide">Manual Entry</span>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <button onclick="lockApp()" class="p-2 bg-slate-800/60 hover:bg-slate-700/80 border border-white/10 rounded-xl text-xs text-slate-300" title="Lock Console">
+          🔒
+        </button>
+        <button onclick="exportDataBackup()" class="p-2 bg-indigo-900/40 hover:bg-indigo-800/60 border border-indigo-500/30 rounded-xl text-xs font-semibold text-indigo-200 flex items-center gap-1">
+          💾 Backup
         </button>
       </div>
+    </header>
 
-      <!-- Entries List -->
-      <section class="space-y-2.5">
+    <main class="max-w-md mx-auto p-4 space-y-4">
+      <!-- View 1: Main Ledger & Financial Summary -->
+      <div id="viewEntries" class="space-y-4">
+        <section class="frosted-glass rounded-3xl p-4.5 space-y-3.5">
+          <div class="flex justify-between items-center gap-2">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-300/60">Practice Overview</span>
+            <div class="flex items-center gap-1">
+              <select id="viewRangeSelect" onchange="handleViewRangeChange()" class="text-xs glass-input rounded-lg px-2 py-1 font-medium">
+                <option value="month" selected>This Month</option>
+                <option value="all">All Records</option>
+              </select>
+              <input type="month" id="monthFilter" onchange="loadDashboard()" class="text-xs glass-input rounded-lg px-2 py-1 font-medium" />
+            </div>
+          </div>
+
+          <!-- Total Revenue Hero -->
+          <div class="liquid-glass rounded-2xl p-4 text-center border border-indigo-500/20 relative overflow-hidden">
+            <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-indigo-500/10 rounded-full blur-xl pointer-events-none"></div>
+            <span class="text-[11px] text-indigo-300 font-semibold uppercase tracking-wider">Total Practice Revenue</span>
+            <div id="statTotal" class="text-3xl font-black text-white tracking-tight mt-0.5">₹0</div>
+          </div>
+
+          <!-- Category Grid & Pending Receivables -->
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <button onclick="openOpdAuditModal()" class="liquid-glass hover:bg-slate-800/60 active:scale-98 p-3 rounded-2xl text-left transition border border-white/10">
+              <div class="flex justify-between items-center text-slate-400 font-medium">
+                <span>OPD / Indoor</span>
+                <span class="text-[10px] text-indigo-400 font-bold">Audit ↗</span>
+              </div>
+              <div id="statOpdIndoor" class="text-sm font-extrabold text-white mt-1">₹0</div>
+            </button>
+            
+            <button onclick="openSurgeryAuditModal()" class="liquid-glass hover:bg-emerald-950/40 active:scale-98 p-3 rounded-2xl text-left transition border border-emerald-500/20">
+              <div class="flex justify-between items-center text-emerald-400 font-medium">
+                <span>Surgeries</span>
+                <span class="text-[10px] text-emerald-300 font-bold">OT List ↗</span>
+              </div>
+              <div id="statSurgery" class="text-sm font-extrabold text-emerald-200 mt-1">₹0</div>
+            </button>
+
+            <!-- Pending Receivables Tracker Button -->
+            <button onclick="openPendingReceivablesModal()" class="frosted-glass hover:bg-amber-950/40 active:scale-98 p-3 rounded-2xl col-span-2 text-left transition border border-amber-500/30">
+              <div class="flex justify-between items-center text-amber-300 font-bold">
+                <span class="flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                  <span>Pending Claims (PMJAY / TPA)</span>
+                </span>
+                <span class="text-[10px] text-amber-400 underline">Track & Recover ↗</span>
+              </div>
+              <div id="statPendingReceivables" class="text-base font-black text-amber-200 mt-1">₹0 Due</div>
+            </button>
+          </div>
+
+          <!-- Hospital Breakdown -->
+          <details class="text-xs liquid-glass p-3 rounded-2xl cursor-pointer">
+            <summary class="font-bold text-slate-300 flex justify-between items-center select-none">
+              <span>🏥 Hospital-wise Revenue</span>
+              <span class="text-[10px] text-indigo-400 font-semibold">Details ▼</span>
+            </summary>
+            <div id="hospitalBreakdownList" class="pt-2.5 space-y-1.5 border-t border-white/10 mt-2 text-slate-400"></div>
+          </details>
+        </section>
+
+        <!-- Quick Action Buttons -->
+        <div class="grid grid-cols-2 gap-3">
+          <label class="flex flex-col items-center justify-center bg-gradient-to-br from-indigo-600 to-indigo-800 hover:from-indigo-500 hover:to-indigo-700 active:scale-95 text-white rounded-3xl p-4 shadow-xl shadow-indigo-950/50 cursor-pointer min-h-[76px] border border-indigo-400/30 transition">
+            <span class="text-2xl">📷</span>
+            <span class="text-xs font-extrabold mt-1 tracking-wide">Scan Doc / Slip</span>
+            <input type="file" id="scanInput" accept="image/*" class="hidden" onchange="handleImageSelected(event)" />
+          </label>
+          <button onclick="openManualEntryModal()" class="flex flex-col items-center justify-center liquid-glass hover:bg-slate-800/80 active:scale-95 text-white rounded-3xl p-4 shadow-xl shadow-black/40 min-h-[76px] border border-white/10 transition">
+            <span class="text-2xl">✍️</span>
+            <span class="text-xs font-extrabold mt-1 tracking-wide">Manual Entry</span>
+          </button>
+        </div>
+
+        <!-- Entries List -->
+        <section class="space-y-2.5">
+          <div class="flex justify-between items-center px-1">
+            <h2 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Entries Log</h2>
+            <span id="entriesCount" class="text-xs text-slate-500 font-medium">0 records</span>
+          </div>
+          <div id="entriesList" class="space-y-2.5"></div>
+        </section>
+      </div>
+
+      <!-- View 2: Unified IPD & Surgeries Hub -->
+      <div id="viewInpatients" class="hidden space-y-4">
+        <!-- Sub-tabs within IPD Hub -->
+        <div class="liquid-glass p-1 rounded-2xl grid grid-cols-2 text-xs font-bold border border-white/10 shadow-lg">
+          <button onclick="switchIpdSubTab('active')" id="subTabActiveBtn" class="py-2.5 rounded-xl bg-indigo-600 text-white shadow transition">
+            🛏️ Active Inpatients (<span id="activeCountBadge">0</span>)
+          </button>
+          <button onclick="switchIpdSubTab('pipeline')" id="subTabPipelineBtn" class="py-2.5 rounded-xl text-slate-400 hover:text-white transition">
+            📅 Upcoming Pipeline (<span id="pipelineCountBadge">0</span>)
+          </button>
+        </div>
+
         <div class="flex justify-between items-center px-1">
-          <h2 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Entries Log</h2>
-          <span id="entriesCount" class="text-xs text-slate-500 font-medium">0 records</span>
+          <div>
+            <h2 id="ipdSectionHeading" class="text-base font-extrabold text-white">Active Inpatients (IPD)</h2>
+            <p id="ipdSectionSubheading" class="text-[11px] text-slate-400">Live Stay, Dated Visits & Surgeries</p>
+          </div>
+          <button onclick="openInpatientModal()" class="bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white px-3 py-2 rounded-xl text-xs font-bold shadow-lg shadow-indigo-600/30 border border-indigo-400/30 transition">
+            + Add / Plan Patient
+          </button>
         </div>
-        <div id="entriesList" class="space-y-2.5"></div>
-      </section>
-    </div>
 
-    <!-- View 2: Unified IPD & Surgeries Hub -->
-    <div id="viewInpatients" class="hidden space-y-4">
-      
-      <!-- Sub-tabs within IPD Hub -->
-      <div class="liquid-glass p-1 rounded-2xl grid grid-cols-2 text-xs font-bold border border-white/10 shadow-lg">
-        <button onclick="switchIpdSubTab('active')" id="subTabActiveBtn" class="py-2.5 rounded-xl bg-indigo-600 text-white shadow transition">
-          🛏️ Active Inpatients (<span id="activeCountBadge">0</span>)
+        <div id="inpatientsActiveList" class="space-y-3"></div>
+        <div id="inpatientsPipelineList" class="hidden space-y-3"></div>
+      </div>
+    </main>
+
+    <!-- Floating Glass Bottom Dock -->
+    <nav class="fixed bottom-4 left-4 right-4 z-40 max-w-md mx-auto">
+      <div class="floating-glass-dock rounded-3xl grid grid-cols-2 h-16 p-1">
+        <button onclick="switchTab('entries')" id="navTabEntries" class="flex flex-col items-center justify-center text-indigo-400 font-bold text-xs rounded-2xl transition">
+          <span class="text-xl">📋</span>
+          <span class="text-[11px] mt-0.5">OPD & Ledger</span>
         </button>
-        <button onclick="switchIpdSubTab('pipeline')" id="subTabPipelineBtn" class="py-2.5 rounded-xl text-slate-400 hover:text-white transition">
-          📅 Upcoming Pipeline (<span id="pipelineCountBadge">0</span>)
+        <button onclick="switchTab('inpatients')" id="navTabInpatients" class="flex flex-col items-center justify-center text-slate-400 font-medium text-xs rounded-2xl transition">
+          <span class="text-xl">🛏️️</span>
+          <span class="text-[11px] mt-0.5">IPD & Surgeries Hub</span>
         </button>
       </div>
+    </nav>
+  </div>
 
-      <div class="flex justify-between items-center px-1">
-        <div>
-          <h2 id="ipdSectionHeading" class="text-base font-extrabold text-white">Active Inpatients (IPD)</h2>
-          <p id="ipdSectionSubheading" class="text-[11px] text-slate-400">Live Stay, Dated Visits & Surgeries</p>
-        </div>
-        <button onclick="openInpatientModal()" class="bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white px-3 py-2 rounded-xl text-xs font-bold shadow-lg shadow-indigo-600/30 border border-indigo-400/30 transition">
-          + Add / Plan Patient
-        </button>
-      </div>
-
-      <div id="inpatientsActiveList" class="space-y-3"></div>
-      <div id="inpatientsPipelineList" class="hidden space-y-3"></div>
-    </div>
-  </main>
-
-  <!-- Floating Glass Bottom Dock (2 Tabs) -->
-  <nav class="fixed bottom-4 left-4 right-4 z-40 max-w-md mx-auto">
-    <div class="floating-glass-dock rounded-3xl grid grid-cols-2 h-16 p-1">
-      <button onclick="switchTab('entries')" id="navTabEntries" class="flex flex-col items-center justify-center text-indigo-400 font-bold text-xs rounded-2xl transition">
-        <span class="text-xl">📋</span>
-        <span class="text-[11px] mt-0.5">OPD & Ledger</span>
-      </button>
-      <button onclick="switchTab('inpatients')" id="navTabInpatients" class="flex flex-col items-center justify-center text-slate-400 font-medium text-xs rounded-2xl transition">
-        <span class="text-xl">🛏️</span>
-        <span class="text-[11px] mt-0.5">IPD & Surgeries Hub</span>
-      </button>
-    </div>
-  </nav>
-
-  <!-- Entry Form Modal (OPD / Direct Log) -->
+  <!-- Entry Form Modal -->
   <div id="entryModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end justify-center p-0">
     <div class="frosted-card rounded-t-3xl p-5 w-full max-w-md max-h-[90vh] overflow-y-auto space-y-4 border-t border-white/20">
       <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
@@ -262,12 +266,10 @@
       </div>
       <form id="entryForm" onsubmit="saveEntry(event)" class="space-y-3">
         <input type="hidden" id="entryRecordId" value="" />
-        
         <div>
           <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Date</label>
           <input type="date" id="entryDate" required class="w-full glass-input rounded-xl p-3" />
         </div>
-
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Category</label>
@@ -292,22 +294,18 @@
             </select>
           </div>
         </div>
-
         <div id="customHospitalContainer" class="hidden">
           <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Hospital Name</label>
           <input type="text" id="customHospitalName" placeholder="Enter hospital name" class="w-full glass-input rounded-xl p-3 text-sm" />
         </div>
-
         <div>
           <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Patient Name</label>
           <input type="text" id="entryName" required placeholder="e.g. Ramesh Patel" class="w-full glass-input rounded-xl p-3" />
         </div>
-
         <div>
           <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Referred By (Doctor / Source)</label>
           <input type="text" id="entryReferredBy" placeholder="e.g. Dr. A. K. Shah / Self" class="w-full glass-input rounded-xl p-3 text-sm" />
         </div>
-
         <div id="entrySurgeryFields" class="hidden p-3 liquid-glass border border-emerald-500/30 rounded-2xl space-y-3">
           <div class="grid grid-cols-2 gap-2">
             <div>
@@ -331,12 +329,10 @@
             <input type="text" id="entryImplantDetails" placeholder="e.g. 4 Pedicle Screws + 1 PEEK Cage" class="w-full glass-input rounded-xl p-2.5 text-xs" />
           </div>
         </div>
-
         <div>
           <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Procedure / Clinical Note</label>
           <input type="text" id="entryNote" placeholder="e.g. TLIF L4-L5 / Consultation" class="w-full glass-input rounded-xl p-3" />
         </div>
-
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Amount (₹)</label>
@@ -350,7 +346,6 @@
             </select>
           </div>
         </div>
-
         <button type="submit" id="entrySubmitBtn" class="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold py-3.5 rounded-2xl shadow-lg shadow-indigo-600/30 active:scale-95 transition mt-2">
           Save Entry
         </button>
@@ -358,7 +353,7 @@
     </div>
   </div>
 
-  <!-- Inpatient (IPD) Admission & Timeline Modal -->
+  <!-- Inpatient Admission Modal -->
   <div id="inpatientModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end justify-center p-0">
     <div class="frosted-card rounded-t-3xl p-5 w-full max-w-md max-h-[92vh] overflow-y-auto space-y-4 border-t border-white/20">
       <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
@@ -367,13 +362,10 @@
       </div>
       <form id="inpatientForm" onsubmit="saveInpatient(event)" class="space-y-3">
         <input type="hidden" id="ipdRecordId" value="" />
-        
         <div>
           <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Patient Name</label>
           <input type="text" id="ipdPatientName" required placeholder="Patient full name" class="w-full glass-input rounded-xl p-3" />
         </div>
-
-        <!-- Cross-Reference Selection -->
         <div class="p-3 liquid-glass border border-indigo-500/30 rounded-2xl space-y-2">
           <div class="grid grid-cols-2 gap-2">
             <div>
@@ -396,7 +388,6 @@
             <input type="text" id="ipdPrimaryConsultant" placeholder="e.g. Dr. Desai (Physician) / ICU Team" class="w-full glass-input rounded-xl p-2 text-xs" />
           </div>
         </div>
-
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Hospital / Clinic</label>
@@ -415,8 +406,6 @@
             <input type="text" id="ipdWardBed" placeholder="e.g. ICU-3 / Bed 12" class="w-full glass-input rounded-xl p-3 text-xs" />
           </div>
         </div>
-
-        <!-- Calendar Timeline Milestones Section -->
         <div class="p-3 liquid-glass border border-white/10 rounded-2xl space-y-2.5">
           <label class="block text-xs font-bold text-slate-300 uppercase">Stay & Milestones (Select Dates)</label>
           <div class="grid grid-cols-2 gap-2">
@@ -440,8 +429,6 @@
             </div>
           </div>
         </div>
-
-        <!-- Scheme & PMJAY to Cash Conversion by Date -->
         <div class="p-3 liquid-glass border border-amber-500/30 rounded-2xl space-y-2.5">
           <div class="flex justify-between items-center">
             <label class="text-xs font-bold text-amber-300 uppercase">Scheme & Conversion</label>
@@ -453,7 +440,6 @@
               </select>
             </div>
           </div>
-
           <div id="singleSchemeContainer">
             <span class="text-[10px] text-slate-400 font-semibold">Scheme</span>
             <select id="ipdPrimaryScheme" class="w-full glass-input rounded-xl p-2 text-xs font-bold text-blue-300">
@@ -462,18 +448,15 @@
               <option value="TPA">TPA</option>
             </select>
           </div>
-
           <div id="convertedSchemeContainer" class="hidden">
             <span class="text-[10px] text-amber-300 font-semibold">Date Converted from PMJAY to Cash</span>
             <input type="date" id="ipdConversionDate" class="w-full glass-input rounded-xl p-2 text-xs" />
           </div>
         </div>
-
         <div>
           <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Diagnosis / Plan / Procedure</label>
           <input type="text" id="ipdDiagnosis" placeholder="e.g. L4-L5 TLIF / Conservative Head injury" class="w-full glass-input rounded-xl p-3 text-sm" />
         </div>
-
         <button type="submit" class="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold py-3.5 rounded-2xl shadow-lg shadow-indigo-600/30 active:scale-95 transition">
           Save Case
         </button>
@@ -612,7 +595,7 @@
     </div>
   </div>
 
-  <!-- Surgery Audit Modal & Clean Formal WhatsApp Share -->
+  <!-- Surgery Audit Modal -->
   <div id="surgeryAuditModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3">
     <div class="frosted-glass rounded-3xl p-5 w-full max-w-md max-h-[88vh] flex flex-col shadow-2xl border border-white/20">
       <div class="flex justify-between items-center border-b border-white/10 pb-2.5 mb-3">
@@ -677,6 +660,13 @@
   </div>
 
   <script>
+    // PWA Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW registration error:', err));
+      });
+    }
+
     const db = new Dexie('NeuroPracticeDB');
     db.version(10).stores({
       entries: '++id, date, category, hospital, name, referredBy, scheme, implantsUsed, implantDetails, note, amount, paymentStatus, paymentReceivedDate',
@@ -685,6 +675,7 @@
 
     const DEFAULT_PIN = "1234";
 
+    // Immediate security evaluation without mounting clinical data
     document.addEventListener('DOMContentLoaded', () => {
       const today = new Date();
       document.getElementById('monthFilter').value = today.toISOString().slice(0, 7);
@@ -693,40 +684,56 @@
       document.getElementById('ipdMainSurgeryDate').value = today.toISOString().slice(0, 10);
       document.getElementById('visitDateInput').value = today.toISOString().slice(0, 10);
       
-      authenticateBiometrics();
-      loadDashboard();
-      loadInpatients();
+      requestBiometrics();
     });
 
-    async function authenticateBiometrics() {
+    // Auto-lock when minimized or switched out
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        lockApp();
+      }
+    });
+
+    async function requestBiometrics() {
       if (window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
         try {
           const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
           if (available) {
-            document.getElementById('lockScreen').classList.add('hidden');
+            grantAccess();
             return;
           }
         } catch (e) {
-          console.log('Biometric fallback:', e);
+          console.log('Biometric auth prompt fallback:', e);
         }
       }
-      document.getElementById('pinFallbackContainer').classList.remove('hidden');
     }
 
     function unlockWithPin() {
       const input = document.getElementById('appPinInput').value;
       const savedPin = localStorage.getItem('app_user_pin') || DEFAULT_PIN;
+      const errEl = document.getElementById('lockErrorMsg');
+
       if (input === savedPin) {
-        document.getElementById('lockScreen').classList.add('hidden');
+        errEl.classList.add('hidden');
         document.getElementById('appPinInput').value = '';
+        grantAccess();
       } else {
-        alert('Incorrect PIN. Default is: 1234');
+        errEl.innerText = 'Incorrect PIN. Default is: 1234';
+        errEl.classList.remove('hidden');
       }
     }
 
+    function grantAccess() {
+      document.getElementById('lockScreen').classList.add('hidden');
+      document.getElementById('authenticatedApp').classList.remove('hidden');
+      loadDashboard();
+      loadInpatients();
+    }
+
     function lockApp() {
+      document.getElementById('authenticatedApp').classList.add('hidden');
       document.getElementById('lockScreen').classList.remove('hidden');
-      document.getElementById('pinFallbackContainer').classList.remove('hidden');
+      document.getElementById('appPinInput').value = '';
     }
 
     function switchTab(tab) {
@@ -1283,7 +1290,6 @@
       const staySummaryString = `${totalStay} Days (ICU: ${icuDays}, Ward: ${wardDays})`;
 
       if (confirm(`Discharge ${p.patientName}?\n• Total Stay: ${staySummaryString}\n• Visits: ${visits.length} (₹${totalVisitsFee})\n• Surgeries: ${surgeries.length}\n\nMove records to Practice Ledger?`)) {
-        
         for (const s of surgeries) {
           const isPendingScheme = (s.scheme === 'PMJAY' || s.scheme === 'TPA');
           await db.entries.add({
@@ -1422,7 +1428,7 @@
               ` : ''}
               ${e.category === 'OPD' ? `
                 <button onclick="convertOpdToIpd(${e.id})" class="text-[11px] font-bold px-2 py-1 bg-indigo-900/60 hover:bg-indigo-800/60 text-indigo-200 border border-indigo-500/30 rounded-lg transition">
-                  🛏️ Admit
+                  🛏️️ Admit
                 </button>
               ` : ''}
               <button onclick="editEntry(${e.id})" class="text-indigo-300 font-semibold text-xs px-2 py-1 liquid-glass rounded-lg hover:bg-slate-800 transition">✏️</button>
