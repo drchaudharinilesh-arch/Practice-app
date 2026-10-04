@@ -702,7 +702,9 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       const today = new Date();
-      document.getElementById('monthFilter').value = today.toISOString().slice(0, 7);
+      // Set to current month by default
+      const curYm = today.toISOString().slice(0, 7);
+      document.getElementById('monthFilter').value = curYm;
       document.getElementById('ipdAdmitDate').value = today.toISOString().slice(0, 10);
       document.getElementById('ipdSurgeryDate').value = today.toISOString().slice(0, 10);
       document.getElementById('ipdMainSurgeryDate').value = today.toISOString().slice(0, 10);
@@ -922,7 +924,7 @@
       return days > 0 ? days : 1;
     }
 
-    // Unified IPD & Pipeline Renderer
+    // Load Inpatients
     async function loadInpatients() {
       const allPatients = await db.inpatients.toArray();
       const activePatients = allPatients.filter(p => p.status === 'Active');
@@ -1381,27 +1383,35 @@
       }
     }
 
+    // Comprehensive & Bug-Free loadDashboard
     async function loadDashboard() {
       const range = document.getElementById('viewRangeSelect').value;
-      const selectedMonth = document.getElementById('monthFilter').value;
-      const allEntries = await db.entries.reverse().toArray();
+      const selectedMonth = document.getElementById('monthFilter').value; // e.g. "2026-09"
+      
+      const allEntries = await db.entries.toArray();
+      // Sort newest date first
+      allEntries.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
       
       let displayEntries = allEntries;
       if (range === 'month' && selectedMonth) {
-        displayEntries = allEntries.filter(item => item.date && item.date.startsWith(selectedMonth));
+        displayEntries = allEntries.filter(item => {
+          if (!item.date) return false;
+          // Normalizes both YYYY-MM-DD and other formats
+          return item.date.startsWith(selectedMonth);
+        });
         document.getElementById('currentMonthLabel').innerText = `Month: ${selectedMonth}`;
       } else {
         document.getElementById('currentMonthLabel').innerText = `All Records (${allEntries.length})`;
       }
 
-      let total = 0, opdTotal = 0, surgery = 0;
+      let totalRevenue = 0, opdTotal = 0, surgeryTotal = 0;
       const hospitalTotals = {};
 
       displayEntries.forEach(item => {
         const val = Number(item.amount) || 0;
-        total += val;
+        totalRevenue += val;
         if (item.category === 'OPD' || item.category === 'Indoor') opdTotal += val;
-        else if (item.category === 'Surgery') surgery += val;
+        else if (item.category === 'Surgery') surgeryTotal += val;
 
         const hosp = item.hospital || 'General / Other';
         hospitalTotals[hosp] = (hospitalTotals[hosp] || 0) + val;
@@ -1414,15 +1424,16 @@
         }
       });
 
-      document.getElementById('statTotal').innerText = `₹${total.toLocaleString('en-IN')}`;
+      document.getElementById('statTotal').innerText = `₹${totalRevenue.toLocaleString('en-IN')}`;
       document.getElementById('statOpdIndoor').innerText = `₹${opdTotal.toLocaleString('en-IN')}`;
-      document.getElementById('statSurgery').innerText = `₹${surgery.toLocaleString('en-IN')}`;
+      document.getElementById('statSurgery').innerText = `₹${surgeryTotal.toLocaleString('en-IN')}`;
       document.getElementById('statPendingReceivables').innerText = `₹${totalPending.toLocaleString('en-IN')} Due`;
 
+      // Hospital breakdown
       const hospBreakdownEl = document.getElementById('hospitalBreakdownList');
       const hospKeys = Object.keys(hospitalTotals);
       if (hospKeys.length === 0) {
-        hospBreakdownEl.innerHTML = `<div class="text-slate-500 text-[11px]">No hospital data yet.</div>`;
+        hospBreakdownEl.innerHTML = `<div class="text-slate-500 text-[11px]">No hospital data for this selection.</div>`;
       } else {
         hospBreakdownEl.innerHTML = hospKeys.map(h => `
           <div class="flex justify-between items-center text-xs py-0.5">
@@ -1432,7 +1443,7 @@
         `).join('');
       }
 
-      // Filter entries by currentCategoryFilter for the main log list
+      // Filter entries by category pill
       let filteredLogEntries = displayEntries;
       if (currentCategoryFilter !== 'ALL') {
         filteredLogEntries = displayEntries.filter(e => e.category === currentCategoryFilter);
@@ -1442,7 +1453,7 @@
       document.getElementById('entriesCount').innerText = `${filteredLogEntries.length} records`;
 
       if (filteredLogEntries.length === 0) {
-        listEl.innerHTML = `<div class="liquid-glass rounded-3xl p-6 text-center text-slate-500 text-xs border border-white/5">No ${currentCategoryFilter === 'ALL' ? '' : currentCategoryFilter} entries found for this view.</div>`;
+        listEl.innerHTML = `<div class="liquid-glass rounded-3xl p-6 text-center text-slate-500 text-xs border border-white/5">No ${currentCategoryFilter === 'ALL' ? '' : currentCategoryFilter} entries recorded for ${range === 'month' ? selectedMonth : 'all time'}.</div>`;
         return;
       }
 
@@ -1621,9 +1632,15 @@
     async function filterOpdAuditList() {
       const selectedMonth = document.getElementById('monthFilter').value;
       const targetHospital = document.getElementById('opdAuditHospitalFilter').value;
-      const allEntries = await db.entries.reverse().toArray();
+      const allEntries = await db.entries.toArray();
+      allEntries.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 
-      let opdEntries = allEntries.filter(item => item.category === 'OPD' && item.date && item.date.startsWith(selectedMonth));
+      let opdEntries = allEntries.filter(item => {
+        if (item.category !== 'OPD') return false;
+        if (!item.date) return false;
+        return item.date.startsWith(selectedMonth);
+      });
+
       if (targetHospital !== 'All') {
         opdEntries = opdEntries.filter(s => s.hospital === targetHospital);
       }
@@ -1665,11 +1682,11 @@
       `).join('');
     }
 
-    // Share Clean OPD Consultation Statement on WhatsApp
     async function shareOpdAuditWhatsApp() {
       const selectedMonth = document.getElementById('monthFilter').value;
       const targetHospital = document.getElementById('opdAuditHospitalFilter').value;
-      const allEntries = await db.entries.reverse().toArray();
+      const allEntries = await db.entries.toArray();
+      allEntries.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 
       let opdEntries = allEntries.filter(item => item.category === 'OPD' && item.date && item.date.startsWith(selectedMonth));
       if (targetHospital !== 'All') {
@@ -1707,7 +1724,6 @@
       window.open(whatsappUrl, '_blank');
     }
 
-    // Surgery Audit List
     async function openSurgeryAuditModal() {
       document.getElementById('surgeryAuditHospitalFilter').value = 'All';
       filterSurgeryAuditList();
@@ -1717,7 +1733,8 @@
     async function filterSurgeryAuditList() {
       const selectedMonth = document.getElementById('monthFilter').value;
       const targetHospital = document.getElementById('surgeryAuditHospitalFilter').value;
-      const allEntries = await db.entries.reverse().toArray();
+      const allEntries = await db.entries.toArray();
+      allEntries.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 
       let monthSurgeries = allEntries.filter(item => item.category === 'Surgery' && item.date && item.date.startsWith(selectedMonth));
       if (targetHospital !== 'All') {
@@ -1753,7 +1770,8 @@
     async function shareSurgeryAuditWhatsApp() {
       const selectedMonth = document.getElementById('monthFilter').value;
       const targetHospital = document.getElementById('surgeryAuditHospitalFilter').value;
-      const allEntries = await db.entries.reverse().toArray();
+      const allEntries = await db.entries.toArray();
+      allEntries.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 
       let monthSurgeries = allEntries.filter(item => item.category === 'Surgery' && item.date && item.date.startsWith(selectedMonth));
       if (targetHospital !== 'All') {
