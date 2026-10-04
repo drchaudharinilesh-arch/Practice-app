@@ -133,14 +133,15 @@
       <!-- View 1: Main Ledger & Financial Summary -->
       <div id="viewEntries" class="space-y-4">
         <section class="frosted-glass rounded-3xl p-4.5 space-y-3.5">
+          <!-- Filter Header Fix -->
           <div class="flex justify-between items-center gap-2">
             <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-300/60">Practice Overview</span>
-            <div class="flex items-center gap-1">
-              <select id="viewRangeSelect" onchange="handleViewRangeChange()" class="text-xs glass-input rounded-lg px-2 py-1 font-medium">
-                <option value="month" selected>This Month</option>
-                <option value="all">All Records</option>
+            <div class="flex items-center gap-1.5">
+              <select id="viewRangeSelect" onchange="handleViewRangeChange()" class="text-xs glass-input rounded-xl px-2.5 py-1.5 font-bold text-indigo-200">
+                <option value="all" selected>All Records</option>
+                <option value="month">Select Month</option>
               </select>
-              <input type="month" id="monthFilter" onchange="loadDashboard()" class="text-xs glass-input rounded-lg px-2 py-1 font-medium" />
+              <input type="month" id="monthFilter" onchange="loadDashboard()" class="text-xs glass-input rounded-xl px-2 py-1.5 font-medium hidden" />
             </div>
           </div>
 
@@ -702,7 +703,6 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       const today = new Date();
-      // Set to current month by default
       const curYm = today.toISOString().slice(0, 7);
       document.getElementById('monthFilter').value = curYm;
       document.getElementById('ipdAdmitDate').value = today.toISOString().slice(0, 10);
@@ -908,8 +908,11 @@
     function handleViewRangeChange() {
       const range = document.getElementById('viewRangeSelect').value;
       const monthInput = document.getElementById('monthFilter');
-      if (range === 'all') monthInput.classList.add('hidden');
-      else monthInput.classList.remove('hidden');
+      if (range === 'all') {
+        monthInput.classList.add('hidden');
+      } else {
+        monthInput.classList.remove('hidden');
+      }
       loadDashboard();
     }
 
@@ -1383,10 +1386,11 @@
       }
     }
 
-    // Comprehensive & Bug-Free loadDashboard
+    // Rock-Solid loadDashboard Fix (Zero date blockage)
     async function loadDashboard() {
       const range = document.getElementById('viewRangeSelect').value;
-      const selectedMonth = document.getElementById('monthFilter').value; // e.g. "2026-09"
+      const monthInput = document.getElementById('monthFilter');
+      const selectedMonth = monthInput.value;
       
       const allEntries = await db.entries.toArray();
       // Sort newest date first
@@ -1396,8 +1400,7 @@
       if (range === 'month' && selectedMonth) {
         displayEntries = allEntries.filter(item => {
           if (!item.date) return false;
-          // Normalizes both YYYY-MM-DD and other formats
-          return item.date.startsWith(selectedMonth);
+          return item.date.replace(/\//g, '-').startsWith(selectedMonth);
         });
         document.getElementById('currentMonthLabel').innerText = `Month: ${selectedMonth}`;
       } else {
@@ -1453,7 +1456,7 @@
       document.getElementById('entriesCount').innerText = `${filteredLogEntries.length} records`;
 
       if (filteredLogEntries.length === 0) {
-        listEl.innerHTML = `<div class="liquid-glass rounded-3xl p-6 text-center text-slate-500 text-xs border border-white/5">No ${currentCategoryFilter === 'ALL' ? '' : currentCategoryFilter} entries recorded for ${range === 'month' ? selectedMonth : 'all time'}.</div>`;
+        listEl.innerHTML = `<div class="liquid-glass rounded-3xl p-6 text-center text-slate-500 text-xs border border-white/5">No ${currentCategoryFilter === 'ALL' ? '' : currentCategoryFilter} entries found.</div>`;
         return;
       }
 
@@ -1630,17 +1633,11 @@
     }
 
     async function filterOpdAuditList() {
-      const selectedMonth = document.getElementById('monthFilter').value;
       const targetHospital = document.getElementById('opdAuditHospitalFilter').value;
       const allEntries = await db.entries.toArray();
       allEntries.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 
-      let opdEntries = allEntries.filter(item => {
-        if (item.category !== 'OPD') return false;
-        if (!item.date) return false;
-        return item.date.startsWith(selectedMonth);
-      });
-
+      let opdEntries = allEntries.filter(item => item.category === 'OPD');
       if (targetHospital !== 'All') {
         opdEntries = opdEntries.filter(s => s.hospital === targetHospital);
       }
@@ -1648,7 +1645,7 @@
       let totalFee = 0;
       opdEntries.forEach(item => { totalFee += Number(item.amount) || 0; });
 
-      document.getElementById('opdAuditSubtitle').innerText = `${selectedMonth} | ${opdEntries.length} Patients (₹${totalFee.toLocaleString('en-IN')})`;
+      document.getElementById('opdAuditSubtitle').innerText = `${opdEntries.length} Patients (₹${totalFee.toLocaleString('en-IN')})`;
       const listEl = document.getElementById('opdAuditList');
 
       if (opdEntries.length === 0) {
@@ -1683,12 +1680,11 @@
     }
 
     async function shareOpdAuditWhatsApp() {
-      const selectedMonth = document.getElementById('monthFilter').value;
       const targetHospital = document.getElementById('opdAuditHospitalFilter').value;
       const allEntries = await db.entries.toArray();
       allEntries.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 
-      let opdEntries = allEntries.filter(item => item.category === 'OPD' && item.date && item.date.startsWith(selectedMonth));
+      let opdEntries = allEntries.filter(item => item.category === 'OPD');
       if (targetHospital !== 'All') {
         opdEntries = opdEntries.filter(s => s.hospital === targetHospital);
       }
@@ -1701,7 +1697,7 @@
       const hospTitle = targetHospital === 'All' ? 'ALL HOSPITALS' : targetHospital.toUpperCase();
       let totalFee = 0;
 
-      let msg = `OPD CONSULTATION REGISTER - ${hospTitle} (${selectedMonth})\n`;
+      let msg = `OPD CONSULTATION REGISTER - ${hospTitle}\n`;
       msg += `----------------------------------------\n\n`;
 
       opdEntries.forEach((s, idx) => {
@@ -1736,12 +1732,12 @@
       const allEntries = await db.entries.toArray();
       allEntries.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 
-      let monthSurgeries = allEntries.filter(item => item.category === 'Surgery' && item.date && item.date.startsWith(selectedMonth));
+      let monthSurgeries = allEntries.filter(item => item.category === 'Surgery');
       if (targetHospital !== 'All') {
         monthSurgeries = monthSurgeries.filter(s => s.hospital === targetHospital);
       }
 
-      document.getElementById('surgeryAuditSubtitle').innerText = `${selectedMonth} | ${monthSurgeries.length} cases`;
+      document.getElementById('surgeryAuditSubtitle').innerText = `${monthSurgeries.length} cases`;
       const listEl = document.getElementById('surgeryAuditList');
 
       if (monthSurgeries.length === 0) {
@@ -1768,12 +1764,11 @@
     }
 
     async function shareSurgeryAuditWhatsApp() {
-      const selectedMonth = document.getElementById('monthFilter').value;
       const targetHospital = document.getElementById('surgeryAuditHospitalFilter').value;
       const allEntries = await db.entries.toArray();
       allEntries.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 
-      let monthSurgeries = allEntries.filter(item => item.category === 'Surgery' && item.date && item.date.startsWith(selectedMonth));
+      let monthSurgeries = allEntries.filter(item => item.category === 'Surgery');
       if (targetHospital !== 'All') {
         monthSurgeries = monthSurgeries.filter(s => s.hospital === targetHospital);
       }
@@ -1784,7 +1779,7 @@
       }
 
       const hospTitle = targetHospital === 'All' ? 'ALL HOSPITALS' : targetHospital.toUpperCase();
-      let msg = `SURGICAL CASE LIST - ${hospTitle} (${selectedMonth})\n`;
+      let msg = `SURGICAL CASE LIST - ${hospTitle}\n`;
       msg += `----------------------------------------\n\n`;
 
       monthSurgeries.forEach((s, idx) => {
@@ -1876,11 +1871,6 @@
       else await db.entries.add(data);
 
       closeModal('entryModal');
-
-      if (entryDate && entryDate.length >= 7) {
-        document.getElementById('monthFilter').value = entryDate.slice(0, 7);
-      }
-      
       loadDashboard();
     }
 
