@@ -70,7 +70,7 @@
 </head>
 <body class="obsidian-bg neural-mesh min-h-screen pb-28 text-slate-200">
 
-  <!-- Full-Screen Ironclad Security Shield -->
+  <!-- Lock Screen Overlay -->
   <div id="lockScreen" class="fixed inset-0 z-50 bg-[#070a13] flex flex-col items-center justify-center p-6 text-white text-center">
     <div class="relative mb-5">
       <div class="w-24 h-24 bg-gradient-to-tr from-indigo-950 via-slate-900 to-indigo-900/60 border border-indigo-500/30 rounded-3xl flex items-center justify-center text-5xl shadow-2xl shadow-indigo-500/20">
@@ -90,7 +90,6 @@
         <span class="text-lg">👆</span> Authenticate with Fingerprint
       </button>
 
-      <!-- PIN Fallback Box -->
       <div class="liquid-glass p-4 rounded-2xl border border-white/10 space-y-2.5">
         <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Or Unlock with PIN</label>
         <div class="flex items-center gap-2">
@@ -104,7 +103,7 @@
     </div>
   </div>
 
-  <!-- App Wrapper (Mounted only after unlock) -->
+  <!-- Authenticated Application -->
   <div id="authenticatedApp" class="hidden">
     <!-- Header -->
     <header class="liquid-glass border-b border-white/10 p-4 sticky top-0 z-30 flex justify-between items-center shadow-lg">
@@ -120,7 +119,7 @@
         </div>
       </div>
       <div class="flex items-center gap-1.5">
-        <button onclick="forceRefreshAll()" class="p-2 bg-slate-800/60 hover:bg-slate-700/80 border border-white/10 rounded-xl text-xs text-indigo-300" title="Force Refresh Records">
+        <button onclick="forceRefreshAll()" class="p-2 bg-slate-800/60 hover:bg-slate-700/80 border border-white/10 rounded-xl text-xs text-indigo-300" title="Sync All Records">
           🔄
         </button>
         <button onclick="lockApp()" class="p-2 bg-slate-800/60 hover:bg-slate-700/80 border border-white/10 rounded-xl text-xs text-slate-300" title="Lock Console">
@@ -212,7 +211,7 @@
             <button onclick="setEntriesFilter('Indoor')" id="filterBtnIndoor" class="px-3 py-1.5 rounded-xl liquid-glass text-slate-300 hover:text-white transition">🛏 Indoor</button>
           </div>
 
-          <!-- The List Container -->
+          <!-- Entries Container -->
           <div id="entriesList" class="space-y-2.5 min-h-[120px]"></div>
         </section>
       </div>
@@ -682,7 +681,6 @@
       });
     }
 
-    // Version 12: Force upgrade schema to unlock browser cached stores
     const db = new Dexie('NeuroPracticeDB');
     db.version(12).stores({
       entries: '++id, date, category, hospital, name, referredBy, scheme, implantsUsed, implantDetails, note, amount, paymentStatus, paymentReceivedDate',
@@ -691,6 +689,7 @@
 
     const DEFAULT_PIN = "1234";
     let currentCategoryFilter = 'ALL';
+    let masterEntriesCache = [];
 
     document.addEventListener('DOMContentLoaded', () => {
       const today = new Date();
@@ -904,19 +903,70 @@
       return days > 0 ? days : 1;
     }
 
-    // Direct, Crash-Proof Master Ledger Cache
-    let masterEntriesCache = [];
-
+    // Unified Data Aggregator (Directly reads IPD patients & surgeries into Frontpage Feed)
     async function forceRefreshAll() {
       try {
         await db.open();
-        masterEntriesCache = await db.entries.toArray();
+        let directEntries = await db.entries.toArray();
+        let inpatientsList = await db.inpatients.toArray();
+
+        // Synthesize Active IPD cases & linked surgeries into Unified Ledger Feed
+        let combinedFeed = [...directEntries];
+
+        inpatientsList.forEach(p => {
+          // 1. Synthesize linked surgeries from active IPD cases
+          if (p.surgeries && p.surgeries.length > 0) {
+            p.surgeries.forEach((s, sIdx) => {
+              // Avoid duplicates if already explicitly in entries
+              const exists = directEntries.some(e => e.name === p.patientName && e.category === 'Surgery' && e.note === s.procedure);
+              if (!exists) {
+                combinedFeed.push({
+                  id: `ipd_surg_${p.id}_${sIdx}`,
+                  date: s.date || p.admitDate,
+                  category: 'Surgery',
+                  hospital: p.hospital,
+                  name: p.patientName,
+                  referredBy: p.referredBy || (p.admissionType === 'Cross-Ref' ? p.primaryConsultant : ''),
+                  scheme: s.scheme || p.primaryScheme || 'PMJAY',
+                  implantsUsed: s.implantsUsed || 'No',
+                  implantDetails: s.implantDetails || '',
+                  note: s.procedure,
+                  amount: Number(s.fee) || 0,
+                  paymentStatus: (s.scheme === 'PMJAY' || s.scheme === 'TPA') ? 'Pending' : 'Received',
+                  isFromActiveIpd: true
+                });
+              }
+            });
+          }
+
+          // 2. Synthesize Indoor Admission Card into Indoor filter
+          const existsIndoor = directEntries.some(e => e.name === p.patientName && e.category === 'Indoor');
+          if (!existsIndoor) {
+            let visitsFee = 0;
+            if (p.datedVisits) {
+              p.datedVisits.forEach(v => { visitsFee += Number(v.fee) || 0; });
+            }
+            combinedFeed.push({
+              id: `ipd_stay_${p.id}`,
+              date: p.admitDate,
+              category: 'Indoor',
+              hospital: p.hospital,
+              name: p.patientName,
+              referredBy: p.referredBy || (p.admissionType === 'Cross-Ref' ? p.primaryConsultant : ''),
+              note: `${p.diagnosis || 'Admitted'} (${p.admissionType === 'Cross-Ref' ? 'Cross-Ref Call' : 'Direct IPD'})`,
+              amount: visitsFee,
+              paymentStatus: 'Received',
+              isFromActiveIpd: true
+            });
+          }
+        });
+
+        masterEntriesCache = combinedFeed;
       } catch (err) {
         console.warn('Dexie read fallback:', err);
         masterEntriesCache = [];
       }
 
-      // Safe date sort
       masterEntriesCache.sort((a, b) => {
         const da = a.date ? new Date(a.date).getTime() : 0;
         const db_ = b.date ? new Date(b.date).getTime() : 0;
@@ -978,8 +1028,8 @@
       if (displayList.length === 0) {
         listEl.innerHTML = `
           <div class="liquid-glass rounded-3xl p-8 text-center text-slate-400 text-xs border border-white/5 space-y-2">
-            <div>No ${currentCategoryFilter === 'ALL' ? '' : currentCategoryFilter} records found in memory.</div>
-            <button onclick="openManualEntryModal()" class="px-3 py-1.5 bg-indigo-600 text-white rounded-xl font-bold text-xs">+ Add First Patient</button>
+            <div>No ${currentCategoryFilter === 'ALL' ? '' : currentCategoryFilter} records found.</div>
+            <button onclick="openManualEntryModal()" class="px-3 py-1.5 bg-indigo-600 text-white rounded-xl font-bold text-xs">+ Add Patient</button>
           </div>
         `;
         return;
@@ -1008,7 +1058,7 @@
           <div class="text-right flex flex-col items-end">
             <div class="text-sm font-black text-white">₹${(Number(e.amount)||0).toLocaleString('en-IN')}</div>
             <div class="flex items-center gap-1.5 mt-1.5">
-              ${e.paymentStatus === 'Pending' ? `
+              ${e.paymentStatus === 'Pending' && !e.isFromActiveIpd ? `
                 <button onclick="markPaymentReceivedDirect(${e.id})" class="text-[10px] font-bold px-2 py-1 bg-emerald-900/60 text-emerald-200 border border-emerald-500/30 rounded-lg hover:bg-emerald-800/60 transition">
                   ✓ Paid
                 </button>
@@ -1018,8 +1068,14 @@
                   🛏 Admit
                 </button>
               ` : ''}
-              <button onclick="editEntry(${e.id})" class="text-indigo-300 font-semibold text-xs px-2 py-1 liquid-glass rounded-lg hover:bg-slate-800 transition">✏️</button>
-              <button onclick="deleteEntry(${e.id})" class="text-rose-400 hover:text-rose-300 font-semibold text-xs px-1.5 py-1">🗑</button>
+              ${!e.isFromActiveIpd ? `
+                <button onclick="editEntry(${e.id})" class="text-indigo-300 font-semibold text-xs px-2 py-1 liquid-glass rounded-lg hover:bg-slate-800 transition">✏️</button>
+                <button onclick="deleteEntry(${e.id})" class="text-rose-400 hover:text-rose-300 font-semibold text-xs px-1.5 py-1">🗑</button>
+              ` : `
+                <button onclick="switchTab('inpatients')" class="text-[10px] font-bold text-indigo-300 bg-indigo-950/60 px-2 py-1 rounded-lg border border-indigo-500/30">
+                  Active in IPD ↗
+                </button>
+              `}
             </div>
           </div>
         </div>
@@ -1159,7 +1215,7 @@
                       <div class="text-[10px] text-slate-400 flex items-center gap-2">
                         <span>OT: ${s.date}</span>
                         <span class="font-bold text-blue-300">${s.scheme || 'PMJAY'}</span>
-                        <span class="font-medium ${s.implantsUsed === 'Yes' ? 'text-emerald-300' : 'text-slate-500'}">
+                        <span class="font-medium ${s.implantsUsed === 'Yes' ? 'text-emerald-300' : 'text-slate-400'}">
                           🔩 Implants: ${s.implantsUsed === 'Yes' ? (escapeHtml(s.implantDetails) || 'Yes') : 'No'}
                         </span>
                       </div>
@@ -1335,7 +1391,7 @@
 
       await db.inpatients.update(ipdId, { datedVisits: existingVisits });
       closeModal('addDatedVisitModal');
-      loadInpatients();
+      forceRefreshAll();
     }
 
     async function markPatientAdmitted(id) {
@@ -1347,7 +1403,7 @@
           admitDate: new Date().toISOString().slice(0, 10) 
         });
         switchIpdSubTab('active');
-        loadInpatients();
+        forceRefreshAll();
       }
     }
 
@@ -1381,23 +1437,7 @@
         surgeries: existingSurgeries 
       });
 
-      const isPendingScheme = (completedSurgery.scheme === 'PMJAY' || completedSurgery.scheme === 'TPA');
-      await db.entries.add({
-        date: completedSurgery.date,
-        category: 'Surgery',
-        hospital: p.hospital,
-        name: p.patientName,
-        referredBy: p.referredBy || (p.admissionType === 'Cross-Ref' ? p.primaryConsultant : ''),
-        scheme: completedSurgery.scheme,
-        implantsUsed: completedSurgery.implantsUsed,
-        implantDetails: completedSurgery.implantDetails,
-        note: completedSurgery.procedure,
-        amount: completedSurgery.fee,
-        paymentStatus: isPendingScheme ? 'Pending' : 'Received',
-        stayDetails: 'Admitted Patient Surgery'
-      });
-
-      alert('Surgery recorded and synced to Main Ledger immediately!');
+      alert('Surgery marked completed!');
       switchIpdSubTab('active');
       forceRefreshAll();
     }
@@ -1437,25 +1477,9 @@
         mainSurgeryDate: newSurgery.date
       });
 
-      const isPendingScheme = (newSurgery.scheme === 'PMJAY' || newSurgery.scheme === 'TPA');
-      await db.entries.add({
-        date: newSurgery.date,
-        category: 'Surgery',
-        hospital: patient.hospital,
-        name: patient.patientName,
-        referredBy: patient.referredBy || (patient.admissionType === 'Cross-Ref' ? patient.primaryConsultant : ''),
-        scheme: newSurgery.scheme,
-        implantsUsed: newSurgery.implantsUsed,
-        implantDetails: newSurgery.implantDetails,
-        note: newSurgery.procedure,
-        amount: newSurgery.fee,
-        paymentStatus: isPendingScheme ? 'Pending' : 'Received',
-        stayDetails: 'Admitted Patient Surgery'
-      });
-
       closeModal('addSurgeryToIpdModal');
       forceRefreshAll();
-      alert('Surgery added and synced to Ledger!');
+      alert('Surgery added to patient and synced to Frontpage Feed!');
     }
 
     async function dischargeInpatient(id) {
@@ -1465,47 +1489,19 @@
       const dischargeDate = prompt(`Confirm Discharge Date (YYYY-MM-DD):`, p.dischargeDate || new Date().toISOString().slice(0, 10));
       if (!dischargeDate) return;
 
-      const totalStay = calculateDaysDifference(p.admitDate, dischargeDate);
-      let icuDays = 0;
-      if (p.icuOutDate && p.icuOutDate >= p.admitDate) {
-        icuDays = calculateDaysDifference(p.admitDate, p.icuOutDate);
-      }
-      const wardDays = totalStay > icuDays ? (totalStay - icuDays) : 0;
-      const visits = p.datedVisits || [];
+      await db.inpatients.update(id, { 
+        status: 'Discharged', 
+        dischargeDate: dischargeDate 
+      });
 
-      let totalVisitsFee = 0;
-      visits.forEach(v => { totalVisitsFee += Number(v.fee) || 0; });
-
-      const staySummaryString = `${totalStay} Days (ICU: ${icuDays}, Ward: ${wardDays})`;
-
-      if (confirm(`Discharge ${p.patientName}?\n• Total Stay: ${staySummaryString}\n• Visits: ${visits.length} (₹${totalVisitsFee})\n\nSettle indoor rounds to Practice Ledger?`)) {
-        if (totalVisitsFee > 0) {
-          await db.entries.add({
-            date: dischargeDate,
-            category: 'Indoor',
-            hospital: p.hospital,
-            name: p.patientName,
-            referredBy: p.referredBy || (p.admissionType === 'Cross-Ref' ? p.primaryConsultant : ''),
-            note: `${visits.length} Dated Visits (${p.admissionType === 'Cross-Ref' ? 'Cross-Ref Call' : 'Routine/ICU'})`,
-            amount: totalVisitsFee,
-            paymentStatus: 'Received'
-          });
-        }
-
-        await db.inpatients.update(id, { 
-          status: 'Discharged', 
-          dischargeDate: dischargeDate 
-        });
-
-        alert('Patient discharged successfully!');
-        forceRefreshAll();
-      }
+      alert('Patient discharged successfully!');
+      forceRefreshAll();
     }
 
     async function deleteInpatient(id) {
       if (confirm('Delete this case?')) {
         await db.inpatients.delete(id);
-        loadInpatients();
+        forceRefreshAll();
       }
     }
 
@@ -1557,28 +1553,9 @@
               <span>🏥 ${escapeHtml(item.hospital)}</span>
               <span class="font-bold text-blue-300">${item.scheme}</span>
             </div>
-            <div class="flex justify-end pt-1">
-              <button onclick="markPaymentReceivedDirect(${item.id})" class="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-bold px-3 py-1 rounded-xl text-xs shadow transition">
-                ✓ Mark Received
-              </button>
-            </div>
           </div>
         `;
       }).join('');
-    }
-
-    async function markPaymentReceivedDirect(id) {
-      const recDate = prompt(`Enter Received Date:`, new Date().toISOString().slice(0, 10));
-      if (!recDate) return;
-
-      await db.entries.update(id, {
-        paymentStatus: 'Received',
-        paymentReceivedDate: recDate
-      });
-
-      alert('Claim marked as Received!');
-      forceRefreshAll();
-      renderPendingReceivablesList();
     }
 
     async function sharePendingClaimsWhatsApp() {
@@ -1659,7 +1636,7 @@
             <span>📅 ${item.date}</span>
             <span>🏥 ${escapeHtml(item.hospital)}</span>
           </div>
-          ${item.referredBy ? `<div class="text-[11px] font-semibold text-indigo-300">👨‍‍⚕ Ref: ${escapeHtml(item.referredBy)}</div>` : ''}
+          ${item.referredBy ? `<div class="text-[11px] font-semibold text-indigo-300">👨‍⚕ Ref: ${escapeHtml(item.referredBy)}</div>` : ''}
           ${item.note ? `<div class="text-xs text-slate-300">📋 Note / Advice: ${escapeHtml(item.note)}</div>` : ''}
           <div class="flex justify-end gap-1.5 pt-1.5 border-t border-white/5">
             <button onclick="convertOpdToIpd(${item.id})" class="text-[11px] font-bold px-2.5 py-1 bg-indigo-900/60 hover:bg-indigo-800/60 text-indigo-200 border border-indigo-500/30 rounded-lg transition">
@@ -1719,20 +1696,20 @@
 
     async function filterSurgeryAuditList() {
       const targetHospital = document.getElementById('surgeryAuditHospitalFilter').value;
-      let monthSurgeries = masterEntriesCache.filter(item => item.category === 'Surgery');
+      let surgeryEntries = masterEntriesCache.filter(item => item.category === 'Surgery');
       if (targetHospital !== 'All') {
-        monthSurgeries = monthSurgeries.filter(s => s.hospital === targetHospital);
+        surgeryEntries = surgeryEntries.filter(s => s.hospital === targetHospital);
       }
 
-      document.getElementById('surgeryAuditSubtitle').innerText = `${monthSurgeries.length} cases`;
+      document.getElementById('surgeryAuditSubtitle').innerText = `${surgeryEntries.length} cases`;
       const listEl = document.getElementById('surgeryAuditList');
 
-      if (monthSurgeries.length === 0) {
+      if (surgeryEntries.length === 0) {
         listEl.innerHTML = `<div class="p-8 text-center text-slate-500 text-xs">No surgeries found for this selection.</div>`;
         return;
       }
 
-      listEl.innerHTML = monthSurgeries.map((s, idx) => `
+      listEl.innerHTML = surgeryEntries.map((s, idx) => `
         <div class="p-3.5 liquid-glass rounded-2xl space-y-1.5 border border-white/10">
           <div class="flex justify-between items-start">
             <div class="font-extrabold text-sm text-white">${idx+1}. ${escapeHtml(s.name)}</div>
@@ -1752,12 +1729,12 @@
 
     async function shareSurgeryAuditWhatsApp() {
       const targetHospital = document.getElementById('surgeryAuditHospitalFilter').value;
-      let monthSurgeries = masterEntriesCache.filter(item => item.category === 'Surgery');
+      let surgeryEntries = masterEntriesCache.filter(item => item.category === 'Surgery');
       if (targetHospital !== 'All') {
-        monthSurgeries = monthSurgeries.filter(s => s.hospital === targetHospital);
+        surgeryEntries = surgeryEntries.filter(s => s.hospital === targetHospital);
       }
 
-      if (monthSurgeries.length === 0) {
+      if (surgeryEntries.length === 0) {
         alert('No surgeries found to share.');
         return;
       }
@@ -1766,7 +1743,7 @@
       let msg = `SURGICAL CASE LIST - ${hospTitle}\n`;
       msg += `----------------------------------------\n\n`;
 
-      monthSurgeries.forEach((s, idx) => {
+      surgeryEntries.forEach((s, idx) => {
         msg += `${idx+1}. *${s.name}*\n`;
         msg += `Hospital: ${s.hospital || 'General'}\n`;
         msg += `Date of Surgery: ${s.date}\n`;
@@ -1776,14 +1753,10 @@
         const implantText = s.implantsUsed === 'Yes' ? `Yes (${s.implantDetails || 'Used'})` : 'No';
         msg += `Implants: ${implantText}\n`;
         
-        if (s.stayDetails) {
-          msg += `Total Days of Stay: ${s.stayDetails}\n`;
-        }
-
         msg += `\n----------------------------------------\n\n`;
       });
 
-      msg += `Total Cases: ${monthSurgeries.length}\n`;
+      msg += `Total Cases: ${surgeryEntries.length}\n`;
 
       const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
       window.open(whatsappUrl, '_blank');
