@@ -73,7 +73,7 @@
           <div id="statTotal" class="text-2xl font-extrabold text-indigo-950">₹0</div>
         </div>
 
-        <!-- Category Grid (Audits) -->
+        <!-- Category Grid -->
         <div class="grid grid-cols-2 gap-2 text-xs">
           <button onclick="openOpdAuditModal()" class="bg-slate-50 hover:bg-slate-100 active:bg-slate-200 p-2.5 rounded-lg border border-slate-200/60 text-left transition">
             <div class="flex justify-between items-center text-slate-500 font-medium">
@@ -86,7 +86,7 @@
           <button onclick="openSurgeryAuditModal()" class="bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 p-2.5 rounded-lg border border-emerald-100 text-left transition">
             <div class="flex justify-between items-center text-emerald-700 font-medium">
               <span>Surgeries</span>
-              <span class="text-[10px] text-emerald-800 font-bold">List ↗</span>
+              <span class="text-[10px] text-emerald-800 font-bold">OT List ↗</span>
             </div>
             <div id="statSurgery" class="text-sm font-bold text-emerald-950 mt-0.5">₹0</div>
           </button>
@@ -219,8 +219,9 @@
             <div>
               <label class="block text-xs font-bold text-emerald-800 uppercase mb-1">Scheme</label>
               <select id="entryScheme" class="w-full bg-white border border-emerald-300 rounded-xl p-2.5 text-xs font-semibold">
-                <option value="Private">Private / Cash / TPA</option>
-                <option value="PMJAY">PMJAY / Ayushman</option>
+                <option value="PMJAY">PMJAY</option>
+                <option value="Cash">Cash</option>
+                <option value="TPA">TPA (Mediclaim)</option>
               </select>
             </div>
             <div>
@@ -279,6 +280,23 @@
             <option value="Aatithyam Hospital, Navsari">Aatithyam Hospital, Navsari</option>
           </select>
         </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Admission Scheme</label>
+            <select id="ipdCurrentScheme" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-bold">
+              <option value="PMJAY">PMJAY</option>
+              <option value="Cash">Cash</option>
+              <option value="TPA">TPA (Mediclaim)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Current Location</label>
+            <select id="ipdCurrentWard" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-bold">
+              <option value="ICU">ICU</option>
+              <option value="Ward">Ward</option>
+            </select>
+          </div>
+        </div>
         <div>
           <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Referred By</label>
           <input type="text" id="ipdReferredBy" placeholder="e.g. Dr. A. K. Shah / Direct" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs" />
@@ -289,18 +307,8 @@
             <input type="date" id="ipdAdmitDate" required class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs" />
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Ward / Bed</label>
-            <input type="text" id="ipdWardBed" placeholder="e.g. ICU-3 / Room 104" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs" />
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Routine Rate (₹)</label>
-            <input type="number" id="ipdRoutineRate" value="800" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 font-bold" />
-          </div>
-          <div>
-            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Emergency Rate (₹)</label>
-            <input type="number" id="ipdEmergencyRate" value="1500" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 font-bold" />
+            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Bed No.</label>
+            <input type="text" id="ipdWardBed" placeholder="e.g. ICU-3 / Bed 12" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs" />
           </div>
         </div>
         <div>
@@ -327,19 +335,20 @@
       <form id="linkSurgeryForm" onsubmit="saveSurgeryToIpd(event)" class="space-y-3">
         <input type="hidden" id="targetIpdId" value="" />
         <div>
-          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Surgery Date</label>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Date of Surgery</label>
           <input type="date" id="ipdSurgeryDate" required class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3" />
         </div>
         <div>
           <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Procedure Name</label>
-          <input type="text" id="ipdSurgeryProcedure" required placeholder="e.g. Left Craniotomy / L4-L5 TLIF" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3" />
+          <input type="text" id="ipdSurgeryProcedure" required placeholder="e.g. Left Temporal Craniotomy / L4-L5 TLIF" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3" />
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Scheme</label>
             <select id="ipdSurgeryScheme" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-bold">
-              <option value="Private">Private / Cash</option>
-              <option value="PMJAY">PMJAY (Ayushman)</option>
+              <option value="PMJAY">PMJAY</option>
+              <option value="Cash">Cash</option>
+              <option value="TPA">TPA (Mediclaim)</option>
             </select>
           </div>
           <div>
@@ -357,7 +366,7 @@
           </div>
           <div id="ipdSurgeryImplantDetailsContainer" class="hidden">
             <label class="block text-xs font-bold text-emerald-800 uppercase mb-1">Implant Details</label>
-            <input type="text" id="ipdSurgeryImplantDetails" placeholder="e.g. 4 Pedicle Screws, 1 PEEK cage" class="w-full bg-white border border-emerald-300 rounded-xl p-2.5 text-xs" />
+            <input type="text" id="ipdSurgeryImplantDetails" placeholder="e.g. 4 Screws + 1 PEEK Cage / Mesh" class="w-full bg-white border border-emerald-300 rounded-xl p-2.5 text-xs" />
           </div>
         </div>
         <button type="submit" class="w-full bg-emerald-600 text-white font-bold py-3.5 rounded-xl shadow active:bg-emerald-700">
@@ -367,7 +376,7 @@
     </div>
   </div>
 
-  <!-- Surgery Audit Modal & WhatsApp Share -->
+  <!-- Surgery Audit Modal & Clean WhatsApp Share -->
   <div id="surgeryAuditModal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3">
     <div class="bg-white rounded-3xl p-5 w-full max-w-md max-h-[88vh] flex flex-col shadow-2xl">
       <div class="flex justify-between items-center border-b pb-2 mb-3">
@@ -377,10 +386,28 @@
         </div>
         <button onclick="closeModal('surgeryAuditModal')" class="text-slate-400 text-2xl font-bold">&times;</button>
       </div>
+
+      <!-- Hospital filter dropdown for WhatsApp share -->
+      <div class="mb-3">
+        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Filter by Hospital for OT Staff</label>
+        <select id="surgeryAuditHospitalFilter" onchange="filterSurgeryAuditList()" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 text-xs font-medium">
+          <option value="All">All Hospitals</option>
+          <option value="Orange Hospital, Navsari">Orange Hospital, Navsari</option>
+          <option value="Parsi Hospital, Navsari">Parsi Hospital, Navsari</option>
+          <option value="Kejal Lifeline Hospital, Navsari">Kejal Lifeline, Navsari</option>
+          <option value="Alipore Hospital">Alipore Hospital</option>
+          <option value="Rhythm Hospital, Vyara">Rhythm Hospital, Vyara</option>
+          <option value="Atmiya Hospital, Mandvi">Atmiya Hospital, Mandvi</option>
+          <option value="Aatithyam Hospital, Navsari">Aatithyam Hospital, Navsari</option>
+        </select>
+      </div>
+
       <div id="surgeryAuditList" class="flex-1 overflow-y-auto space-y-2.5 pr-1"></div>
+
       <div class="pt-3 border-t mt-3 space-y-2">
+        <!-- Strictly clean OT Staff WhatsApp Share -->
         <button onclick="shareSurgeryAuditWhatsApp()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow text-sm">
-          <span>📲</span> Share Surgery Statement on WhatsApp
+          <span>📲</span> Share Clean OT List on WhatsApp
         </button>
         <button onclick="closeModal('surgeryAuditModal')" class="w-full text-slate-500 text-xs py-1">Close</button>
       </div>
@@ -397,7 +424,9 @@
         </div>
         <button onclick="closeModal('opdAuditModal')" class="text-slate-400 text-2xl font-bold">&times;</button>
       </div>
+
       <div id="opdAuditList" class="flex-1 overflow-y-auto space-y-3 pr-1"></div>
+
       <div class="pt-3 border-t mt-3">
         <button onclick="closeModal('opdAuditModal')" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-xs">
           Close
@@ -415,10 +444,10 @@
 
   <script>
     const db = new Dexie('NeuroPracticeDB');
-    // Unified v6 schema supporting nested multi-surgery objects & stay tracking
-    db.version(6).stores({
+    // Version 7 schema: Supports ICU/Ward stay split & PMJAY->Cash conversion
+    db.version(7).stores({
       entries: '++id, date, category, hospital, name, referredBy, scheme, implantsUsed, implantDetails, note, amount',
-      inpatients: '++id, patientName, hospital, referredBy, admitDate, dischargeDate, wardBed, routineRate, emergencyRate, routineCount, emergencyCount, diagnosis, surgeries, status'
+      inpatients: '++id, patientName, hospital, referredBy, currentScheme, admitDate, dischargeDate, currentWard, icuDays, wardDays, wardBed, diagnosis, surgeries, status, convertedAt'
     });
 
     const DEFAULT_PIN = "1234";
@@ -522,7 +551,6 @@
       loadDashboard();
     }
 
-    // Days difference utility
     function calculateDaysDifference(startDateStr, endDateStr) {
       if (!startDateStr) return 1;
       const start = new Date(startDateStr);
@@ -534,7 +562,7 @@
       return days > 0 ? days : 1;
     }
 
-    // Unified IPD & Surgeries Hub Renderer
+    // Unified IPD & Surgeries Hub
     async function loadInpatients() {
       const patients = await db.inpatients.filter(p => p.status === 'Active').toArray();
       const listEl = document.getElementById('inpatientsList');
@@ -553,10 +581,6 @@
         let surgeriesTotal = 0;
         surgeries.forEach(s => { surgeriesTotal += Number(s.fee) || 0; });
 
-        const routineTotal = (p.routineCount || 0) * (p.routineRate || 800);
-        const emergencyTotal = (p.emergencyCount || 0) * (p.emergencyRate || 1500);
-        const runningBill = routineTotal + emergencyTotal + surgeriesTotal;
-
         return `
           <div class="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm space-y-3">
             <div class="flex justify-between items-start">
@@ -565,25 +589,31 @@
                   <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
                     Day ${daysStay} of Stay
                   </span>
+                  <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${p.currentScheme === 'PMJAY' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'}">
+                    ${p.currentScheme}
+                  </span>
+                  <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${p.currentWard === 'ICU' ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'}">
+                    ${p.currentWard}
+                  </span>
                   <span class="text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
                     🏥 ${escapeHtml(p.hospital)}
                   </span>
                 </div>
                 <h3 class="text-base font-bold text-slate-900 mt-1">${escapeHtml(p.patientName)}</h3>
-                <p class="text-[11px] text-slate-500">Admitted: ${p.admitDate} | ${escapeHtml(p.wardBed || 'Ward')}</p>
+                <p class="text-[11px] text-slate-500">Admit: ${p.admitDate} | ${escapeHtml(p.wardBed || '')}</p>
                 ${p.referredBy ? `<p class="text-[11px] text-indigo-700 font-medium">👨‍⚕️ Ref: ${escapeHtml(p.referredBy)}</p>` : ''}
                 ${p.diagnosis ? `<p class="text-xs text-slate-700 mt-0.5 font-medium bg-slate-50 p-1.5 rounded-lg">📋 ${escapeHtml(p.diagnosis)}</p>` : ''}
               </div>
               <div class="text-right">
-                <span class="text-[10px] text-slate-400 uppercase font-semibold">Total Claim</span>
-                <div class="text-base font-extrabold text-indigo-950">₹${runningBill.toLocaleString('en-IN')}</div>
+                <span class="text-[10px] text-slate-400 uppercase font-semibold">Surgeon Total</span>
+                <div class="text-base font-extrabold text-emerald-950">₹${surgeriesTotal.toLocaleString('en-IN')}</div>
               </div>
             </div>
 
             <!-- Surgeries Linked Section -->
             <div class="space-y-1.5">
               <div class="flex justify-between items-center text-xs">
-                <span class="font-bold text-slate-700">Surgical Procedures (${surgeries.length})</span>
+                <span class="font-bold text-slate-700">Surgeries (${surgeries.length})</span>
                 <button onclick="openAddSurgeryToIpdModal(${p.id}, '${escapeHtml(p.patientName)}')" class="text-emerald-700 bg-emerald-50 hover:bg-emerald-100 font-bold px-2 py-1 rounded-lg text-xs">
                   + Add Surgery
                 </button>
@@ -596,42 +626,46 @@
                     <div class="flex justify-between items-start">
                       <div>
                         <span class="font-bold text-emerald-950">${sIdx + 1}. ${escapeHtml(s.procedure)}</span>
-                        <span class="text-[10px] ml-1 bg-emerald-200/70 text-emerald-900 px-1.5 py-0.2 rounded font-semibold">
+                        <span class="text-[10px] ml-1 bg-emerald-200 text-emerald-900 px-1.5 py-0.2 rounded font-semibold">
                           ${pod >= 0 ? `POD ${pod}` : 'Scheduled'}
                         </span>
                       </div>
                       <div class="font-bold text-emerald-900">₹${(Number(s.fee)||0).toLocaleString('en-IN')}</div>
                     </div>
                     <div class="text-[10px] text-slate-600 flex items-center gap-2">
-                      <span>OT Date: ${s.date}</span>
-                      <span class="font-semibold text-blue-700">${s.scheme || 'Private'}</span>
-                      ${s.implantsUsed === 'Yes' ? `<span class="text-emerald-800">🔩 ${escapeHtml(s.implantDetails || 'Implants')}</span>` : ''}
+                      <span>OT: ${s.date}</span>
+                      <span class="font-semibold text-blue-800">${s.scheme || 'PMJAY'}</span>
+                      <span class="font-medium ${s.implantsUsed === 'Yes' ? 'text-emerald-800' : 'text-slate-400'}">
+                        🔩 Implants: ${s.implantsUsed === 'Yes' ? (escapeHtml(s.implantDetails) || 'Yes') : 'No'}
+                      </span>
                     </div>
                   </div>
                 `;
               }).join('') : `<div class="text-[11px] text-slate-400 bg-slate-50 p-2 rounded-xl text-center">Conservative case (No surgery linked yet)</div>`}
             </div>
 
-            <!-- Daily Rounds Tracker Controls -->
+            <!-- Smart Scheme Conversion & Location Shift Buttons -->
             <div class="grid grid-cols-2 gap-2 bg-slate-50 p-2.5 rounded-2xl border border-slate-100 text-xs">
-              <div class="flex items-center justify-between">
-                <div>
-                  <div class="font-bold text-slate-800">Routine Rounds</div>
-                  <div class="text-[10px] text-slate-500">₹${p.routineRate} (${p.routineCount || 0})</div>
-                </div>
-                <button onclick="addRoutineVisit(${p.id})" class="bg-indigo-600 active:bg-indigo-700 text-white font-bold px-2.5 py-1.5 rounded-lg text-xs">
-                  +1 Round
-                </button>
+              <div>
+                <span class="text-[10px] text-slate-500 font-semibold uppercase">Scheme Mode</span>
+                ${p.currentScheme === 'PMJAY' ? `
+                  <button onclick="convertIpdSchemeToCash(${p.id})" class="mt-1 w-full bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 font-bold py-1 px-2 rounded-lg text-[11px]">
+                    🔄 Convert to Cash
+                  </button>
+                ` : `
+                  <div class="text-[11px] font-bold text-amber-800 mt-1">Paid / Cash Care</div>
+                `}
               </div>
 
-              <div class="flex items-center justify-between border-l pl-2">
-                <div>
-                  <div class="font-bold text-slate-800">Emergency Call</div>
-                  <div class="text-[10px] text-slate-500">₹${p.emergencyRate} (${p.emergencyCount || 0})</div>
-                </div>
-                <button onclick="addEmergencyVisit(${p.id})" class="bg-red-500 active:bg-red-600 text-white font-bold px-2.5 py-1.5 rounded-lg text-xs">
-                  +1 Call
-                </button>
+              <div>
+                <span class="text-[10px] text-slate-500 font-semibold uppercase">Location</span>
+                ${p.currentWard === 'ICU' ? `
+                  <button onclick="shiftIpdToWard(${p.id})" class="mt-1 w-full bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-1 px-2 rounded-lg text-[11px]">
+                    ➡️ Shift to Ward
+                  </button>
+                ` : `
+                  <div class="text-[11px] font-bold text-emerald-800 mt-1">In Ward</div>
+                `}
               </div>
             </div>
 
@@ -652,10 +686,10 @@
       document.getElementById('ipdPatientName').value = prefill.name || '';
       document.getElementById('ipdHospital').value = prefill.hospital || 'Orange Hospital, Navsari';
       document.getElementById('ipdReferredBy').value = prefill.referredBy || '';
+      document.getElementById('ipdCurrentScheme').value = prefill.currentScheme || 'PMJAY';
+      document.getElementById('ipdCurrentWard').value = prefill.currentWard || 'ICU';
       document.getElementById('ipdAdmitDate').value = prefill.admitDate || new Date().toISOString().slice(0, 10);
       document.getElementById('ipdWardBed').value = prefill.wardBed || '';
-      document.getElementById('ipdRoutineRate').value = prefill.routineRate || 800;
-      document.getElementById('ipdEmergencyRate').value = prefill.emergencyRate || 1500;
       document.getElementById('ipdDiagnosis').value = prefill.diagnosis || '';
       document.getElementById('inpatientModal').classList.remove('hidden');
     }
@@ -666,12 +700,11 @@
         patientName: document.getElementById('ipdPatientName').value.trim(),
         hospital: document.getElementById('ipdHospital').value,
         referredBy: document.getElementById('ipdReferredBy').value.trim(),
+        currentScheme: document.getElementById('ipdCurrentScheme').value,
+        currentWard: document.getElementById('ipdCurrentWard').value,
         admitDate: document.getElementById('ipdAdmitDate').value,
+        dischargeDate: null,
         wardBed: document.getElementById('ipdWardBed').value.trim(),
-        routineRate: Number(document.getElementById('ipdRoutineRate').value) || 800,
-        emergencyRate: Number(document.getElementById('ipdEmergencyRate').value) || 1500,
-        routineCount: 1,
-        emergencyCount: 0,
         diagnosis: document.getElementById('ipdDiagnosis').value.trim(),
         surgeries: [],
         status: 'Active'
@@ -682,21 +715,26 @@
       switchTab('inpatients');
     }
 
-    // OPD to IPD One-Tap Convert
-    async function convertOpdToIpd(id) {
-      const entry = await db.entries.get(id);
-      if (!entry) return;
-
-      openInpatientModal({
-        name: entry.name,
-        hospital: entry.hospital,
-        referredBy: entry.referredBy,
-        diagnosis: entry.note || '',
-        admitDate: new Date().toISOString().slice(0, 10)
-      });
+    // Convert PMJAY to Cash
+    async function convertIpdSchemeToCash(id) {
+      const p = await db.inpatients.get(id);
+      if (!p) return;
+      if (confirm(`Convert ${p.patientName} from PMJAY to Cash/Paying? PMJAY course will end today and subsidized cash care begins.`)) {
+        await db.inpatients.update(id, { currentScheme: 'Cash', convertedAt: new Date().toISOString().slice(0, 10) });
+        loadInpatients();
+      }
     }
 
-    // Add Surgery to Inpatient
+    // Shift to Ward
+    async function shiftIpdToWard(id) {
+      const p = await db.inpatients.get(id);
+      if (!p) return;
+      if (confirm(`Shift ${p.patientName} from ICU to General/Private Ward?`)) {
+        await db.inpatients.update(id, { currentWard: 'Ward' });
+        loadInpatients();
+      }
+    }
+
     function openAddSurgeryToIpdModal(ipdId, patientName) {
       document.getElementById('targetIpdId').value = ipdId;
       document.getElementById('ipdTargetPatientLabel').innerText = `Patient: ${patientName}`;
@@ -732,21 +770,7 @@
       loadInpatients();
     }
 
-    async function addRoutineVisit(id) {
-      const p = await db.inpatients.get(id);
-      if (!p) return;
-      await db.inpatients.update(id, { routineCount: (p.routineCount || 0) + 1 });
-      loadInpatients();
-    }
-
-    async function addEmergencyVisit(id) {
-      const p = await db.inpatients.get(id);
-      if (!p) return;
-      await db.inpatients.update(id, { emergencyCount: (p.emergencyCount || 0) + 1 });
-      loadInpatients();
-    }
-
-    // Discharge & Full Settlement with Stay Breakdown
+    // Discharge
     async function dischargeInpatient(id) {
       const p = await db.inpatients.get(id);
       if (!p) return;
@@ -756,28 +780,8 @@
 
       const totalDaysStay = calculateDaysDifference(p.admitDate, dischargeDate);
       const surgeries = p.surgeries || [];
-      
-      let surgeriesFeeTotal = 0;
-      let surgerySummaryText = '';
-      
-      surgeries.forEach((s, idx) => {
-        surgeriesFeeTotal += Number(s.fee) || 0;
-        surgerySummaryText += `\n  • Surgery ${idx+1}: ${s.procedure} (₹${s.fee})`;
-      });
 
-      const routineTotal = (p.routineCount || 0) * (p.routineRate || 800);
-      const emergencyTotal = (p.emergencyCount || 0) * (p.emergencyRate || 1500);
-      const totalVisitsFee = routineTotal + emergencyTotal;
-
-      const confirmMsg = `Discharge Summary for ${p.patientName}:\n` +
-        `• Length of Stay: ${totalDaysStay} Days (${p.admitDate} to ${dischargeDate})\n` +
-        `• Surgeries (${surgeries.length}): ₹${surgeriesFeeTotal.toLocaleString('en-IN')}${surgerySummaryText}\n` +
-        `• Rounds (${p.routineCount} routine, ${p.emergencyCount} emerg): ₹${totalVisitsFee.toLocaleString('en-IN')}\n\n` +
-        `Total Patient Value: ₹${(surgeriesFeeTotal + totalVisitsFee).toLocaleString('en-IN')}\n\n` +
-        `Transfer both Surgery and Indoor records to Practice Ledger?`;
-
-      if (confirm(confirmMsg)) {
-        // Log individual surgeries to ledger
+      if (confirm(`Discharge ${p.patientName}?\nTotal Stay: ${totalDaysStay} Days\nSurgeries: ${surgeries.length}\n\nMove records to Practice Ledger?`)) {
         for (const s of surgeries) {
           await db.entries.add({
             date: s.date,
@@ -785,24 +789,11 @@
             hospital: p.hospital,
             name: p.patientName,
             referredBy: p.referredBy || '',
-            scheme: s.scheme || 'Private',
+            scheme: s.scheme || p.currentScheme || 'PMJAY',
             implantsUsed: s.implantsUsed || 'No',
             implantDetails: s.implantDetails || '',
             note: s.procedure,
             amount: Number(s.fee) || 0
-          });
-        }
-
-        // Log Inpatient visits to ledger
-        if (totalVisitsFee > 0 || surgeries.length === 0) {
-          await db.entries.add({
-            date: dischargeDate,
-            category: 'Indoor',
-            hospital: p.hospital,
-            name: p.patientName,
-            referredBy: p.referredBy || '',
-            note: `Stay: ${totalDaysStay} days (${p.routineCount} rounds, ${p.emergencyCount} emerg) - ${p.wardBed || ''}`,
-            amount: totalVisitsFee
           });
         }
 
@@ -811,7 +802,7 @@
           dischargeDate: dischargeDate 
         });
 
-        alert('Case settled and logged successfully into Ledger!');
+        alert('Patient discharged and surgeries logged to Ledger.');
         loadInpatients();
         loadDashboard();
       }
@@ -871,7 +862,7 @@
         `).join('');
       }
 
-      // Render Entries List with "Admit to IPD" button for OPD cases
+      // Render Entries List
       const listEl = document.getElementById('entriesList');
       document.getElementById('entriesCount').innerText = `${displayEntries.length} records`;
 
@@ -885,7 +876,7 @@
           <div class="space-y-1 max-w-[65%]">
             <div class="flex items-center gap-1.5 flex-wrap">
               <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${getCategoryBadge(e.category)}">${e.category}</span>
-              ${e.scheme === 'PMJAY' ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">PMJAY</span>` : ''}
+              ${e.scheme ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">${e.scheme}</span>` : ''}
               <span class="text-[10px] font-semibold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded truncate max-w-[120px]">
                 🏥 ${escapeHtml(e.hospital || 'General')}
               </span>
@@ -893,14 +884,17 @@
             </div>
             <div class="text-sm font-bold text-slate-900 truncate">${escapeHtml(e.name || 'Unnamed Entry')}</div>
             ${e.referredBy ? `<div class="text-[11px] font-semibold text-indigo-700 flex items-center gap-1 truncate">👨‍⚕️ Ref: ${escapeHtml(e.referredBy)}</div>` : ''}
-            ${e.implantsUsed === 'Yes' && e.implantDetails ? `<div class="text-[10px] text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded font-medium truncate">🔩 ${escapeHtml(e.implantDetails)}</div>` : ''}
+            ${e.category === 'Surgery' ? `
+              <div class="text-[10px] font-medium ${e.implantsUsed === 'Yes' ? 'text-emerald-800' : 'text-slate-500'}">
+                🔩 Implants: ${e.implantsUsed === 'Yes' ? (escapeHtml(e.implantDetails) || 'Yes') : 'No'}
+              </div>` : ''}
             ${e.note ? `<div class="text-xs text-slate-500 truncate">${escapeHtml(e.note)}</div>` : ''}
           </div>
           <div class="text-right flex flex-col items-end">
             <div class="text-sm font-extrabold text-slate-800">₹${(Number(e.amount)||0).toLocaleString('en-IN')}</div>
             <div class="flex items-center gap-1.5 mt-1.5">
               ${e.category === 'OPD' ? `
-                <button onclick="convertOpdToIpd(${e.id})" class="text-[11px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg" title="Admit to Inpatients">
+                <button onclick="convertOpdToIpd(${e.id})" class="text-[11px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg">
                   🛏️ Admit
                 </button>
               ` : ''}
@@ -918,77 +912,80 @@
       return 'bg-indigo-100 text-indigo-800';
     }
 
-    // Surgery Audit & WhatsApp
+    // Surgery Audit List
     async function openSurgeryAuditModal() {
-      const selectedMonth = document.getElementById('monthFilter').value;
-      const allEntries = await db.entries.reverse().toArray();
-      const monthSurgeries = allEntries.filter(item => item.category === 'Surgery' && item.date && item.date.startsWith(selectedMonth));
-
-      document.getElementById('surgeryAuditSubtitle').innerText = `Month: ${selectedMonth} (${monthSurgeries.length} cases)`;
-      const listEl = document.getElementById('surgeryAuditList');
-
-      if (monthSurgeries.length === 0) {
-        listEl.innerHTML = `<div class="p-8 text-center text-slate-400 text-xs">No surgeries recorded for this month.</div>`;
-      } else {
-        listEl.innerHTML = monthSurgeries.map((s, idx) => `
-          <div class="p-3 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-1">
-            <div class="flex justify-between items-start">
-              <div class="font-bold text-sm text-slate-900">${idx+1}. ${escapeHtml(s.name)}</div>
-              <div class="text-xs font-extrabold text-emerald-800">₹${(Number(s.amount)||0).toLocaleString('en-IN')}</div>
-            </div>
-            <div class="text-[11px] text-slate-600 flex items-center gap-2 flex-wrap">
-              <span>🏥 ${escapeHtml(s.hospital || 'Hospital')}</span>
-              <span>📅 ${s.date}</span>
-              <span class="font-semibold px-1.5 py-0.2 rounded ${s.scheme === 'PMJAY' ? 'bg-blue-100 text-blue-800' : 'bg-slate-200 text-slate-700'}">${s.scheme || 'Private'}</span>
-            </div>
-            ${s.referredBy ? `<div class="text-[11px] text-indigo-700 font-medium">👨‍⚕️ Ref: ${escapeHtml(s.referredBy)}</div>` : ''}
-            ${s.note ? `<div class="text-xs text-slate-700">🔹 Procedure: ${escapeHtml(s.note)}</div>` : ''}
-            ${s.implantsUsed === 'Yes' ? `<div class="text-[11px] text-emerald-900 bg-emerald-100/60 p-1.5 rounded-lg">🔩 Implants: ${escapeHtml(s.implantDetails || 'Yes')}</div>` : ''}
-          </div>
-        `).join('');
-      }
-
+      document.getElementById('surgeryAuditHospitalFilter').value = 'All';
+      filterSurgeryAuditList();
       document.getElementById('surgeryAuditModal').classList.remove('hidden');
     }
 
-    async function shareSurgeryAuditWhatsApp() {
+    async function filterSurgeryAuditList() {
       const selectedMonth = document.getElementById('monthFilter').value;
+      const targetHospital = document.getElementById('surgeryAuditHospitalFilter').value;
       const allEntries = await db.entries.reverse().toArray();
-      const monthSurgeries = allEntries.filter(item => item.category === 'Surgery' && item.date && item.date.startsWith(selectedMonth));
+
+      let monthSurgeries = allEntries.filter(item => item.category === 'Surgery' && item.date && item.date.startsWith(selectedMonth));
+      if (targetHospital !== 'All') {
+        monthSurgeries = monthSurgeries.filter(s => s.hospital === targetHospital);
+      }
+
+      document.getElementById('surgeryAuditSubtitle').innerText = `${selectedMonth} | ${monthSurgeries.length} cases`;
+      const listEl = document.getElementById('surgeryAuditList');
 
       if (monthSurgeries.length === 0) {
-        alert('No surgeries found for this month.');
+        listEl.innerHTML = `<div class="p-8 text-center text-slate-400 text-xs">No surgeries found for this selection.</div>`;
         return;
       }
 
-      let totalFee = 0;
-      let pmjayCount = 0;
-      let privateCount = 0;
+      listEl.innerHTML = monthSurgeries.map((s, idx) => `
+        <div class="p-3 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-1">
+          <div class="flex justify-between items-start">
+            <div class="font-bold text-sm text-slate-900">${idx+1}. ${escapeHtml(s.name)}</div>
+            <span class="font-bold text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-800">${s.scheme || 'PMJAY'}</span>
+          </div>
+          <div class="text-xs text-slate-700">🔹 <b>Procedure:</b> ${escapeHtml(s.note || 'Surgery')}</div>
+          <div class="text-[11px] text-slate-600 flex items-center gap-3">
+            <span>📅 <b>Date:</b> ${s.date}</span>
+            <span>🏥 ${escapeHtml(s.hospital || '')}</span>
+          </div>
+          <div class="text-[11px] ${s.implantsUsed === 'Yes' ? 'text-emerald-800 font-bold' : 'text-slate-500 font-medium'}">
+            🔩 <b>Implants:</b> ${s.implantsUsed === 'Yes' ? (escapeHtml(s.implantDetails) || 'Yes') : 'No'}
+          </div>
+        </div>
+      `).join('');
+    }
 
-      let msg = `📋 *Dr. Nilesh Chaudhari - Surgical Statement*\n`;
+    // Strictly Clean WhatsApp Export for OT Staff (No Visits, Zero Fees)
+    async function shareSurgeryAuditWhatsApp() {
+      const selectedMonth = document.getElementById('monthFilter').value;
+      const targetHospital = document.getElementById('surgeryAuditHospitalFilter').value;
+      const allEntries = await db.entries.reverse().toArray();
+
+      let monthSurgeries = allEntries.filter(item => item.category === 'Surgery' && item.date && item.date.startsWith(selectedMonth));
+      if (targetHospital !== 'All') {
+        monthSurgeries = monthSurgeries.filter(s => s.hospital === targetHospital);
+      }
+
+      if (monthSurgeries.length === 0) {
+        alert('No surgeries found to share.');
+        return;
+      }
+
+      let msg = `📋 *Surgical Case List - ${targetHospital === 'All' ? 'Monthly' : targetHospital}*\n`;
       msg += `*Month:* ${selectedMonth}\n`;
       msg += `────────────────────────\n\n`;
 
       monthSurgeries.forEach((s, idx) => {
-        const fee = Number(s.amount) || 0;
-        totalFee += fee;
-        if (s.scheme === 'PMJAY') pmjayCount++;
-        else privateCount++;
-
-        msg += `${idx+1}. *${s.name}* | ${s.date}\n`;
-        msg += `   🏥 ${s.hospital || 'Hospital'}\n`;
-        if (s.referredBy) msg += `   👨‍⚕️ Ref: ${s.referredBy}\n`;
-        if (s.note) msg += `   🔹 Pro: ${s.note}\n`;
-        msg += `   🏷 Scheme: ${s.scheme || 'Private'}\n`;
-        if (s.implantsUsed === 'Yes') {
-          msg += `   🔩 Implants: ${s.implantDetails || 'Used'}\n`;
-        }
-        msg += `   💰 Surgeon Fee: ₹${fee.toLocaleString('en-IN')}\n\n`;
+        msg += `${idx+1}. *${s.name}*\n`;
+        msg += `   📅 *Date of Surgery:* ${s.date}\n`;
+        msg += `   🔹 *Procedure:* ${s.note || 'Surgical Procedure'}\n`;
+        msg += `   🏷️ *Scheme:* ${s.scheme || 'PMJAY'}\n`;
+        const implantText = s.implantsUsed === 'Yes' ? `Yes (${s.implantDetails || 'Used'})` : 'No';
+        msg += `   🔩 *Implants:* ${implantText}\n\n`;
       });
 
       msg += `────────────────────────\n`;
-      msg += `*Total Cases:* ${monthSurgeries.length} (${pmjayCount} PMJAY, ${privateCount} Private)\n`;
-      msg += `*Total Expected Fee:* ₹${totalFee.toLocaleString('en-IN')}\n`;
+      msg += `*Total Cases:* ${monthSurgeries.length}\n`;
 
       const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
       window.open(whatsappUrl, '_blank');
@@ -1027,7 +1024,7 @@
               <div class="flex justify-between items-center p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
                 <div>
                   <div class="font-bold text-slate-900">${escapeHtml(h)}</div>
-                  <div class="text-slate-500">${hospCounters[h].count} OPDs / Rounds</div>
+                  <div class="text-slate-500">${hospCounters[h].count} Consultations / Rounds</div>
                 </div>
                 <div class="font-extrabold text-slate-800 text-sm">₹${hospCounters[h].rev.toLocaleString('en-IN')}</div>
               </div>
@@ -1042,7 +1039,21 @@
       document.getElementById('opdAuditModal').classList.remove('hidden');
     }
 
-    // Edit/Save Entry
+    async function convertOpdToIpd(id) {
+      const entry = await db.entries.get(id);
+      if (!entry) return;
+
+      openInpatientModal({
+        name: entry.name,
+        hospital: entry.hospital,
+        referredBy: entry.referredBy,
+        diagnosis: entry.note || '',
+        admitDate: new Date().toISOString().slice(0, 10),
+        currentScheme: 'PMJAY',
+        currentWard: 'ICU'
+      });
+    }
+
     async function editEntry(id) {
       const item = await db.entries.get(id);
       if (!item) return;
@@ -1080,7 +1091,7 @@
         hospital: hospitalVal,
         name: document.getElementById('entryName').value.trim(),
         referredBy: document.getElementById('entryReferredBy').value.trim(),
-        scheme: cat === 'Surgery' ? document.getElementById('entryScheme').value : 'Private',
+        scheme: cat === 'Surgery' ? document.getElementById('entryScheme').value : '',
         implantsUsed: cat === 'Surgery' ? document.getElementById('entryImplantsUsed').value : 'No',
         implantDetails: cat === 'Surgery' ? document.getElementById('entryImplantDetails').value.trim() : '',
         note: document.getElementById('entryNote').value.trim(),
@@ -1136,7 +1147,7 @@
 
       document.getElementById('entryName').value = prefill.name || '';
       document.getElementById('entryReferredBy').value = prefill.referredBy || '';
-      document.getElementById('entryScheme').value = prefill.scheme || 'Private';
+      document.getElementById('entryScheme').value = prefill.scheme || 'PMJAY';
       document.getElementById('entryImplantsUsed').value = prefill.implantsUsed || 'No';
       document.getElementById('entryImplantDetails').value = prefill.implantDetails || '';
       document.getElementById('entryNote').value = prefill.note || '';
@@ -1227,7 +1238,7 @@
           hospital: detectedHospital,
           date: detectedDate,
           category: isSurgery ? 'Surgery' : (/admit|ward|indoor|ipd/i.test(fullText) ? 'Indoor' : 'OPD'),
-          scheme: /pmjay|ayushman/i.test(fullText) ? 'PMJAY' : 'Private',
+          scheme: /pmjay|ayushman/i.test(fullText) ? 'PMJAY' : (/tpa|mediclaim/i.test(fullText) ? 'TPA' : 'Cash'),
           note: detectedNote,
           amount: detectedAmount
         });
