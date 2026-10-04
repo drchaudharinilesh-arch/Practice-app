@@ -3,33 +3,100 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Surgical Practice Log</title>
+  <title>Surgical Practice Log - Obsidian Neuro Suite</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
-    .bottom-nav { box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05); }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      background-color: #070a13;
+      color: #e2e8f0;
+    }
+    
+    /* Obsidian Ambient Canvas & Neural Glow */
+    .obsidian-bg {
+      background: radial-gradient(circle at 15% 15%, rgba(45, 212, 191, 0.08) 0%, transparent 40%),
+                  radial-gradient(circle at 85% 65%, rgba(99, 102, 241, 0.10) 0%, transparent 45%),
+                  radial-gradient(circle at 50% 90%, rgba(16, 185, 129, 0.06) 0%, transparent 50%),
+                  #070a13;
+      background-attachment: fixed;
+    }
+
+    /* Subdued Cortical Contour Pattern */
+    .neural-mesh {
+      background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    /* Liquid Glass (Secondary Elements & Containers) */
+    .liquid-glass {
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Frosted Acrylic Glass (Key Metrics & High Hierarchy) */
+    .frosted-glass {
+      background: rgba(30, 41, 59, 0.65);
+      backdrop-filter: blur(28px) saturate(190%);
+      -webkit-backdrop-filter: blur(28px) saturate(190%);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), inset 0 1px 1px 0 rgba(255, 255, 255, 0.15);
+    }
+
+    .frosted-card {
+      background: rgba(15, 23, 42, 0.72);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Floating Bottom Dock */
+    .floating-glass-dock {
+      background: rgba(11, 15, 26, 0.82);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    }
+
+    /* Glass Inputs */
+    .glass-input {
+      background: rgba(15, 23, 42, 0.65) !important;
+      border: 1px solid rgba(255, 255, 255, 0.12) !important;
+      color: #f8fafc !important;
+    }
+    .glass-input:focus {
+      border-color: rgba(99, 102, 241, 0.6) !important;
+      outline: none;
+      box-shadow: 0 0 12px rgba(99, 102, 241, 0.25);
+    }
+
     input, select, textarea { font-size: 16px !important; }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-800 min-h-screen pb-24">
+<body class="obsidian-bg neural-mesh min-h-screen pb-28 text-slate-200">
 
   <!-- Lock Screen Overlay -->
-  <div id="lockScreen" class="fixed inset-0 z-50 bg-indigo-950 flex flex-col items-center justify-center p-6 text-white text-center">
-    <div class="w-20 h-20 bg-indigo-800/80 rounded-3xl flex items-center justify-center text-4xl mb-4 shadow-lg border border-indigo-700">
+  <div id="lockScreen" class="fixed inset-0 z-50 bg-[#070a13]/95 backdrop-blur-2xl flex flex-col items-center justify-center p-6 text-white text-center">
+    <div class="w-20 h-20 bg-indigo-500/10 border border-indigo-500/30 rounded-3xl flex items-center justify-center text-4xl mb-4 shadow-2xl shadow-indigo-500/20">
       🔒
     </div>
-    <h2 class="text-xl font-bold mb-1">Neuro Practice Log</h2>
-    <p class="text-xs text-indigo-300 mb-6">Secured Medical Records</p>
+    <h2 class="text-xl font-bold tracking-tight text-white mb-0.5">Neuro Practice Suite</h2>
+    <p class="text-xs text-indigo-300/80 mb-6 font-medium">Secured Surgical Console</p>
     
     <div class="w-full max-w-xs space-y-3">
-      <button onclick="authenticateBiometrics()" id="bioUnlockBtn" class="w-full bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold py-3.5 rounded-2xl shadow-lg flex items-center justify-center gap-2 text-sm">
-        <span>👆</span> Unlock with Fingerprint / PIN
+      <button onclick="authenticateBiometrics()" id="bioUnlockBtn" class="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 active:scale-95 transition text-white font-bold py-3.5 rounded-2xl shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 text-sm border border-indigo-400/20">
+        <span>👆</span> Unlock with Biometrics / PIN
       </button>
       <div id="pinFallbackContainer" class="hidden space-y-2 pt-2">
-        <input type="password" id="appPinInput" pattern="[0-9]*" inputmode="numeric" maxlength="6" placeholder="Enter PIN" class="w-full bg-indigo-900/60 border border-indigo-700 text-center text-lg text-white rounded-xl p-3 focus:outline-none" />
-        <button onclick="unlockWithPin()" class="w-full bg-slate-800 text-indigo-200 font-semibold py-2.5 rounded-xl text-xs">
+        <input type="password" id="appPinInput" pattern="[0-9]*" inputmode="numeric" maxlength="6" placeholder="Enter PIN" class="w-full glass-input text-center text-lg rounded-xl p-3 focus:outline-none" />
+        <button onclick="unlockWithPin()" class="w-full bg-slate-800/80 hover:bg-slate-700 text-indigo-200 font-semibold py-2.5 rounded-xl text-xs border border-slate-700">
           Submit PIN
         </button>
       </div>
@@ -37,16 +104,21 @@
   </div>
 
   <!-- Header -->
-  <header class="bg-indigo-900 text-white p-4 sticky top-0 z-30 shadow flex justify-between items-center">
+  <header class="liquid-glass border-b border-white/10 p-4 sticky top-0 z-30 flex justify-between items-center shadow-lg">
     <div>
-      <h1 class="text-lg font-bold tracking-tight">Neuro Practice Log</h1>
-      <p id="currentMonthLabel" class="text-xs text-indigo-200">Practice Ledger</p>
+      <div class="flex items-center gap-2">
+        <span class="text-lg">🧠</span>
+        <h1 class="text-base font-extrabold tracking-tight bg-gradient-to-r from-white via-indigo-200 to-slate-400 bg-clip-text text-transparent">
+          Neuro Practice Log
+        </h1>
+      </div>
+      <p id="currentMonthLabel" class="text-[11px] text-indigo-300/70 font-medium">Obsidian Practice Hub</p>
     </div>
     <div class="flex items-center gap-1.5">
-      <button onclick="lockApp()" class="p-2 bg-indigo-800/80 hover:bg-indigo-700 rounded-lg text-xs" title="Lock App">
+      <button onclick="lockApp()" class="p-2 bg-slate-800/60 hover:bg-slate-700/80 border border-white/10 rounded-xl text-xs text-slate-300" title="Lock App">
         🔒
       </button>
-      <button onclick="exportDataBackup()" class="p-2 bg-indigo-800 hover:bg-indigo-700 rounded-lg text-xs font-semibold flex items-center gap-1">
+      <button onclick="exportDataBackup()" class="p-2 bg-indigo-900/40 hover:bg-indigo-800/60 border border-indigo-500/30 rounded-xl text-xs font-semibold text-indigo-200 flex items-center gap-1">
         💾 Backup
       </button>
     </div>
@@ -56,81 +128,86 @@
     
     <!-- View 1: Main Ledger & Financial Summary -->
     <div id="viewEntries" class="space-y-4">
-      <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-3">
+      <section class="frosted-glass rounded-3xl p-4.5 space-y-3.5">
         <div class="flex justify-between items-center gap-2">
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Financial Summary</span>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-300/60">Practice Overview</span>
           <div class="flex items-center gap-1">
-            <select id="viewRangeSelect" onchange="handleViewRangeChange()" class="text-xs bg-slate-100 border border-slate-300 rounded px-2 py-1 font-medium text-slate-700">
+            <select id="viewRangeSelect" onchange="handleViewRangeChange()" class="text-xs glass-input rounded-lg px-2 py-1 font-medium">
               <option value="month" selected>This Month</option>
               <option value="all">All Records</option>
             </select>
-            <input type="month" id="monthFilter" onchange="loadDashboard()" class="text-xs bg-slate-100 border border-slate-300 rounded px-2 py-1 font-medium text-slate-700" />
+            <input type="month" id="monthFilter" onchange="loadDashboard()" class="text-xs glass-input rounded-lg px-2 py-1 font-medium" />
           </div>
         </div>
 
-        <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-center">
-          <span class="text-xs text-indigo-600 font-semibold uppercase tracking-wide">Total Practice Revenue</span>
-          <div id="statTotal" class="text-2xl font-extrabold text-indigo-950">₹0</div>
+        <!-- Total Revenue Hero -->
+        <div class="liquid-glass rounded-2xl p-4 text-center border border-indigo-500/20 relative overflow-hidden">
+          <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-indigo-500/10 rounded-full blur-xl pointer-events-none"></div>
+          <span class="text-[11px] text-indigo-300 font-semibold uppercase tracking-wider">Total Practice Revenue</span>
+          <div id="statTotal" class="text-3xl font-black text-white tracking-tight mt-0.5">₹0</div>
         </div>
 
         <!-- Category Grid & Pending Receivables -->
         <div class="grid grid-cols-2 gap-2 text-xs">
-          <button onclick="openOpdAuditModal()" class="bg-slate-50 hover:bg-slate-100 active:bg-slate-200 p-2.5 rounded-lg border border-slate-200/60 text-left transition">
-            <div class="flex justify-between items-center text-slate-500 font-medium">
+          <button onclick="openOpdAuditModal()" class="liquid-glass hover:bg-slate-800/60 active:scale-98 p-3 rounded-2xl text-left transition border border-white/10">
+            <div class="flex justify-between items-center text-slate-400 font-medium">
               <span>OPD / Indoor</span>
-              <span class="text-[10px] text-indigo-600">Audit ↗</span>
+              <span class="text-[10px] text-indigo-400 font-bold">Audit ↗</span>
             </div>
-            <div id="statOpdIndoor" class="text-sm font-bold text-slate-800 mt-0.5">₹0</div>
+            <div id="statOpdIndoor" class="text-sm font-extrabold text-white mt-1">₹0</div>
           </button>
           
-          <button onclick="openSurgeryAuditModal()" class="bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 p-2.5 rounded-lg border border-emerald-100 text-left transition">
-            <div class="flex justify-between items-center text-emerald-700 font-medium">
+          <button onclick="openSurgeryAuditModal()" class="liquid-glass hover:bg-emerald-950/40 active:scale-98 p-3 rounded-2xl text-left transition border border-emerald-500/20">
+            <div class="flex justify-between items-center text-emerald-400 font-medium">
               <span>Surgeries</span>
-              <span class="text-[10px] text-emerald-800 font-bold">OT List ↗</span>
+              <span class="text-[10px] text-emerald-300 font-bold">OT List ↗</span>
             </div>
-            <div id="statSurgery" class="text-sm font-bold text-emerald-950 mt-0.5">₹0</div>
+            <div id="statSurgery" class="text-sm font-extrabold text-emerald-200 mt-1">₹0</div>
           </button>
 
           <!-- Pending Receivables Tracker Button -->
-          <button onclick="openPendingReceivablesModal()" class="bg-amber-50 hover:bg-amber-100 p-2.5 rounded-lg border border-amber-200 col-span-2 text-left transition">
-            <div class="flex justify-between items-center text-amber-800 font-bold">
-              <span>⏳ Pending Claims (PMJAY / TPA)</span>
-              <span class="text-[10px] text-amber-900 underline">Track & Recover ↗</span>
+          <button onclick="openPendingReceivablesModal()" class="frosted-glass hover:bg-amber-950/40 active:scale-98 p-3 rounded-2xl col-span-2 text-left transition border border-amber-500/30">
+            <div class="flex justify-between items-center text-amber-300 font-bold">
+              <span class="flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                <span>Pending Claims (PMJAY / TPA)</span>
+              </span>
+              <span class="text-[10px] text-amber-400 underline">Track & Recover ↗</span>
             </div>
-            <div id="statPendingReceivables" class="text-base font-extrabold text-amber-950 mt-0.5">₹0 Due</div>
+            <div id="statPendingReceivables" class="text-base font-black text-amber-200 mt-1">₹0 Due</div>
           </button>
         </div>
 
         <!-- Hospital Breakdown -->
-        <details class="text-xs bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 cursor-pointer">
-          <summary class="font-bold text-slate-700 flex justify-between items-center select-none">
+        <details class="text-xs liquid-glass p-3 rounded-2xl cursor-pointer">
+          <summary class="font-bold text-slate-300 flex justify-between items-center select-none">
             <span>🏥 Hospital-wise Revenue</span>
-            <span class="text-[10px] text-indigo-600 font-semibold">View details ▼</span>
+            <span class="text-[10px] text-indigo-400 font-semibold">Details ▼</span>
           </summary>
-          <div id="hospitalBreakdownList" class="pt-2 space-y-1.5 border-t border-slate-200 mt-2 text-slate-600"></div>
+          <div id="hospitalBreakdownList" class="pt-2.5 space-y-1.5 border-t border-white/10 mt-2 text-slate-400"></div>
         </details>
       </section>
 
       <!-- Quick Action Buttons -->
       <div class="grid grid-cols-2 gap-3">
-        <label class="flex flex-col items-center justify-center bg-indigo-600 active:bg-indigo-700 text-white rounded-2xl p-4 shadow-sm cursor-pointer min-h-[72px]">
-          <span class="text-xl">📷</span>
-          <span class="text-sm font-bold mt-1">Scan Doc / Slip</span>
+        <label class="flex flex-col items-center justify-center bg-gradient-to-br from-indigo-600 to-indigo-800 hover:from-indigo-500 hover:to-indigo-700 active:scale-95 text-white rounded-3xl p-4 shadow-xl shadow-indigo-950/50 cursor-pointer min-h-[76px] border border-indigo-400/30 transition">
+          <span class="text-2xl">📷</span>
+          <span class="text-xs font-extrabold mt-1 tracking-wide">Scan Doc / Slip</span>
           <input type="file" id="scanInput" accept="image/*" class="hidden" onchange="handleImageSelected(event)" />
         </label>
-        <button onclick="openManualEntryModal()" class="flex flex-col items-center justify-center bg-white border border-slate-300 active:bg-slate-50 text-slate-800 rounded-2xl p-4 shadow-sm min-h-[72px]">
-          <span class="text-xl">✍️</span>
-          <span class="text-sm font-bold mt-1">Manual Entry</span>
+        <button onclick="openManualEntryModal()" class="flex flex-col items-center justify-center liquid-glass hover:bg-slate-800/80 active:scale-95 text-white rounded-3xl p-4 shadow-xl shadow-black/40 min-h-[76px] border border-white/10 transition">
+          <span class="text-2xl">✍️</span>
+          <span class="text-xs font-extrabold mt-1 tracking-wide">Manual Entry</span>
         </button>
       </div>
 
       <!-- Entries List -->
-      <section class="space-y-2">
-        <div class="flex justify-between items-center">
-          <h2 class="text-sm font-bold text-slate-700 uppercase tracking-wide">Entries Log</h2>
-          <span id="entriesCount" class="text-xs text-slate-400 font-medium">0 records</span>
+      <section class="space-y-2.5">
+        <div class="flex justify-between items-center px-1">
+          <h2 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Entries Log</h2>
+          <span id="entriesCount" class="text-xs text-slate-500 font-medium">0 records</span>
         </div>
-        <div id="entriesList" class="space-y-2"></div>
+        <div id="entriesList" class="space-y-2.5"></div>
       </section>
     </div>
 
@@ -138,66 +215,63 @@
     <div id="viewInpatients" class="hidden space-y-4">
       
       <!-- Sub-tabs within IPD Hub -->
-      <div class="bg-white p-1 rounded-2xl border border-slate-200 grid grid-cols-2 text-xs font-bold shadow-sm">
-        <button onclick="switchIpdSubTab('active')" id="subTabActiveBtn" class="py-2.5 rounded-xl bg-indigo-600 text-white transition">
+      <div class="liquid-glass p-1 rounded-2xl grid grid-cols-2 text-xs font-bold border border-white/10 shadow-lg">
+        <button onclick="switchIpdSubTab('active')" id="subTabActiveBtn" class="py-2.5 rounded-xl bg-indigo-600 text-white shadow transition">
           🛏️ Active Inpatients (<span id="activeCountBadge">0</span>)
         </button>
-        <button onclick="switchIpdSubTab('pipeline')" id="subTabPipelineBtn" class="py-2.5 rounded-xl text-slate-600 transition">
+        <button onclick="switchIpdSubTab('pipeline')" id="subTabPipelineBtn" class="py-2.5 rounded-xl text-slate-400 hover:text-white transition">
           📅 Upcoming Pipeline (<span id="pipelineCountBadge">0</span>)
         </button>
       </div>
 
-      <div class="flex justify-between items-center">
+      <div class="flex justify-between items-center px-1">
         <div>
-          <h2 id="ipdSectionHeading" class="text-base font-bold text-slate-900">Active Inpatients (IPD)</h2>
-          <p id="ipdSectionSubheading" class="text-xs text-slate-500">Live Stay, Dated Visits & Surgeries</p>
+          <h2 id="ipdSectionHeading" class="text-base font-extrabold text-white">Active Inpatients (IPD)</h2>
+          <p id="ipdSectionSubheading" class="text-[11px] text-slate-400">Live Stay, Dated Visits & Surgeries</p>
         </div>
-        <button onclick="openInpatientModal()" class="bg-indigo-600 active:bg-indigo-700 text-white px-3 py-2 rounded-xl text-xs font-bold shadow-sm">
+        <button onclick="openInpatientModal()" class="bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white px-3 py-2 rounded-xl text-xs font-bold shadow-lg shadow-indigo-600/30 border border-indigo-400/30 transition">
           + Add / Plan Patient
         </button>
       </div>
 
-      <!-- Active Inpatients Container -->
       <div id="inpatientsActiveList" class="space-y-3"></div>
-
-      <!-- Upcoming Surgeries Pipeline Container -->
       <div id="inpatientsPipelineList" class="hidden space-y-3"></div>
     </div>
   </main>
 
-  <!-- Clean Bottom Navigation (2 Tabs) -->
-  <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 bottom-nav z-20 max-w-md mx-auto">
-    <div class="grid grid-cols-2 h-16">
-      <button onclick="switchTab('entries')" id="navTabEntries" class="flex flex-col items-center justify-center text-indigo-600 font-semibold text-xs">
+  <!-- Floating Glass Bottom Dock (2 Tabs) -->
+  <nav class="fixed bottom-4 left-4 right-4 z-40 max-w-md mx-auto">
+    <div class="floating-glass-dock rounded-3xl grid grid-cols-2 h-16 p-1">
+      <button onclick="switchTab('entries')" id="navTabEntries" class="flex flex-col items-center justify-center text-indigo-400 font-bold text-xs rounded-2xl transition">
         <span class="text-xl">📋</span>
-        <span>OPD & Ledger</span>
+        <span class="text-[11px] mt-0.5">OPD & Ledger</span>
       </button>
-      <button onclick="switchTab('inpatients')" id="navTabInpatients" class="flex flex-col items-center justify-center text-slate-400 font-medium text-xs">
+      <button onclick="switchTab('inpatients')" id="navTabInpatients" class="flex flex-col items-center justify-center text-slate-400 font-medium text-xs rounded-2xl transition">
         <span class="text-xl">🛏️</span>
-        <span>IPD & Surgeries Hub</span>
+        <span class="text-[11px] mt-0.5">IPD & Surgeries Hub</span>
       </button>
     </div>
   </nav>
 
   <!-- Entry Form Modal (OPD / Direct Log) -->
-  <div id="entryModal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-end justify-center p-0">
-    <div class="bg-white rounded-t-3xl p-5 w-full max-w-md max-h-[90vh] overflow-y-auto space-y-4">
-      <div class="flex justify-between items-center border-b pb-2">
-        <h3 id="entryModalTitle" class="text-base font-bold text-slate-900">New Entry</h3>
-        <button onclick="closeModal('entryModal')" class="text-slate-400 text-xl font-bold p-1">&times;</button>
+  <div id="entryModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end justify-center p-0">
+    <div class="frosted-card rounded-t-3xl p-5 w-full max-w-md max-h-[90vh] overflow-y-auto space-y-4 border-t border-white/20">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
+        <h3 id="entryModalTitle" class="text-base font-bold text-white">New Entry</h3>
+        <button onclick="closeModal('entryModal')" class="text-slate-400 hover:text-white text-2xl font-bold p-1">&times;</button>
       </div>
       <form id="entryForm" onsubmit="saveEntry(event)" class="space-y-3">
         <input type="hidden" id="entryRecordId" value="" />
         
         <div>
-          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Date</label>
-          <input type="date" id="entryDate" required class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-800" />
+          <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Date</label>
+          <input type="date" id="entryDate" required class="w-full glass-input rounded-xl p-3" />
         </div>
 
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Category</label>
-            <select id="entryCategory" onchange="handleEntryCategoryChange()" required class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-800 text-sm">
+            <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Category</label>
+            <select id="entryCategory" onchange="handleEntryCategoryChange()" required class="w-full glass-input rounded-xl p-3 text-sm">
               <option value="OPD">OPD</option>
               <option value="Surgery">Surgery</option>
               <option value="MR Benefit">MR Benefit</option>
@@ -205,8 +279,8 @@
             </select>
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Hospital / Clinic</label>
-            <select id="entryHospital" onchange="toggleCustomHospitalInput()" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-800 text-sm">
+            <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Hospital / Clinic</label>
+            <select id="entryHospital" onchange="toggleCustomHospitalInput()" class="w-full glass-input rounded-xl p-3 text-sm">
               <option value="Orange Hospital, Navsari">Orange Hospital, Navsari</option>
               <option value="Parsi Hospital, Navsari">Parsi Hospital, Navsari</option>
               <option value="Kejal Lifeline Hospital, Navsari">Kejal Lifeline, Navsari</option>
@@ -220,113 +294,113 @@
         </div>
 
         <div id="customHospitalContainer" class="hidden">
-          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Hospital Name</label>
-          <input type="text" id="customHospitalName" placeholder="Enter hospital name" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-800 text-sm" />
+          <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Hospital Name</label>
+          <input type="text" id="customHospitalName" placeholder="Enter hospital name" class="w-full glass-input rounded-xl p-3 text-sm" />
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Patient Name</label>
-          <input type="text" id="entryName" required placeholder="e.g. Ramesh Patel" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-800" />
+          <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Patient Name</label>
+          <input type="text" id="entryName" required placeholder="e.g. Ramesh Patel" class="w-full glass-input rounded-xl p-3" />
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Referred By (Doctor / Source)</label>
-          <input type="text" id="entryReferredBy" placeholder="e.g. Dr. A. K. Shah / Self" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-800 text-sm" />
+          <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Referred By (Doctor / Source)</label>
+          <input type="text" id="entryReferredBy" placeholder="e.g. Dr. A. K. Shah / Self" class="w-full glass-input rounded-xl p-3 text-sm" />
         </div>
 
-        <div id="entrySurgeryFields" class="hidden p-3 bg-emerald-50/70 border border-emerald-200 rounded-2xl space-y-3">
+        <div id="entrySurgeryFields" class="hidden p-3 liquid-glass border border-emerald-500/30 rounded-2xl space-y-3">
           <div class="grid grid-cols-2 gap-2">
             <div>
-              <label class="block text-xs font-bold text-emerald-800 uppercase mb-1">Scheme</label>
-              <select id="entryScheme" class="w-full bg-white border border-emerald-300 rounded-xl p-2.5 text-xs font-semibold">
+              <label class="block text-[11px] font-bold text-emerald-300 uppercase mb-1">Scheme</label>
+              <select id="entryScheme" class="w-full glass-input rounded-xl p-2.5 text-xs font-semibold">
                 <option value="PMJAY">PMJAY</option>
                 <option value="Cash">Cash</option>
                 <option value="TPA">TPA</option>
               </select>
             </div>
             <div>
-              <label class="block text-xs font-bold text-emerald-800 uppercase mb-1">Implants Used?</label>
-              <select id="entryImplantsUsed" onchange="toggleEntryImplantDetails()" class="w-full bg-white border border-emerald-300 rounded-xl p-2.5 text-xs font-semibold">
+              <label class="block text-[11px] font-bold text-emerald-300 uppercase mb-1">Implants Used?</label>
+              <select id="entryImplantsUsed" onchange="toggleEntryImplantDetails()" class="w-full glass-input rounded-xl p-2.5 text-xs font-semibold">
                 <option value="No">No</option>
                 <option value="Yes">Yes</option>
               </select>
             </div>
           </div>
           <div id="entryImplantDetailsContainer" class="hidden">
-            <label class="block text-xs font-bold text-emerald-800 uppercase mb-1">Implants Detail</label>
-            <input type="text" id="entryImplantDetails" placeholder="e.g. 4 Pedicle Screws + 1 PEEK Cage" class="w-full bg-white border border-emerald-300 rounded-xl p-2.5 text-xs" />
+            <label class="block text-[11px] font-bold text-emerald-300 uppercase mb-1">Implants Detail</label>
+            <input type="text" id="entryImplantDetails" placeholder="e.g. 4 Pedicle Screws + 1 PEEK Cage" class="w-full glass-input rounded-xl p-2.5 text-xs" />
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Procedure / Clinical Note</label>
-          <input type="text" id="entryNote" placeholder="e.g. TLIF L4-L5 / Consultation" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-800" />
+          <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Procedure / Clinical Note</label>
+          <input type="text" id="entryNote" placeholder="e.g. TLIF L4-L5 / Consultation" class="w-full glass-input rounded-xl p-3" />
         </div>
 
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Amount (₹)</label>
-            <input type="number" id="entryAmount" step="1" placeholder="0" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-slate-900 text-lg font-bold" />
+            <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Amount (₹)</label>
+            <input type="number" id="entryAmount" step="1" placeholder="0" class="w-full glass-input rounded-xl p-3 text-lg font-bold text-emerald-300" />
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Payment Status</label>
-            <select id="entryPaymentStatus" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-bold">
+            <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Payment Status</label>
+            <select id="entryPaymentStatus" class="w-full glass-input rounded-xl p-3 text-xs font-bold text-amber-300">
               <option value="Received">Received</option>
               <option value="Pending">Pending (Receivable)</option>
             </select>
           </div>
         </div>
 
-        <button type="submit" id="entrySubmitBtn" class="w-full bg-indigo-600 text-white font-bold py-3.5 rounded-xl shadow-md active:bg-indigo-700 mt-2">
+        <button type="submit" id="entrySubmitBtn" class="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold py-3.5 rounded-2xl shadow-lg shadow-indigo-600/30 active:scale-95 transition mt-2">
           Save Entry
         </button>
       </form>
     </div>
   </div>
 
-  <!-- Inpatient (IPD) Admission & Timeline Modal (Supports Cross-Reference Tag) -->
-  <div id="inpatientModal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-end justify-center p-0">
-    <div class="bg-white rounded-t-3xl p-5 w-full max-w-md max-h-[92vh] overflow-y-auto space-y-4">
-      <div class="flex justify-between items-center border-b pb-2">
-        <h3 id="ipdModalTitle" class="text-base font-bold text-slate-900">Inpatient Admission / OT Planning</h3>
-        <button onclick="closeModal('inpatientModal')" class="text-slate-400 text-xl font-bold p-1">&times;</button>
+  <!-- Inpatient (IPD) Admission & Timeline Modal -->
+  <div id="inpatientModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end justify-center p-0">
+    <div class="frosted-card rounded-t-3xl p-5 w-full max-w-md max-h-[92vh] overflow-y-auto space-y-4 border-t border-white/20">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
+        <h3 id="ipdModalTitle" class="text-base font-bold text-white">Inpatient Admission / OT Planning</h3>
+        <button onclick="closeModal('inpatientModal')" class="text-slate-400 hover:text-white text-2xl font-bold p-1">&times;</button>
       </div>
       <form id="inpatientForm" onsubmit="saveInpatient(event)" class="space-y-3">
         <input type="hidden" id="ipdRecordId" value="" />
         
         <div>
-          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Patient Name</label>
-          <input type="text" id="ipdPatientName" required placeholder="Patient full name" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3" />
+          <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Patient Name</label>
+          <input type="text" id="ipdPatientName" required placeholder="Patient full name" class="w-full glass-input rounded-xl p-3" />
         </div>
 
         <!-- Cross-Reference Selection -->
-        <div class="p-3 bg-indigo-50/70 border border-indigo-200 rounded-2xl space-y-2">
+        <div class="p-3 liquid-glass border border-indigo-500/30 rounded-2xl space-y-2">
           <div class="grid grid-cols-2 gap-2">
             <div>
-              <label class="block text-xs font-bold text-indigo-950 uppercase mb-1">Admission Type</label>
-              <select id="ipdAdmissionType" onchange="toggleCrossReferenceFields()" class="w-full bg-white border border-indigo-300 rounded-xl p-2.5 text-xs font-bold">
+              <label class="block text-[11px] font-bold text-indigo-300 uppercase mb-1">Admission Type</label>
+              <select id="ipdAdmissionType" onchange="toggleCrossReferenceFields()" class="w-full glass-input rounded-xl p-2.5 text-xs font-bold">
                 <option value="Direct">My Direct Admission</option>
                 <option value="Cross-Ref">Cross-Reference / Call</option>
               </select>
             </div>
             <div>
-              <label class="block text-xs font-bold text-indigo-950 uppercase mb-1">Status Mode</label>
-              <select id="ipdStatusMode" class="w-full bg-white border border-indigo-300 rounded-xl p-2.5 text-xs font-bold text-indigo-900">
+              <label class="block text-[11px] font-bold text-indigo-300 uppercase mb-1">Status Mode</label>
+              <select id="ipdStatusMode" class="w-full glass-input rounded-xl p-2.5 text-xs font-bold text-indigo-200">
                 <option value="Active">Currently Admitted</option>
                 <option value="Scheduled">Scheduled (Upcoming OT)</option>
               </select>
             </div>
           </div>
           <div id="crossRefContainer" class="hidden">
-            <label class="block text-[10px] font-bold text-indigo-900 uppercase mb-1">Primary Consultant / Department</label>
-            <input type="text" id="ipdPrimaryConsultant" placeholder="e.g. Dr. Desai (Physician) / ICU Team" class="w-full bg-white border border-indigo-300 rounded-xl p-2 text-xs" />
+            <label class="block text-[10px] font-bold text-indigo-300 uppercase mb-1">Primary Consultant / Department</label>
+            <input type="text" id="ipdPrimaryConsultant" placeholder="e.g. Dr. Desai (Physician) / ICU Team" class="w-full glass-input rounded-xl p-2 text-xs" />
           </div>
         </div>
 
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Hospital / Clinic</label>
-            <select id="ipdHospital" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs">
+            <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Hospital / Clinic</label>
+            <select id="ipdHospital" class="w-full glass-input rounded-xl p-3 text-xs">
               <option value="Orange Hospital, Navsari">Orange Hospital, Navsari</option>
               <option value="Parsi Hospital, Navsari">Parsi Hospital, Navsari</option>
               <option value="Kejal Lifeline Hospital, Navsari">Kejal Lifeline, Navsari</option>
@@ -337,43 +411,43 @@
             </select>
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Bed / Room</label>
-            <input type="text" id="ipdWardBed" placeholder="e.g. ICU-3 / Bed 12" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs" />
+            <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Bed / Room</label>
+            <input type="text" id="ipdWardBed" placeholder="e.g. ICU-3 / Bed 12" class="w-full glass-input rounded-xl p-3 text-xs" />
           </div>
         </div>
 
         <!-- Calendar Timeline Milestones Section -->
-        <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
-          <label class="block text-xs font-bold text-slate-700 uppercase">Stay & Milestones (Select Dates)</label>
+        <div class="p-3 liquid-glass border border-white/10 rounded-2xl space-y-2.5">
+          <label class="block text-xs font-bold text-slate-300 uppercase">Stay & Milestones (Select Dates)</label>
           <div class="grid grid-cols-2 gap-2">
             <div>
-              <span class="text-[10px] text-slate-500 font-semibold">Date of Admission</span>
-              <input type="date" id="ipdAdmitDate" required class="w-full bg-white border border-slate-300 rounded-xl p-2 text-xs" />
+              <span class="text-[10px] text-slate-400 font-semibold">Date of Admission</span>
+              <input type="date" id="ipdAdmitDate" required class="w-full glass-input rounded-xl p-2 text-xs" />
             </div>
             <div>
-              <span class="text-[10px] text-slate-500 font-semibold">Planned/Done Surgery Date</span>
-              <input type="date" id="ipdMainSurgeryDate" class="w-full bg-white border border-slate-300 rounded-xl p-2 text-xs" />
+              <span class="text-[10px] text-slate-400 font-semibold">Planned/Done Surgery Date</span>
+              <input type="date" id="ipdMainSurgeryDate" class="w-full glass-input rounded-xl p-2 text-xs" />
             </div>
           </div>
           <div class="grid grid-cols-2 gap-2">
             <div>
-              <span class="text-[10px] text-slate-500 font-semibold">Date ICU Step-down</span>
-              <input type="date" id="ipdIcuOutDate" class="w-full bg-white border border-slate-300 rounded-xl p-2 text-xs" />
+              <span class="text-[10px] text-slate-400 font-semibold">Date ICU Step-down</span>
+              <input type="date" id="ipdIcuOutDate" class="w-full glass-input rounded-xl p-2 text-xs" />
             </div>
             <div>
-              <span class="text-[10px] text-slate-500 font-semibold">Date of Discharge</span>
-              <input type="date" id="ipdDischargeDateInput" class="w-full bg-white border border-slate-300 rounded-xl p-2 text-xs" />
+              <span class="text-[10px] text-slate-400 font-semibold">Date of Discharge</span>
+              <input type="date" id="ipdDischargeDateInput" class="w-full glass-input rounded-xl p-2 text-xs" />
             </div>
           </div>
         </div>
 
         <!-- Scheme & PMJAY to Cash Conversion by Date -->
-        <div class="p-3 bg-amber-50/70 border border-amber-200 rounded-2xl space-y-2.5">
+        <div class="p-3 liquid-glass border border-amber-500/30 rounded-2xl space-y-2.5">
           <div class="flex justify-between items-center">
-            <label class="text-xs font-bold text-amber-950 uppercase">Scheme & Conversion</label>
+            <label class="text-xs font-bold text-amber-300 uppercase">Scheme & Conversion</label>
             <div class="flex items-center gap-1.5">
-              <span class="text-[11px] text-amber-800 font-medium">Convert to Cash?</span>
-              <select id="ipdIsConverted" onchange="toggleSchemeConversionInputs()" class="bg-white border border-amber-300 rounded-lg p-1 text-xs font-bold text-amber-900">
+              <span class="text-[11px] text-amber-200 font-medium">Convert to Cash?</span>
+              <select id="ipdIsConverted" onchange="toggleSchemeConversionInputs()" class="glass-input rounded-lg p-1 text-xs font-bold text-amber-300">
                 <option value="No">No</option>
                 <option value="Yes">Yes</option>
               </select>
@@ -381,8 +455,8 @@
           </div>
 
           <div id="singleSchemeContainer">
-            <span class="text-[10px] text-slate-500 font-semibold">Scheme</span>
-            <select id="ipdPrimaryScheme" class="w-full bg-white border border-slate-300 rounded-xl p-2 text-xs font-bold">
+            <span class="text-[10px] text-slate-400 font-semibold">Scheme</span>
+            <select id="ipdPrimaryScheme" class="w-full glass-input rounded-xl p-2 text-xs font-bold text-blue-300">
               <option value="PMJAY">PMJAY</option>
               <option value="Cash">Cash</option>
               <option value="TPA">TPA</option>
@@ -390,17 +464,17 @@
           </div>
 
           <div id="convertedSchemeContainer" class="hidden">
-            <span class="text-[10px] text-amber-900 font-semibold">Date Converted from PMJAY to Cash</span>
-            <input type="date" id="ipdConversionDate" class="w-full bg-white border border-amber-300 rounded-xl p-2 text-xs" />
+            <span class="text-[10px] text-amber-300 font-semibold">Date Converted from PMJAY to Cash</span>
+            <input type="date" id="ipdConversionDate" class="w-full glass-input rounded-xl p-2 text-xs" />
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Diagnosis / Plan / Procedure</label>
-          <input type="text" id="ipdDiagnosis" placeholder="e.g. L4-L5 TLIF / Conservative Head injury" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-sm" />
+          <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Diagnosis / Plan / Procedure</label>
+          <input type="text" id="ipdDiagnosis" placeholder="e.g. L4-L5 TLIF / Conservative Head injury" class="w-full glass-input rounded-xl p-3 text-sm" />
         </div>
 
-        <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3.5 rounded-xl shadow active:bg-indigo-700">
+        <button type="submit" class="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold py-3.5 rounded-2xl shadow-lg shadow-indigo-600/30 active:scale-95 transition">
           Save Case
         </button>
       </form>
@@ -408,40 +482,40 @@
   </div>
 
   <!-- Add Dated Visit Modal -->
-  <div id="addDatedVisitModal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-end justify-center p-0">
-    <div class="bg-white rounded-t-3xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto space-y-4">
-      <div class="flex justify-between items-center border-b pb-2">
+  <div id="addDatedVisitModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end justify-center p-0">
+    <div class="frosted-card rounded-t-3xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto space-y-4 border-t border-white/20">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
         <div>
-          <h3 class="text-base font-bold text-slate-900">+ Log Dated Inpatient Visit</h3>
-          <p id="datedVisitPatientLabel" class="text-xs text-indigo-600 font-semibold"></p>
+          <h3 class="text-base font-bold text-white">+ Log Dated Inpatient Visit</h3>
+          <p id="datedVisitPatientLabel" class="text-xs text-indigo-300 font-semibold"></p>
         </div>
-        <button onclick="closeModal('addDatedVisitModal')" class="text-slate-400 text-xl font-bold p-1">&times;</button>
+        <button onclick="closeModal('addDatedVisitModal')" class="text-slate-400 hover:text-white text-2xl font-bold p-1">&times;</button>
       </div>
       <form id="datedVisitForm" onsubmit="saveDatedVisitToIpd(event)" class="space-y-3">
         <input type="hidden" id="targetVisitIpdId" value="" />
         <div>
-          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Visit Date</label>
-          <input type="date" id="visitDateInput" required class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3" />
+          <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Visit Date</label>
+          <input type="date" id="visitDateInput" required class="w-full glass-input rounded-xl p-3" />
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Visit Type</label>
-            <select id="visitTypeSelect" onchange="updateDefaultVisitFee()" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-bold">
+            <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Visit Type</label>
+            <select id="visitTypeSelect" onchange="updateDefaultVisitFee()" class="w-full glass-input rounded-xl p-3 text-xs font-bold">
               <option value="Routine Round">Routine Round</option>
               <option value="Emergency Call">Emergency / ICU Call</option>
               <option value="Reference Review">Reference Review</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Fee (₹)</label>
-            <input type="number" id="visitFeeInput" value="800" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 font-bold" />
+            <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Fee (₹)</label>
+            <input type="number" id="visitFeeInput" value="800" class="w-full glass-input rounded-xl p-3 font-bold text-emerald-300" />
           </div>
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Clinical Note (Optional)</label>
-          <input type="text" id="visitNoteInput" placeholder="e.g. Advised antiedema, GCS 14/15" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs" />
+          <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Clinical Note (Optional)</label>
+          <input type="text" id="visitNoteInput" placeholder="e.g. Advised antiedema, GCS 14/15" class="w-full glass-input rounded-xl p-3 text-xs" />
         </div>
-        <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3.5 rounded-xl shadow active:bg-indigo-700">
+        <button type="submit" class="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold py-3.5 rounded-2xl shadow-lg shadow-indigo-600/30 active:scale-95 transition">
           Save Visit
         </button>
       </form>
@@ -449,73 +523,73 @@
   </div>
 
   <!-- Add Surgery inside IPD Modal -->
-  <div id="addSurgeryToIpdModal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-end justify-center p-0">
-    <div class="bg-white rounded-t-3xl p-5 w-full max-w-md max-h-[90vh] overflow-y-auto space-y-4">
-      <div class="flex justify-between items-center border-b pb-2">
+  <div id="addSurgeryToIpdModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end justify-center p-0">
+    <div class="frosted-card rounded-t-3xl p-5 w-full max-w-md max-h-[90vh] overflow-y-auto space-y-4 border-t border-white/20">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
         <div>
-          <h3 class="text-base font-bold text-slate-900">+ Add Surgery to Patient</h3>
-          <p id="ipdTargetPatientLabel" class="text-xs text-indigo-600 font-semibold"></p>
+          <h3 class="text-base font-bold text-white">+ Add Surgery to Patient</h3>
+          <p id="ipdTargetPatientLabel" class="text-xs text-indigo-300 font-semibold"></p>
         </div>
-        <button onclick="closeModal('addSurgeryToIpdModal')" class="text-slate-400 text-xl font-bold p-1">&times;</button>
+        <button onclick="closeModal('addSurgeryToIpdModal')" class="text-slate-400 hover:text-white text-2xl font-bold p-1">&times;</button>
       </div>
       <form id="linkSurgeryForm" onsubmit="saveSurgeryToIpd(event)" class="space-y-3">
         <input type="hidden" id="targetIpdId" value="" />
         <div>
-          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Date of Surgery</label>
-          <input type="date" id="ipdSurgeryDate" required class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3" />
+          <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Date of Surgery</label>
+          <input type="date" id="ipdSurgeryDate" required class="w-full glass-input rounded-xl p-3" />
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Procedure Name</label>
-          <input type="text" id="ipdSurgeryProcedure" required placeholder="e.g. Left Temporal Craniotomy / L4-L5 TLIF" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3" />
+          <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Procedure Name</label>
+          <input type="text" id="ipdSurgeryProcedure" required placeholder="e.g. Left Temporal Craniotomy / L4-L5 TLIF" class="w-full glass-input rounded-xl p-3" />
         </div>
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Scheme</label>
-            <select id="ipdSurgeryScheme" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-bold">
+            <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Scheme</label>
+            <select id="ipdSurgeryScheme" class="w-full glass-input rounded-xl p-3 text-xs font-bold text-blue-300">
               <option value="PMJAY">PMJAY</option>
               <option value="Cash">Cash</option>
               <option value="TPA">TPA</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Surgeon Fee (₹)</label>
-            <input type="number" id="ipdSurgeryFee" required placeholder="0" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 font-bold text-emerald-950" />
+            <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Surgeon Fee (₹)</label>
+            <input type="number" id="ipdSurgeryFee" required placeholder="0" class="w-full glass-input rounded-xl p-3 font-bold text-emerald-300" />
           </div>
         </div>
-        <div class="p-3 bg-emerald-50 rounded-2xl border border-emerald-100 space-y-2">
+        <div class="p-3 liquid-glass border border-emerald-500/30 rounded-2xl space-y-2">
           <div>
-            <label class="block text-xs font-bold text-emerald-800 uppercase mb-1">Implants Used?</label>
-            <select id="ipdSurgeryImplantsUsed" onchange="toggleIpdSurgeryImplantDetails()" class="w-full bg-white border border-emerald-300 rounded-xl p-2.5 text-xs font-semibold">
+            <label class="block text-[11px] font-bold text-emerald-300 uppercase mb-1">Implants Used?</label>
+            <select id="ipdSurgeryImplantsUsed" onchange="toggleIpdSurgeryImplantDetails()" class="w-full glass-input rounded-xl p-2.5 text-xs font-semibold">
               <option value="No">No</option>
               <option value="Yes">Yes</option>
             </select>
           </div>
           <div id="ipdSurgeryImplantDetailsContainer" class="hidden">
-            <label class="block text-xs font-bold text-emerald-800 uppercase mb-1">Implant Details</label>
-            <input type="text" id="ipdSurgeryImplantDetails" placeholder="e.g. 4 Screws + 1 PEEK Cage / Mesh" class="w-full bg-white border border-emerald-300 rounded-xl p-2.5 text-xs" />
+            <label class="block text-[11px] font-bold text-emerald-300 uppercase mb-1">Implant Details</label>
+            <input type="text" id="ipdSurgeryImplantDetails" placeholder="e.g. 4 Screws + 1 PEEK Cage / Mesh" class="w-full glass-input rounded-xl p-2.5 text-xs" />
           </div>
         </div>
-        <button type="submit" class="w-full bg-emerald-600 text-white font-bold py-3.5 rounded-xl shadow active:bg-emerald-700">
+        <button type="submit" class="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-bold py-3.5 rounded-2xl shadow-lg shadow-emerald-700/30 active:scale-95 transition">
           Save Surgery to Patient
         </button>
       </form>
     </div>
   </div>
 
-  <!-- Pending Receivables (Expected Income) Tracker Modal -->
-  <div id="pendingReceivablesModal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3">
-    <div class="bg-white rounded-3xl p-5 w-full max-w-md max-h-[88vh] flex flex-col shadow-2xl">
-      <div class="flex justify-between items-center border-b pb-2 mb-3">
+  <!-- Pending Receivables Tracker Modal -->
+  <div id="pendingReceivablesModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3">
+    <div class="frosted-glass rounded-3xl p-5 w-full max-w-md max-h-[88vh] flex flex-col shadow-2xl border border-white/20">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2.5 mb-3">
         <div>
-          <h3 class="text-base font-bold text-slate-900">Pending Receivables (PMJAY / TPA)</h3>
-          <p class="text-xs text-amber-800 font-semibold" id="pendingTotalHeader">Expected Claims: ₹0</p>
+          <h3 class="text-base font-bold text-white">Pending Receivables (PMJAY / TPA)</h3>
+          <p class="text-xs text-amber-300 font-semibold" id="pendingTotalHeader">Expected Claims: ₹0</p>
         </div>
-        <button onclick="closeModal('pendingReceivablesModal')" class="text-slate-400 text-2xl font-bold">&times;</button>
+        <button onclick="closeModal('pendingReceivablesModal')" class="text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
       </div>
 
       <div class="mb-3">
-        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Filter by Hospital for Reconciliation</label>
-        <select id="pendingHospitalFilter" onchange="renderPendingReceivablesList()" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 text-xs font-medium">
+        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Filter by Hospital</label>
+        <select id="pendingHospitalFilter" onchange="renderPendingReceivablesList()" class="w-full glass-input rounded-xl p-2 text-xs font-medium">
           <option value="All">All Hospitals</option>
           <option value="Orange Hospital, Navsari">Orange Hospital, Navsari</option>
           <option value="Parsi Hospital, Navsari">Parsi Hospital, Navsari</option>
@@ -529,29 +603,29 @@
 
       <div id="pendingReceivablesList" class="flex-1 overflow-y-auto space-y-2.5 pr-1"></div>
 
-      <div class="pt-3 border-t mt-3 space-y-2">
-        <button onclick="sharePendingClaimsWhatsApp()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow text-sm">
+      <div class="pt-3 border-t border-white/10 mt-3 space-y-2">
+        <button onclick="sharePendingClaimsWhatsApp()" class="w-full bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-bold py-3 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-amber-700/30 text-sm active:scale-95 transition">
           <span>📲</span> Share Pending Statement to TPA Desk
         </button>
-        <button onclick="closeModal('pendingReceivablesModal')" class="w-full text-slate-500 text-xs py-1">Close</button>
+        <button onclick="closeModal('pendingReceivablesModal')" class="w-full text-slate-400 hover:text-white text-xs py-1">Close</button>
       </div>
     </div>
   </div>
 
   <!-- Surgery Audit Modal & Clean Formal WhatsApp Share -->
-  <div id="surgeryAuditModal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3">
-    <div class="bg-white rounded-3xl p-5 w-full max-w-md max-h-[88vh] flex flex-col shadow-2xl">
-      <div class="flex justify-between items-center border-b pb-2 mb-3">
+  <div id="surgeryAuditModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3">
+    <div class="frosted-glass rounded-3xl p-5 w-full max-w-md max-h-[88vh] flex flex-col shadow-2xl border border-white/20">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2.5 mb-3">
         <div>
-          <h3 class="text-base font-bold text-slate-900">Monthly Surgery Audit</h3>
-          <p id="surgeryAuditSubtitle" class="text-xs text-slate-500"></p>
+          <h3 class="text-base font-bold text-white">Monthly Surgery Audit</h3>
+          <p id="surgeryAuditSubtitle" class="text-xs text-slate-400"></p>
         </div>
-        <button onclick="closeModal('surgeryAuditModal')" class="text-slate-400 text-2xl font-bold">&times;</button>
+        <button onclick="closeModal('surgeryAuditModal')" class="text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
       </div>
 
       <div class="mb-3">
-        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Filter by Hospital for OT Staff</label>
-        <select id="surgeryAuditHospitalFilter" onchange="filterSurgeryAuditList()" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 text-xs font-medium">
+        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Filter by Hospital for OT Staff</label>
+        <select id="surgeryAuditHospitalFilter" onchange="filterSurgeryAuditList()" class="w-full glass-input rounded-xl p-2 text-xs font-medium">
           <option value="All">All Hospitals</option>
           <option value="Orange Hospital, Navsari">Orange Hospital, Navsari</option>
           <option value="Parsi Hospital, Navsari">Parsi Hospital, Navsari</option>
@@ -565,30 +639,30 @@
 
       <div id="surgeryAuditList" class="flex-1 overflow-y-auto space-y-2.5 pr-1"></div>
 
-      <div class="pt-3 border-t mt-3 space-y-2">
-        <button onclick="shareSurgeryAuditWhatsApp()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow text-sm">
+      <div class="pt-3 border-t border-white/10 mt-3 space-y-2">
+        <button onclick="shareSurgeryAuditWhatsApp()" class="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-bold py-3 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-700/30 text-sm active:scale-95 transition">
           <span>📲</span> Share Formal OT List on WhatsApp
         </button>
-        <button onclick="closeModal('surgeryAuditModal')" class="w-full text-slate-500 text-xs py-1">Close</button>
+        <button onclick="closeModal('surgeryAuditModal')" class="w-full text-slate-400 hover:text-white text-xs py-1">Close</button>
       </div>
     </div>
   </div>
 
   <!-- OPD Audit Modal -->
-  <div id="opdAuditModal" class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3">
-    <div class="bg-white rounded-3xl p-5 w-full max-w-md max-h-[85vh] flex flex-col shadow-2xl">
-      <div class="flex justify-between items-center border-b pb-2 mb-3">
+  <div id="opdAuditModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-3">
+    <div class="frosted-glass rounded-3xl p-5 w-full max-w-md max-h-[85vh] flex flex-col shadow-2xl border border-white/20">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2.5 mb-3">
         <div>
-          <h3 class="text-base font-bold text-slate-900">OPD & Indoor Audit</h3>
-          <p id="opdAuditSubtitle" class="text-xs text-slate-500"></p>
+          <h3 class="text-base font-bold text-white">OPD & Indoor Audit</h3>
+          <p id="opdAuditSubtitle" class="text-xs text-slate-400"></p>
         </div>
-        <button onclick="closeModal('opdAuditModal')" class="text-slate-400 text-2xl font-bold">&times;</button>
+        <button onclick="closeModal('opdAuditModal')" class="text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
       </div>
 
       <div id="opdAuditList" class="flex-1 overflow-y-auto space-y-3 pr-1"></div>
 
-      <div class="pt-3 border-t mt-3">
-        <button onclick="closeModal('opdAuditModal')" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-xs">
+      <div class="pt-3 border-t border-white/10 mt-3">
+        <button onclick="closeModal('opdAuditModal')" class="w-full liquid-glass hover:bg-slate-800 text-slate-300 font-bold py-2.5 rounded-xl text-xs border border-white/10">
           Close
         </button>
       </div>
@@ -596,15 +670,14 @@
   </div>
 
   <!-- Loading Overlay -->
-  <div id="loadingOverlay" class="hidden fixed inset-0 z-50 bg-black/75 flex flex-col items-center justify-center p-6 text-white text-center">
-    <div class="w-12 h-12 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin mb-4"></div>
+  <div id="loadingOverlay" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-white text-center">
+    <div class="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
     <div class="text-base font-bold mb-1">Reading Document...</div>
-    <div class="text-xs text-slate-300 max-w-xs">Extracting details directly on device.</div>
+    <div class="text-xs text-slate-400 max-w-xs">Extracting details directly on device.</div>
   </div>
 
   <script>
     const db = new Dexie('NeuroPracticeDB');
-    // Version 10: Dated visits, Payment Tracking, Cross-Reference Tag
     db.version(10).stores({
       entries: '++id, date, category, hospital, name, referredBy, scheme, implantsUsed, implantDetails, note, amount, paymentStatus, paymentReceivedDate',
       inpatients: '++id, patientName, hospital, admissionType, primaryConsultant, referredBy, primaryScheme, isConverted, conversionDate, admitDate, mainSurgeryDate, icuOutDate, dischargeDate, wardBed, diagnosis, datedVisits, surgeries, status'
@@ -665,14 +738,14 @@
       if (tab === 'entries') {
         viewEntries.classList.remove('hidden');
         viewInpatients.classList.add('hidden');
-        navEntries.className = 'flex flex-col items-center justify-center text-indigo-600 font-semibold text-xs';
-        navInpatients.className = 'flex flex-col items-center justify-center text-slate-400 font-medium text-xs';
+        navEntries.className = 'flex flex-col items-center justify-center text-indigo-400 font-bold text-xs rounded-2xl transition';
+        navInpatients.className = 'flex flex-col items-center justify-center text-slate-400 font-medium text-xs rounded-2xl transition';
         loadDashboard();
       } else {
         viewEntries.classList.add('hidden');
         viewInpatients.classList.remove('hidden');
-        navInpatients.className = 'flex flex-col items-center justify-center text-indigo-600 font-semibold text-xs';
-        navEntries.className = 'flex flex-col items-center justify-center text-slate-400 font-medium text-xs';
+        navInpatients.className = 'flex flex-col items-center justify-center text-indigo-400 font-bold text-xs rounded-2xl transition';
+        navEntries.className = 'flex flex-col items-center justify-center text-slate-400 font-medium text-xs rounded-2xl transition';
         loadInpatients();
       }
     }
@@ -688,15 +761,15 @@
       if (subTab === 'active') {
         activeList.classList.remove('hidden');
         pipelineList.classList.add('hidden');
-        activeBtn.className = 'py-2.5 rounded-xl bg-indigo-600 text-white transition';
-        pipelineBtn.className = 'py-2.5 rounded-xl text-slate-600 transition';
+        activeBtn.className = 'py-2.5 rounded-xl bg-indigo-600 text-white shadow transition';
+        pipelineBtn.className = 'py-2.5 rounded-xl text-slate-400 hover:text-white transition';
         heading.innerText = 'Active Inpatients (IPD)';
         subheading.innerText = 'Live Stay, Dated Visits & Surgeries';
       } else {
         activeList.classList.add('hidden');
         pipelineList.classList.remove('hidden');
-        pipelineBtn.className = 'py-2.5 rounded-xl bg-indigo-600 text-white transition';
-        activeBtn.className = 'py-2.5 rounded-xl text-slate-600 transition';
+        pipelineBtn.className = 'py-2.5 rounded-xl bg-indigo-600 text-white shadow transition';
+        activeBtn.className = 'py-2.5 rounded-xl text-slate-400 hover:text-white transition';
         heading.innerText = 'Upcoming OT Pipeline';
         subheading.innerText = 'Scheduled surgeries, workup and fitness';
       }
@@ -814,7 +887,7 @@
 
       // Render Active Inpatients
       if (activePatients.length === 0) {
-        activeListEl.innerHTML = `<div class="bg-white rounded-2xl p-8 text-center text-slate-400 text-xs">No active admitted patients currently.</div>`;
+        activeListEl.innerHTML = `<div class="liquid-glass rounded-3xl p-8 text-center text-slate-500 text-xs border border-white/5">No active admitted patients currently.</div>`;
       } else {
         activeListEl.innerHTML = activePatients.map(p => {
           const totalStay = calculateDaysDifference(p.admitDate, p.dischargeDate || todayStr);
@@ -841,66 +914,66 @@
           const isCrossRef = p.admissionType === 'Cross-Ref';
 
           return `
-            <div class="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm space-y-3">
+            <div class="frosted-card p-4.5 rounded-3xl space-y-3.5 border border-white/10 shadow-xl">
               <div class="flex justify-between items-start">
                 <div>
                   <div class="flex items-center gap-1.5 flex-wrap">
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${isCrossRef ? 'bg-purple-100 text-purple-900' : 'bg-indigo-100 text-indigo-900'}">
+                    <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full ${isCrossRef ? 'bg-purple-900/60 text-purple-200 border border-purple-500/30' : 'bg-indigo-900/60 text-indigo-200 border border-indigo-500/30'}">
                       ${isCrossRef ? 'Cross-Ref Call' : 'Direct IPD'}
                     </span>
-                    <span class="text-[10px] font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">
+                    <span class="text-[10px] font-semibold text-slate-300 bg-slate-800/60 px-2 py-0.5 rounded-md border border-white/5">
                       Stay: ${totalStay}d (ICU: ${icuDays}d | Ward: ${wardDays}d)
                     </span>
-                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-900">
+                    <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-blue-900/50 text-blue-200 border border-blue-500/30">
                       ${p.primaryScheme || 'PMJAY'}
                     </span>
                   </div>
-                  <h3 class="text-base font-bold text-slate-900 mt-1">${escapeHtml(p.patientName)}</h3>
-                  <p class="text-[11px] text-slate-500">Admitted: ${p.admitDate} | 🏥 ${escapeHtml(p.hospital)}</p>
-                  ${isCrossRef && p.primaryConsultant ? `<p class="text-[11px] font-bold text-purple-900">Primary: ${escapeHtml(p.primaryConsultant)}</p>` : ''}
-                  ${p.wardBed ? `<p class="text-[11px] text-slate-500">Bed: ${escapeHtml(p.wardBed)}</p>` : ''}
-                  ${preopDays > 0 ? `<p class="text-[11px] text-amber-800 font-semibold">Pre-op Workup: ${preopDays} Days</p>` : ''}
-                  ${p.diagnosis ? `<p class="text-xs text-slate-700 mt-0.5 font-medium bg-slate-50 p-1.5 rounded-lg">📋 ${escapeHtml(p.diagnosis)}</p>` : ''}
+                  <h3 class="text-base font-extrabold text-white mt-1.5">${escapeHtml(p.patientName)}</h3>
+                  <p class="text-[11px] text-slate-400">Admitted: ${p.admitDate} | 🏥 ${escapeHtml(p.hospital)}</p>
+                  ${isCrossRef && p.primaryConsultant ? `<p class="text-[11px] font-bold text-purple-300 mt-0.5">Primary: ${escapeHtml(p.primaryConsultant)}</p>` : ''}
+                  ${p.wardBed ? `<p class="text-[11px] text-slate-400">Bed: ${escapeHtml(p.wardBed)}</p>` : ''}
+                  ${preopDays > 0 ? `<p class="text-[11px] text-amber-300/90 font-semibold mt-0.5">Pre-op Workup: ${preopDays} Days</p>` : ''}
+                  ${p.diagnosis ? `<p class="text-xs text-slate-300 mt-1 font-medium liquid-glass p-2 rounded-xl border border-white/5">📋 ${escapeHtml(p.diagnosis)}</p>` : ''}
                 </div>
                 <div class="text-right">
                   <span class="text-[10px] text-slate-400 uppercase font-semibold">Total Due</span>
-                  <div class="text-base font-extrabold text-emerald-950">₹${(surgeriesTotal + visitsTotal).toLocaleString('en-IN')}</div>
-                  <button onclick="editInpatientCase(${p.id})" class="text-[11px] text-indigo-600 font-bold mt-1 px-2 py-0.5 bg-indigo-50 rounded-lg">
+                  <div class="text-base font-black text-emerald-300">₹${(surgeriesTotal + visitsTotal).toLocaleString('en-IN')}</div>
+                  <button onclick="editInpatientCase(${p.id})" class="text-[11px] text-indigo-300 font-bold mt-1.5 px-2.5 py-1 bg-indigo-900/40 border border-indigo-500/30 rounded-xl hover:bg-indigo-800/50 transition">
                     ✏️ Edit Case
                   </button>
                 </div>
               </div>
 
               <!-- Dated Visits Section -->
-              <div class="bg-slate-50 p-2.5 rounded-2xl border border-slate-200/80 space-y-2">
+              <div class="liquid-glass p-3 rounded-2xl border border-white/10 space-y-2">
                 <div class="flex justify-between items-center text-xs">
-                  <span class="font-bold text-slate-700">Dated Inpatient Visits (${visits.length})</span>
-                  <button onclick="openAddDatedVisitModal(${p.id}, '${escapeHtml(p.patientName)}')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-2.5 py-1 rounded-lg text-[11px]">
+                  <span class="font-extrabold text-slate-300">Dated Visits (${visits.length})</span>
+                  <button onclick="openAddDatedVisitModal(${p.id}, '${escapeHtml(p.patientName)}')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-2.5 py-1 rounded-xl text-[11px] shadow-sm transition">
                     + Log Visit
                   </button>
                 </div>
 
                 ${visits.length > 0 ? `
-                  <div class="space-y-1 max-h-32 overflow-y-auto pr-1">
-                    ${visits.map((v, vIdx) => `
-                      <div class="flex justify-between items-center text-[11px] bg-white p-1.5 rounded-lg border border-slate-200">
+                  <div class="space-y-1.5 max-h-32 overflow-y-auto pr-1">
+                    ${visits.map((v) => `
+                      <div class="flex justify-between items-center text-[11px] bg-slate-900/70 p-2 rounded-xl border border-white/5">
                         <div>
-                          <span class="font-bold text-slate-800">${v.date}</span>
-                          <span class="text-slate-500 ml-1">(${v.type})</span>
-                          ${v.note ? `<span class="text-slate-400 ml-1 truncate max-w-[120px]">- ${escapeHtml(v.note)}</span>` : ''}
+                          <span class="font-bold text-slate-200">${v.date}</span>
+                          <span class="text-slate-400 ml-1">(${v.type})</span>
+                          ${v.note ? `<span class="text-slate-500 ml-1 truncate max-w-[120px]">- ${escapeHtml(v.note)}</span>` : ''}
                         </div>
-                        <span class="font-bold text-emerald-900">₹${v.fee}</span>
+                        <span class="font-bold text-emerald-300">₹${v.fee}</span>
                       </div>
                     `).join('')}
                   </div>
-                ` : `<div class="text-[11px] text-slate-400 text-center py-1">No dated visits logged yet.</div>`}
+                ` : `<div class="text-[11px] text-slate-500 text-center py-1">No dated visits logged yet.</div>`}
               </div>
 
               <!-- Surgeries Linked Section -->
               <div class="space-y-1.5">
                 <div class="flex justify-between items-center text-xs">
-                  <span class="font-bold text-slate-700">Surgeries Linked (${surgeries.length})</span>
-                  <button onclick="openAddSurgeryToIpdModal(${p.id}, '${escapeHtml(p.patientName)}')" class="text-emerald-700 bg-emerald-50 hover:bg-emerald-100 font-bold px-2 py-1 rounded-lg text-xs">
+                  <span class="font-extrabold text-slate-300">Surgeries Linked (${surgeries.length})</span>
+                  <button onclick="openAddSurgeryToIpdModal(${p.id}, '${escapeHtml(p.patientName)}')" class="text-emerald-300 bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-500/30 font-bold px-2.5 py-1 rounded-xl text-xs transition">
                     + Add Surgery
                   </button>
                 </div>
@@ -908,34 +981,34 @@
                 ${surgeries.length > 0 ? surgeries.map((s, sIdx) => {
                   const pod = calculateDaysDifference(s.date, todayStr) - 1;
                   return `
-                    <div class="bg-emerald-50/80 border border-emerald-200/80 rounded-xl p-2.5 text-xs space-y-1">
+                    <div class="liquid-glass border border-emerald-500/20 rounded-2xl p-3 text-xs space-y-1">
                       <div class="flex justify-between items-start">
                         <div>
-                          <span class="font-bold text-emerald-950">${sIdx + 1}. ${escapeHtml(s.procedure)}</span>
-                          <span class="text-[10px] ml-1 bg-emerald-200 text-emerald-900 px-1.5 py-0.2 rounded font-semibold">
+                          <span class="font-bold text-white">${sIdx + 1}. ${escapeHtml(s.procedure)}</span>
+                          <span class="text-[10px] ml-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.2 rounded font-semibold">
                             ${pod >= 0 ? `POD ${pod}` : 'Scheduled'}
                           </span>
                         </div>
-                        <div class="font-bold text-emerald-900">₹${(Number(s.fee)||0).toLocaleString('en-IN')}</div>
+                        <div class="font-extrabold text-emerald-300">₹${(Number(s.fee)||0).toLocaleString('en-IN')}</div>
                       </div>
-                      <div class="text-[10px] text-slate-600 flex items-center gap-2">
+                      <div class="text-[10px] text-slate-400 flex items-center gap-2">
                         <span>OT: ${s.date}</span>
-                        <span class="font-semibold text-blue-800">${s.scheme || 'PMJAY'}</span>
-                        <span class="font-medium ${s.implantsUsed === 'Yes' ? 'text-emerald-800' : 'text-slate-400'}">
+                        <span class="font-bold text-blue-300">${s.scheme || 'PMJAY'}</span>
+                        <span class="font-medium ${s.implantsUsed === 'Yes' ? 'text-emerald-300' : 'text-slate-500'}">
                           🔩 Implants: ${s.implantsUsed === 'Yes' ? (escapeHtml(s.implantDetails) || 'Yes') : 'No'}
                         </span>
                       </div>
                     </div>
                   `;
-                }).join('') : `<div class="text-[11px] text-slate-400 bg-slate-50 p-2 rounded-xl text-center">Conservative case (No surgery completed)</div>`}
+                }).join('') : `<div class="text-[11px] text-slate-500 liquid-glass p-2.5 rounded-2xl text-center border border-white/5">Conservative case (No surgery completed)</div>`}
               </div>
 
               <!-- Bottom Actions -->
-              <div class="flex justify-end gap-2 pt-2 border-t border-slate-100 text-xs">
-                <button onclick="dischargeInpatient(${p.id})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-xl shadow-sm">
+              <div class="flex justify-end gap-2 pt-2 border-t border-white/10 text-xs">
+                <button onclick="dischargeInpatient(${p.id})" class="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-bold px-3 py-1.5 rounded-xl shadow-lg shadow-emerald-900/30 transition">
                   ✓ Discharge & Settle
                 </button>
-                <button onclick="deleteInpatient(${p.id})" class="text-red-500 font-semibold px-2 py-1.5">Delete</button>
+                <button onclick="deleteInpatient(${p.id})" class="text-rose-400 hover:text-rose-300 font-semibold px-2 py-1.5">Delete</button>
               </div>
             </div>
           `;
@@ -944,43 +1017,43 @@
 
       // Render Upcoming Pipeline
       if (pipelinePatients.length === 0) {
-        pipelineListEl.innerHTML = `<div class="bg-white rounded-2xl p-8 text-center text-slate-400 text-xs">No upcoming surgeries scheduled right now.</div>`;
+        pipelineListEl.innerHTML = `<div class="liquid-glass rounded-3xl p-8 text-center text-slate-500 text-xs border border-white/5">No upcoming surgeries scheduled right now.</div>`;
       } else {
         pipelineListEl.innerHTML = pipelinePatients.map(p => `
-          <div class="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm space-y-3">
+          <div class="frosted-card p-4.5 rounded-3xl space-y-3.5 border border-white/10 shadow-xl">
             <div class="flex justify-between items-start">
               <div>
                 <div class="flex items-center gap-1.5 flex-wrap">
-                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900">
+                  <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-900/60 text-amber-200 border border-amber-500/30">
                     📅 Scheduled OT
                   </span>
-                  <span class="text-[10px] font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">
+                  <span class="text-[10px] font-semibold text-slate-300 bg-slate-800/60 px-2 py-0.5 rounded-md border border-white/5">
                     🏥 ${escapeHtml(p.hospital)}
                   </span>
-                  <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-900">
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-900/50 text-blue-200 border border-blue-500/30">
                     ${p.primaryScheme || 'PMJAY'}
                   </span>
                 </div>
-                <h3 class="text-base font-bold text-slate-900 mt-1">${escapeHtml(p.patientName)}</h3>
-                <p class="text-xs font-bold text-indigo-900 mt-0.5">OT Date: ${p.mainSurgeryDate || p.admitDate}</p>
-                ${p.referredBy ? `<p class="text-[11px] text-indigo-700 font-medium">👨‍⚕️ Ref: ${escapeHtml(p.referredBy)}</p>` : ''}
-                ${p.diagnosis ? `<p class="text-xs text-slate-700 mt-1 font-medium bg-slate-50 p-2 rounded-xl">🔹 Plan: ${escapeHtml(p.diagnosis)}</p>` : ''}
+                <h3 class="text-base font-extrabold text-white mt-1.5">${escapeHtml(p.patientName)}</h3>
+                <p class="text-xs font-bold text-indigo-300 mt-0.5">OT Date: ${p.mainSurgeryDate || p.admitDate}</p>
+                ${p.referredBy ? `<p class="text-[11px] text-slate-400">👨‍⚕ Ref: ${escapeHtml(p.referredBy)}</p>` : ''}
+                ${p.diagnosis ? `<p class="text-xs text-slate-300 mt-1 font-medium liquid-glass p-2 rounded-xl border border-white/5">🔹 Plan: ${escapeHtml(p.diagnosis)}</p>` : ''}
               </div>
               <div class="text-right">
-                <button onclick="editInpatientCase(${p.id})" class="text-xs text-indigo-600 font-bold px-2 py-1 bg-indigo-50 rounded-lg">
+                <button onclick="editInpatientCase(${p.id})" class="text-xs text-indigo-300 font-bold px-2.5 py-1 liquid-glass border border-indigo-500/30 rounded-xl hover:bg-indigo-900/40 transition">
                   ✏️ Edit
                 </button>
               </div>
             </div>
 
-            <div class="flex justify-end gap-2 pt-2 border-t border-slate-100 text-xs">
-              <button onclick="markPatientAdmitted(${p.id})" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-xl shadow-sm">
+            <div class="flex justify-end gap-2 pt-2 border-t border-white/10 text-xs">
+              <button onclick="markPatientAdmitted(${p.id})" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 rounded-xl shadow-lg shadow-indigo-600/30 transition">
                 🛏️ Mark Admitted (Pre-op)
               </button>
-              <button onclick="markSurgeryCompletedDirectly(${p.id})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-xl shadow-sm">
+              <button onclick="markSurgeryCompletedDirectly(${p.id})" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-xl shadow-lg shadow-emerald-700/30 transition">
                 ✓ Mark Surgery Done
               </button>
-              <button onclick="deleteInpatient(${p.id})" class="text-red-500 font-semibold px-2 py-1.5">Cancel</button>
+              <button onclick="deleteInpatient(${p.id})" class="text-rose-400 hover:text-rose-300 font-semibold px-2 py-1.5">Cancel</button>
             </div>
           </div>
         `).join('');
@@ -1070,7 +1143,6 @@
       else switchIpdSubTab('active');
     }
 
-    // Dated Visit Logging
     function openAddDatedVisitModal(ipdId, patientName) {
       document.getElementById('targetVisitIpdId').value = ipdId;
       document.getElementById('datedVisitPatientLabel').innerText = `Patient: ${patientName}`;
@@ -1102,7 +1174,6 @@
       loadInpatients();
     }
 
-    // Move from Pipeline to Active Inpatient
     async function markPatientAdmitted(id) {
       const p = await db.inpatients.get(id);
       if (!p) return;
@@ -1116,7 +1187,6 @@
       }
     }
 
-    // Direct Mark Surgery Completed from Pipeline
     async function markSurgeryCompletedDirectly(id) {
       const p = await db.inpatients.get(id);
       if (!p) return;
@@ -1191,7 +1261,6 @@
       loadInpatients();
     }
 
-    // Discharge & Full Settle (Logs Surgery as Pending if PMJAY/TPA)
     async function dischargeInpatient(id) {
       const p = await db.inpatients.get(id);
       if (!p) return;
@@ -1215,7 +1284,6 @@
 
       if (confirm(`Discharge ${p.patientName}?\n• Total Stay: ${staySummaryString}\n• Visits: ${visits.length} (₹${totalVisitsFee})\n• Surgeries: ${surgeries.length}\n\nMove records to Practice Ledger?`)) {
         
-        // Log individual surgeries
         for (const s of surgeries) {
           const isPendingScheme = (s.scheme === 'PMJAY' || s.scheme === 'TPA');
           await db.entries.add({
@@ -1234,7 +1302,6 @@
           });
         }
 
-        // Log Inpatient visits
         if (totalVisitsFee > 0) {
           await db.entries.add({
             date: dischargeDate,
@@ -1266,7 +1333,6 @@
       }
     }
 
-    // Ledger & Dashboard Logic with Receivables calculation
     async function loadDashboard() {
       const range = document.getElementById('viewRangeSelect').value;
       const selectedMonth = document.getElementById('monthFilter').value;
@@ -1280,7 +1346,7 @@
         document.getElementById('currentMonthLabel').innerText = `All Records (${allEntries.length})`;
       }
 
-      let total = 0, opdIndoor = 0, surgery = 0, mr = 0;
+      let total = 0, opdIndoor = 0, surgery = 0;
       const hospitalTotals = {};
 
       displayEntries.forEach(item => {
@@ -1288,13 +1354,11 @@
         total += val;
         if (item.category === 'OPD' || item.category === 'Indoor') opdIndoor += val;
         else if (item.category === 'Surgery') surgery += val;
-        else if (item.category === 'MR Benefit') mr += val;
 
         const hosp = item.hospital || 'General / Other';
         hospitalTotals[hosp] = (hospitalTotals[hosp] || 0) + val;
       });
 
-      // Pending claims calculation across all records
       let totalPending = 0;
       allEntries.forEach(item => {
         if (item.paymentStatus === 'Pending') {
@@ -1307,64 +1371,62 @@
       document.getElementById('statSurgery').innerText = `₹${surgery.toLocaleString('en-IN')}`;
       document.getElementById('statPendingReceivables').innerText = `₹${totalPending.toLocaleString('en-IN')} Due`;
 
-      // Hospital Breakdown
       const hospBreakdownEl = document.getElementById('hospitalBreakdownList');
       const hospKeys = Object.keys(hospitalTotals);
       if (hospKeys.length === 0) {
-        hospBreakdownEl.innerHTML = `<div class="text-slate-400 text-[11px]">No hospital data yet.</div>`;
+        hospBreakdownEl.innerHTML = `<div class="text-slate-500 text-[11px]">No hospital data yet.</div>`;
       } else {
         hospBreakdownEl.innerHTML = hospKeys.map(h => `
           <div class="flex justify-between items-center text-xs py-0.5">
-            <span class="truncate max-w-[200px] text-slate-700">${escapeHtml(h)}</span>
-            <span class="font-bold text-slate-900">₹${hospitalTotals[h].toLocaleString('en-IN')}</span>
+            <span class="truncate max-w-[200px] text-slate-300">${escapeHtml(h)}</span>
+            <span class="font-extrabold text-white">₹${hospitalTotals[h].toLocaleString('en-IN')}</span>
           </div>
         `).join('');
       }
 
-      // Render Entries List
       const listEl = document.getElementById('entriesList');
       document.getElementById('entriesCount').innerText = `${displayEntries.length} records`;
 
       if (displayEntries.length === 0) {
-        listEl.innerHTML = `<div class="bg-white rounded-xl p-6 text-center text-slate-400 text-xs">No entries found for this view.</div>`;
+        listEl.innerHTML = `<div class="liquid-glass rounded-3xl p-6 text-center text-slate-500 text-xs border border-white/5">No entries found for this view.</div>`;
         return;
       }
 
       listEl.innerHTML = displayEntries.map(e => `
-        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div class="frosted-card p-3.5 rounded-2xl flex items-center justify-between border border-white/10 shadow-lg">
           <div class="space-y-1 max-w-[65%]">
             <div class="flex items-center gap-1.5 flex-wrap">
-              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${getCategoryBadge(e.category)}">${e.category}</span>
-              ${e.scheme ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">${e.scheme}</span>` : ''}
-              ${e.paymentStatus === 'Pending' ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900">⏳ Pending</span>` : ''}
-              <span class="text-[10px] font-semibold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded truncate max-w-[120px]">
+              <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full ${getCategoryBadge(e.category)}">${e.category}</span>
+              ${e.scheme ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-900/60 text-blue-200 border border-blue-500/20">${e.scheme}</span>` : ''}
+              ${e.paymentStatus === 'Pending' ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-900/60 text-amber-200 border border-amber-500/20">⏳ Pending</span>` : ''}
+              <span class="text-[10px] font-semibold bg-slate-800/60 text-slate-300 px-1.5 py-0.5 rounded truncate max-w-[120px]">
                 🏥 ${escapeHtml(e.hospital || 'General')}
               </span>
               <span class="text-[10px] text-slate-400">${e.date || ''}</span>
             </div>
-            <div class="text-sm font-bold text-slate-900 truncate">${escapeHtml(e.name || 'Unnamed Entry')}</div>
-            ${e.referredBy ? `<div class="text-[11px] font-semibold text-indigo-700 flex items-center gap-1 truncate">👨‍⚕️️ Ref: ${escapeHtml(e.referredBy)}</div>` : ''}
+            <div class="text-sm font-extrabold text-white truncate">${escapeHtml(e.name || 'Unnamed Entry')}</div>
+            ${e.referredBy ? `<div class="text-[11px] font-semibold text-indigo-300 flex items-center gap-1 truncate">👨‍⚕ Ref: ${escapeHtml(e.referredBy)}</div>` : ''}
             ${e.category === 'Surgery' ? `
-              <div class="text-[10px] font-medium ${e.implantsUsed === 'Yes' ? 'text-emerald-800' : 'text-slate-500'}">
+              <div class="text-[10px] font-medium ${e.implantsUsed === 'Yes' ? 'text-emerald-300' : 'text-slate-400'}">
                 🔩 Implants: ${e.implantsUsed === 'Yes' ? (escapeHtml(e.implantDetails) || 'Yes') : 'No'}
               </div>` : ''}
-            ${e.note ? `<div class="text-xs text-slate-500 truncate">${escapeHtml(e.note)}</div>` : ''}
+            ${e.note ? `<div class="text-xs text-slate-300 truncate">${escapeHtml(e.note)}</div>` : ''}
           </div>
           <div class="text-right flex flex-col items-end">
-            <div class="text-sm font-extrabold text-slate-800">₹${(Number(e.amount)||0).toLocaleString('en-IN')}</div>
+            <div class="text-sm font-black text-white">₹${(Number(e.amount)||0).toLocaleString('en-IN')}</div>
             <div class="flex items-center gap-1.5 mt-1.5">
               ${e.paymentStatus === 'Pending' ? `
-                <button onclick="markPaymentReceivedDirect(${e.id})" class="text-[10px] font-bold px-1.5 py-0.5 bg-emerald-50 text-emerald-800 rounded">
+                <button onclick="markPaymentReceivedDirect(${e.id})" class="text-[10px] font-bold px-2 py-1 bg-emerald-900/60 text-emerald-200 border border-emerald-500/30 rounded-lg hover:bg-emerald-800/60 transition">
                   ✓ Paid
                 </button>
               ` : ''}
               ${e.category === 'OPD' ? `
-                <button onclick="convertOpdToIpd(${e.id})" class="text-[11px] font-bold px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg">
+                <button onclick="convertOpdToIpd(${e.id})" class="text-[11px] font-bold px-2 py-1 bg-indigo-900/60 hover:bg-indigo-800/60 text-indigo-200 border border-indigo-500/30 rounded-lg transition">
                   🛏️ Admit
                 </button>
               ` : ''}
-              <button onclick="editEntry(${e.id})" class="text-indigo-600 font-semibold text-xs px-1.5 py-1 bg-slate-50 rounded-lg">✏️</button>
-              <button onclick="deleteEntry(${e.id})" class="text-red-400 font-semibold text-xs px-1 py-1">🗑</button>
+              <button onclick="editEntry(${e.id})" class="text-indigo-300 font-semibold text-xs px-2 py-1 liquid-glass rounded-lg hover:bg-slate-800 transition">✏️</button>
+              <button onclick="deleteEntry(${e.id})" class="text-rose-400 hover:text-rose-300 font-semibold text-xs px-1.5 py-1">🗑</button>
             </div>
           </div>
         </div>
@@ -1372,12 +1434,11 @@
     }
 
     function getCategoryBadge(cat) {
-      if (cat === 'Surgery') return 'bg-emerald-100 text-emerald-800';
-      if (cat === 'MR Benefit') return 'bg-amber-100 text-amber-800';
-      return 'bg-indigo-100 text-indigo-800';
+      if (cat === 'Surgery') return 'bg-emerald-900/60 text-emerald-200 border border-emerald-500/30';
+      if (cat === 'MR Benefit') return 'bg-amber-900/60 text-amber-200 border border-amber-500/30';
+      return 'bg-indigo-900/60 text-indigo-200 border border-indigo-500/30';
     }
 
-    // Pending Receivables Modal Logic
     async function openPendingReceivablesModal() {
       document.getElementById('pendingHospitalFilter').value = 'All';
       renderPendingReceivablesList();
@@ -1400,7 +1461,7 @@
       const listEl = document.getElementById('pendingReceivablesList');
 
       if (pendingList.length === 0) {
-        listEl.innerHTML = `<div class="p-8 text-center text-slate-400 text-xs">No pending claims found.</div>`;
+        listEl.innerHTML = `<div class="p-8 text-center text-slate-500 text-xs">No pending claims found.</div>`;
         return;
       }
 
@@ -1408,27 +1469,27 @@
 
       listEl.innerHTML = pendingList.map(item => {
         const daysOld = calculateDaysDifference(item.date, todayStr) - 1;
-        let agingBadge = 'bg-slate-100 text-slate-700';
-        if (daysOld >= 60) agingBadge = 'bg-red-100 text-red-900 font-bold';
-        else if (daysOld >= 30) agingBadge = 'bg-amber-100 text-amber-900 font-bold';
+        let agingBadge = 'bg-slate-800 text-slate-300 border border-white/10';
+        if (daysOld >= 60) agingBadge = 'bg-rose-950/70 text-rose-200 font-bold border border-rose-500/40';
+        else if (daysOld >= 30) agingBadge = 'bg-amber-950/70 text-amber-200 font-bold border border-amber-500/40';
 
         return `
-          <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-1">
+          <div class="p-3.5 liquid-glass rounded-2xl space-y-1.5 border border-white/10">
             <div class="flex justify-between items-start">
               <div>
-                <span class="font-bold text-sm text-slate-900">${escapeHtml(item.name)}</span>
-                <span class="text-[10px] ml-1 px-1.5 py-0.5 rounded ${agingBadge}">${daysOld}d pending</span>
+                <span class="font-extrabold text-sm text-white">${escapeHtml(item.name)}</span>
+                <span class="text-[10px] ml-1.5 px-2 py-0.5 rounded-full ${agingBadge}">${daysOld}d pending</span>
               </div>
-              <span class="font-extrabold text-sm text-emerald-950">₹${(Number(item.amount)||0).toLocaleString('en-IN')}</span>
+              <span class="font-black text-sm text-emerald-300">₹${(Number(item.amount)||0).toLocaleString('en-IN')}</span>
             </div>
-            <div class="text-xs text-slate-600">🔹 Procedure: ${escapeHtml(item.note || 'Surgery')}</div>
-            <div class="text-[11px] text-slate-500 flex items-center gap-2">
+            <div class="text-xs text-slate-300">🔹 Procedure: ${escapeHtml(item.note || 'Surgery')}</div>
+            <div class="text-[11px] text-slate-400 flex items-center gap-2">
               <span>OT: ${item.date}</span>
               <span>🏥 ${escapeHtml(item.hospital)}</span>
-              <span class="font-bold text-blue-800">${item.scheme}</span>
+              <span class="font-bold text-blue-300">${item.scheme}</span>
             </div>
             <div class="flex justify-end pt-1">
-              <button onclick="markPaymentReceivedDirect(${item.id})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1 rounded-lg text-xs">
+              <button onclick="markPaymentReceivedDirect(${item.id})" class="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-bold px-3 py-1 rounded-xl text-xs shadow transition">
                 ✓ Mark Received
               </button>
             </div>
@@ -1454,7 +1515,6 @@
       loadDashboard();
     }
 
-    // Follow-up WhatsApp Message for TPA / Accounts
     async function sharePendingClaimsWhatsApp() {
       const selectedHosp = document.getElementById('pendingHospitalFilter').value;
       const allEntries = await db.entries.reverse().toArray();
@@ -1497,7 +1557,6 @@
       window.open(whatsappUrl, '_blank');
     }
 
-    // Surgery Audit List
     async function openSurgeryAuditModal() {
       document.getElementById('surgeryAuditHospitalFilter').value = 'All';
       filterSurgeryAuditList();
@@ -1518,29 +1577,28 @@
       const listEl = document.getElementById('surgeryAuditList');
 
       if (monthSurgeries.length === 0) {
-        listEl.innerHTML = `<div class="p-8 text-center text-slate-400 text-xs">No surgeries found for this selection.</div>`;
+        listEl.innerHTML = `<div class="p-8 text-center text-slate-500 text-xs">No surgeries found for this selection.</div>`;
         return;
       }
 
       listEl.innerHTML = monthSurgeries.map((s, idx) => `
-        <div class="p-3 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-1">
+        <div class="p-3.5 liquid-glass rounded-2xl space-y-1.5 border border-white/10">
           <div class="flex justify-between items-start">
-            <div class="font-bold text-sm text-slate-900">${idx+1}. ${escapeHtml(s.name)}</div>
-            <span class="font-bold text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-800">${s.scheme || 'PMJAY'}</span>
+            <div class="font-extrabold text-sm text-white">${idx+1}. ${escapeHtml(s.name)}</div>
+            <span class="font-bold text-xs px-2 py-0.5 rounded-md bg-blue-900/60 text-blue-200 border border-blue-500/20">${s.scheme || 'PMJAY'}</span>
           </div>
-          <div class="text-xs text-slate-700">Procedure: ${escapeHtml(s.note || 'Surgery')}</div>
-          <div class="text-[11px] text-slate-600 flex items-center gap-3">
+          <div class="text-xs text-slate-300">Procedure: ${escapeHtml(s.note || 'Surgery')}</div>
+          <div class="text-[11px] text-slate-400 flex items-center gap-3">
             <span>Date: ${s.date}</span>
             <span>Hospital: ${escapeHtml(s.hospital || '')}</span>
           </div>
-          <div class="text-[11px] ${s.implantsUsed === 'Yes' ? 'text-emerald-800 font-bold' : 'text-slate-500 font-medium'}">
+          <div class="text-[11px] ${s.implantsUsed === 'Yes' ? 'text-emerald-300 font-bold' : 'text-slate-400 font-medium'}">
             Implants: ${s.implantsUsed === 'Yes' ? (escapeHtml(s.implantDetails) || 'Yes') : 'No'}
           </div>
         </div>
       `).join('');
     }
 
-    // Clean Formal WhatsApp Export for OT Staff
     async function shareSurgeryAuditWhatsApp() {
       const selectedMonth = document.getElementById('monthFilter').value;
       const targetHospital = document.getElementById('surgeryAuditHospitalFilter').value;
@@ -1583,7 +1641,6 @@
       window.open(whatsappUrl, '_blank');
     }
 
-    // OPD Audit
     async function openOpdAuditModal() {
       const selectedMonth = document.getElementById('monthFilter').value;
       const allEntries = await db.entries.reverse().toArray();
@@ -1607,22 +1664,22 @@
       const hospKeys = Object.keys(hospCounters);
 
       if (hospKeys.length === 0) {
-        listEl.innerHTML = `<div class="p-6 text-center text-slate-400 text-xs">No OPD / Indoor entries recorded this month.</div>`;
+        listEl.innerHTML = `<div class="p-6 text-center text-slate-500 text-xs">No OPD / Indoor entries recorded this month.</div>`;
       } else {
         listEl.innerHTML = `
           <div class="space-y-2">
-            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500">Hospital Breakdown</h4>
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Hospital Breakdown</h4>
             ${hospKeys.map(h => `
-              <div class="flex justify-between items-center p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs">
+              <div class="flex justify-between items-center p-3 liquid-glass rounded-2xl border border-white/10 text-xs">
                 <div>
-                  <div class="font-bold text-slate-900">${escapeHtml(h)}</div>
-                  <div class="text-slate-500">${hospCounters[h].count} Consultations / Rounds</div>
+                  <div class="font-extrabold text-white">${escapeHtml(h)}</div>
+                  <div class="text-slate-400">${hospCounters[h].count} Consultations / Rounds</div>
                 </div>
-                <div class="font-extrabold text-slate-800 text-sm">₹${hospCounters[h].rev.toLocaleString('en-IN')}</div>
+                <div class="font-black text-emerald-300 text-sm">₹${hospCounters[h].rev.toLocaleString('en-IN')}</div>
               </div>
             `).join('')}
           </div>
-          <div class="p-3 bg-indigo-50 rounded-xl text-center font-bold text-indigo-950 text-sm">
+          <div class="p-3 liquid-glass border border-indigo-500/30 rounded-2xl text-center font-black text-indigo-200 text-sm">
             Total Consultations: ₹${totalOpdRev.toLocaleString('en-IN')}
           </div>
         `;
@@ -1761,7 +1818,6 @@
       document.getElementById('entryModal').classList.remove('hidden');
     }
 
-    // OCR Document Parser
     async function handleImageSelected(event) {
       const file = event.target.files[0];
       if (!file) return;
