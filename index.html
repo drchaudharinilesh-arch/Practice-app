@@ -141,4 +141,33 @@
 
             <!-- Card 4: Surgeries Done -->
             <button onclick="openSurgeryAuditModal()" class="liquid-glass hover:bg-emerald-950/30 active:scale-98 rounded-2xl p-3.5 border border-emerald-500/25 relative overflow-hidden flex flex-col justify-between text-left transition h-28">
-              <div class="flex justify-between items-start
+              <div class="flex justify-between items-start">
+                <span class="text-[10px] font-bold text-emerald-300 uppercase tracking-wider">Surgeries</span>
+                <span class="text-[10px] text-emerald-400 font-bold">OT List ↗</span>
+              </div>
+              <div>
+                <div id="statSurgery" class="text-xl font-black text-emerald-200 tracking-tight">₹0</div>
+                <p class="text-[10px] text-emerald-300/70 font-medium mt-0.5">Operated Cases</p>
+              </div>
+            </button>
+
+          </div>
+
+          <!-- Hospital Breakdown Accordion -->
+          <details class="text-xs liquid-glass p-2.5 rounded-2xl cursor-pointer">
+            <summary class="font-bold text-slate-300 flex justify-between items-center select-none text-[11px]">
+              <span>🏥 Hospital-wise Breakdown</span>
+              <span class="text-[10px] text-indigo-400 font-semibold">View details ▼</span>
+            </summary>
+            <div id="hospitalBreakdownList" class="pt-2 space-y-1.5 border-t border-white/10 mt-2 text-slate-400 text-xs"></div>
+          </details>
+        </section>
+
+        <!-- Quick Action Buttons -->
+        <div class="grid grid-cols-2 gap-3">
+          <label class="flex flex-col items-center justify-center bg-gradient-to-br from-indigo-600 to-indigo-800 hover:from-indigo-500 hover:to-indigo-700 active:scale-95 text-white rounded-3xl p-3.5 shadow-xl shadow-indigo-950/50 cursor-pointer min-h-[72px] border border-indigo-400/30 transition">
+            <span class="text-xl">📷</span>
+            <span class="text-xs font-extrabold mt-0.5 tracking-wide">Scan Doc / Slip</span>
+            <input type="file" id="scanInput" accept="image/*" class="hidden" onchange="handleImageSelected(event)" />
+          </label>
+          <button
