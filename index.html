@@ -8,7 +8,6 @@
   <meta name="theme-color" content="#070a13" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -168,7 +167,7 @@
           <label class="flex flex-col items-center justify-center bg-gradient-to-br from-indigo-600 to-indigo-800 hover:from-indigo-500 hover:to-indigo-700 active:scale-95 text-white rounded-3xl p-3.5 shadow-xl shadow-indigo-950/50 cursor-pointer min-h-[72px] border border-indigo-400/30 transition">
             <span class="text-xl">📷</span>
             <span class="text-xs font-extrabold mt-0.5 tracking-wide">Scan Doc / Slip</span>
-            <input type="file" id="scanInput" accept="image/*" class="hidden" onchange="handleImageSelected(event)" />
+            <input type="file" id="scanInput" accept="image/*" capture="environment" class="hidden" onchange="handleImageSelected(event)" />
           </label>
           <button onclick="openManualEntryModal()" class="flex flex-col items-center justify-center liquid-glass hover:bg-slate-800/80 active:scale-95 text-white rounded-3xl p-3.5 shadow-xl shadow-black/40 min-h-[72px] border border-white/10 transition">
             <span class="text-xl">✍️</span>
@@ -671,8 +670,8 @@
   <!-- Loading Overlay -->
   <div id="loadingOverlay" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-white text-center">
     <div class="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-    <div class="text-base font-bold mb-1">Reading Document...</div>
-    <div class="text-xs text-slate-400 max-w-xs">Entry processing...</div>
+    <div class="text-base font-bold mb-1">Reading Document with AI...</div>
+    <div class="text-xs text-slate-400 max-w-xs">Gemini AI is parsing prescription details...</div>
   </div>
 
   <script>
@@ -926,7 +925,6 @@
       return days >= 0 ? days : 0;
     }
 
-    // Smart Aggregator: Groups IPD Surgeries and Stays under Active Inpatients (Preventing duplicate card spam on Frontpage)
     async function forceRefreshAll() {
       try {
         let directEntries = [];
@@ -940,7 +938,6 @@
 
         let combinedFeed = [];
 
-        // 1. Keep only standalone entries (OPD, MR Benefit, or direct manual entries not tied to active IPD)
         directEntries.forEach(e => {
           const isMatchedWithIpd = inpatientsList.some(p => p.patientName.toLowerCase() === e.name.toLowerCase() && (e.category === 'Surgery' || e.category === 'Indoor'));
           if (!isMatchedWithIpd) {
@@ -948,7 +945,6 @@
           }
         });
 
-        // 2. Aggregate Active Inpatients as a single master card in the ledger
         inpatientsList.forEach(p => {
           if (p.status === 'Active') {
             let surgeriesTotal = 0;
@@ -1125,7 +1121,6 @@
       return 'bg-indigo-900/60 text-indigo-200 border border-indigo-500/30';
     }
 
-    // Load Inpatients with Prominent POD Highlighting
     async function loadInpatients() {
       let allPatients = [];
       try {
@@ -1551,7 +1546,6 @@
       }
     }
 
-    // Modal Operations
     async function openPendingReceivablesModal() {
       document.getElementById('pendingHospitalFilter').value = 'All';
       renderPendingReceivablesList();
@@ -1649,7 +1643,6 @@
       window.open(whatsappUrl, '_blank');
     }
 
-    // OPD Register Modal
     async function openOpdAuditModal() {
       document.getElementById('opdAuditHospitalFilter').value = 'All';
       filterOpdAuditList();
@@ -1744,7 +1737,6 @@
       window.open(whatsappUrl, '_blank');
     }
 
-    // Surgery Register Modal
     async function openSurgeryAuditModal() {
       document.getElementById('surgeryAuditHospitalFilter').value = 'All';
       filterSurgeryAuditList();
@@ -1958,6 +1950,7 @@
       document.getElementById('entryModal').classList.remove('hidden');
     }
 
+    // UPDATED AI SCANNER FUNCTION USING GEMINI REST API
     async function handleImageSelected(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -1965,80 +1958,60 @@
       showLoading(true);
 
       try {
-        const worker = await Tesseract.createWorker('eng');
-        const ret = await worker.recognize(file);
-        await worker.terminate();
+        const base64Image = await toBase64(file);
+        const apiKey = 'AQ.Ab8RN6KDZBtbVfLuSOfHhmLwEX9yEu8oGPD2KrrxZ4ktII9qKQ';
 
-        const fullText = ret.data.text || '';
-        const lines = fullText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            "contents": [{
+              "parts": [
+                {
+                  "text": "You are a medical AI assistant for a neurosurgery practice app. Analyze this prescription, case sheet, or discharge summary image. Extract the following details strictly in valid JSON format with keys: 'patient_name', 'referred_by', 'hospital', 'date', 'is_surgery', 'scheme', 'diagnosis_note', 'amount'. For hospital, match one of: ['Orange Hospital, Navsari', 'Parsi Hospital, Navsari', 'Kejal Lifeline Hospital, Navsari', 'Alipore Hospital', 'Rhythm Hospital, Vyara', 'Atmiya Hospital, Mandvi', 'Aatithyam Hospital, Navsari'] if applicable, or return the name found. Do not include markdown or extra text, just pure JSON."
+                },
+                {
+                  "inline_data": {
+                    "mime_type": file.type,
+                    "data": base64Image.split(',')[1]
+                  }
+                }
+              ]
+            }]
+          })
+        });
 
-        let detectedName = '';
-        let detectedReferredBy = '';
-        let detectedDate = new Date().toISOString().slice(0, 10);
-        let detectedAmount = '';
-        let detectedNote = '';
-        let detectedHospital = 'Orange Hospital, Navsari';
-
-        const lower = fullText.toLowerCase();
-        if (lower.includes('orange')) detectedHospital = 'Orange Hospital, Navsari';
-        else if (lower.includes('parsi')) detectedHospital = 'Parsi Hospital, Navsari';
-        else if (lower.includes('kejal') || lower.includes('lifeline')) detectedHospital = 'Kejal Lifeline Hospital, Navsari';
-        else if (lower.includes('alipore')) detectedHospital = 'Alipore Hospital';
-        else if (lower.includes('rhythm') || lower.includes('vyara')) detectedHospital = 'Rhythm Hospital, Vyara';
-        else if (lower.includes('atmiya') || lower.includes('mandvi')) detectedHospital = 'Aatithyam Hospital, Navsari';
-        else if (lower.includes('aatithyam') || lower.includes('atithyam')) detectedHospital = 'Aatithyam Hospital, Navsari';
-
-        const refMatch = fullText.match(/(?:Ref(?:erred)?\.?\s*By|Dr\.?\s*Ref)[:\s]+(?:Dr\.?\s*)?([A-Za-z\s]+)/i);
-        if (refMatch && refMatch[1].trim().length > 2) {
-          detectedReferredBy = 'Dr. ' + refMatch[1].trim().replace(/^Dr\.?\s*/i, '');
-        }
-
-        const dateMatch = fullText.match(/(\d{1,2})[\/\.-](\d{1,2})[\/\.-](\d{2,4})/);
-        if (dateMatch) {
-          let [_, d, m, y] = dateMatch;
-          if (y.length === 2) y = '20' + y;
-          if (d.length === 1) d = '0' + d;
-          if (m.length === 1) m = '0' + m;
-          if (Number(m) <= 12 && Number(d) <= 31) detectedDate = `${y}-${m}-${d}`;
-        }
-
-        const amountMatch = fullText.match(/(?:Rs\.?|INR|₹|Total|Amount|Fee)[:\s]*([0-9,]+)/i);
-        if (amountMatch) detectedAmount = amountMatch[1].replace(/,/g, '');
-
-        for (const line of lines) {
-          const nameMatch = line.match(/(?:Name|Pt|Patient|Mr\.|Mrs\.|Shri)[:\s]+([A-Za-z\s]+)/i);
-          if (nameMatch && nameMatch[1].trim().length > 2) {
-            detectedName = nameMatch[1].trim();
-            break;
-          }
-        }
-        if (!detectedName && lines.length > 0) {
-          const cleanLine = lines.find(l => l.length > 3 && l.length < 35 && !/hospital|clinic|center|dr|receipt|bill|date/i.test(l));
-          if (cleanLine) detectedName = cleanLine;
-        }
-
-        const noteMatch = fullText.match(/(?:Diagnosis|Advised|Procedure|Rx|Treatment|Surgery)[:\s]+([A-Za-z0-9\s\-\,\.]+)/i);
-        if (noteMatch) detectedNote = noteMatch[1].trim().slice(0, 50);
-
-        const isSurgery = /surgery|ot|operat/i.test(fullText);
+        const result = await response.json();
+        const rawText = result.candidates[0].content.parts[0].text;
+        const cleanJson = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+        const data = JSON.parse(cleanJson);
 
         openManualEntryModal({
-          name: detectedName,
-          referredBy: detectedReferredBy,
-          hospital: detectedHospital,
-          date: detectedDate,
-          category: isSurgery ? 'Surgery' : 'OPD',
-          scheme: /pmjay|ayushman/i.test(fullText) ? 'PMJAY' : (/tpa|mediclaim/i.test(fullText) ? 'TPA' : 'Cash'),
-          note: detectedNote,
-          amount: detectedAmount,
-          paymentStatus: isSurgery ? 'Pending' : 'Received'
+          name: data.patient_name || '',
+          referredBy: data.referred_by || '',
+          hospital: data.hospital || 'Orange Hospital, Navsari',
+          date: data.date || new Date().toISOString().slice(0, 10),
+          category: (data.is_surgery === true || String(data.is_surgery).toLowerCase() === 'true') ? 'Surgery' : 'OPD',
+          scheme: data.scheme || 'PMJAY',
+          note: data.diagnosis_note || '',
+          amount: data.amount || '',
+          paymentStatus: (data.is_surgery === true) ? 'Pending' : 'Received'
         });
 
       } catch (err) {
-        alert('OCR error: ' + err.message);
+        alert('AI Scanning error: ' + err.message);
       } finally {
         showLoading(false);
       }
+    }
+
+    function toBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+      });
     }
 
     function closeModal(id) {
