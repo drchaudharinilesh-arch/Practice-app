@@ -162,7 +162,7 @@
           </details>
         </section>
 
-        <!-- Quick Action Buttons (अब गैलरी और कैमरा दोनों से फोटो चुनने की सुविधा) -->
+        <!-- Quick Action Buttons -->
         <div class="grid grid-cols-2 gap-3">
           <label class="flex flex-col items-center justify-center bg-gradient-to-br from-indigo-600 to-indigo-800 hover:from-indigo-500 hover:to-indigo-700 active:scale-95 text-white rounded-3xl p-3.5 shadow-xl shadow-indigo-950/50 cursor-pointer min-h-[72px] border border-indigo-400/30 transition">
             <span class="text-xl">📷</span>
@@ -1106,7 +1106,7 @@
                   Manage IPD ↗
                 </button>
               ` : `
-                <button onclick="editEntry(${e.id})" class="text-indigo-300 font-semibold text-xs px-2 py-1 liquid-glass rounded-lg hover:bg-slate-800 transition">✏️</button>
+                <button onclick="editEntry(${e.id})" class="text-indigo-300 font-semibold text-xs px-2 py-1 liquid-glass rounded-lg hover:bg-slate-800 transition">✏️️</button>
                 <button onclick="deleteEntry(${e.id})" class="text-rose-400 hover:text-rose-300 font-semibold text-xs px-1.5 py-1">🗑</button>
               `}
             </div>
@@ -1950,7 +1950,7 @@
       document.getElementById('entryModal').classList.remove('hidden');
     }
 
-    // UPDATED AI SCANNER FUNCTION TO SUPPORT GALLERY UPLOAD & CAMERA
+    // UPDATED AI SCANNER FUNCTION WITH SAFE ERROR HANDLING
     async function handleImageSelected(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -1968,7 +1968,7 @@
             "contents": [{
               "parts": [
                 {
-                  "text": "You are a medical AI assistant for a neurosurgery practice app. Analyze this prescription, case sheet, or discharge summary image. Extract the following details strictly in valid JSON format with keys: 'patient_name', 'referred_by', 'hospital', 'date', 'is_surgery', 'scheme', 'diagnosis_note', 'amount'. For hospital, match one of: ['Orange Hospital, Navsari', 'Parsi Hospital, Navsari', 'Kejal Lifeline Hospital, Navsari', 'Alipore Hospital', 'Rhythm Hospital, Vyara', 'Atmiya Hospital, Mandvi', 'Aatithyam Hospital, Navsari'] if applicable, or return the name found. Do not include markdown or extra text, just pure JSON."
+                  "text": "Analyze this prescription or discharge summary image. Extract the following details strictly in valid JSON format with keys: 'patient_name', 'referred_by', 'hospital', 'date', 'is_surgery', 'scheme', 'diagnosis_note', 'amount'. For hospital, match one of: ['Orange Hospital, Navsari', 'Parsi Hospital, Navsari', 'Kejal Lifeline Hospital, Navsari', 'Alipore Hospital', 'Rhythm Hospital, Vyara', 'Atmiya Hospital, Mandvi', 'Aatithyam Hospital, Navsari'] if applicable, or return the name found. Do not include markdown or extra text, just pure JSON."
                 },
                 {
                   "inline_data": {
@@ -1982,6 +1982,12 @@
         });
 
         const result = await response.json();
+        
+        // सुरक्षित जाँच ताकि एरर न आए
+        if (!result.candidates || !result.candidates[0].content || !result.candidates[0].content.parts) {
+          throw new Error("AI से सही डेटा नहीं मिल पाया। कृपया दूसरी साफ फोटो ट्राई करें।");
+        }
+
         const rawText = result.candidates[0].content.parts[0].text;
         const cleanJson = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
         const data = JSON.parse(cleanJson);
@@ -1997,7 +2003,7 @@
           amount: data.amount || '',
           paymentStatus: (data.is_surgery === true) ? 'Pending' : 'Received'
         });
-        
+
       } catch (err) {
         alert('AI Scanning error: ' + err.message);
       } finally {
