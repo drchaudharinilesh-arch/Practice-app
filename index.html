@@ -162,12 +162,12 @@
           </details>
         </section>
 
-        <!-- Quick Action Buttons -->
+        <!-- Quick Action Buttons (अब गैलरी और कैमरा दोनों से फोटो चुनने की सुविधा) -->
         <div class="grid grid-cols-2 gap-3">
           <label class="flex flex-col items-center justify-center bg-gradient-to-br from-indigo-600 to-indigo-800 hover:from-indigo-500 hover:to-indigo-700 active:scale-95 text-white rounded-3xl p-3.5 shadow-xl shadow-indigo-950/50 cursor-pointer min-h-[72px] border border-indigo-400/30 transition">
             <span class="text-xl">📷</span>
-            <span class="text-xs font-extrabold mt-0.5 tracking-wide">Scan Doc / Slip</span>
-            <input type="file" id="scanInput" accept="image/*" capture="environment" class="hidden" onchange="handleImageSelected(event)" />
+            <span class="text-xs font-extrabold mt-0.5 tracking-wide">Scan / Gallery</span>
+            <input type="file" id="scanInput" accept="image/*" class="hidden" onchange="handleImageSelected(event)" />
           </label>
           <button onclick="openManualEntryModal()" class="flex flex-col items-center justify-center liquid-glass hover:bg-slate-800/80 active:scale-95 text-white rounded-3xl p-3.5 shadow-xl shadow-black/40 min-h-[72px] border border-white/10 transition">
             <span class="text-xl">✍️</span>
@@ -1950,7 +1950,7 @@
       document.getElementById('entryModal').classList.remove('hidden');
     }
 
-    // UPDATED AI SCANNER FUNCTION USING GEMINI REST API
+    // UPDATED AI SCANNER FUNCTION TO SUPPORT GALLERY UPLOAD & CAMERA
     async function handleImageSelected(event) {
       const file = event.target.files[0];
       if (!file) return;
