@@ -926,6 +926,7 @@
       return days >= 0 ? days : 0;
     }
 
+    // Smart Aggregator: Groups IPD Surgeries and Stays under Active Inpatients (Preventing duplicate card spam on Frontpage)
     async function forceRefreshAll() {
       try {
         let directEntries = [];
@@ -937,49 +938,49 @@
           console.warn('Dexie read note:', dbErr);
         }
 
-        let combinedFeed = [...directEntries];
+        let combinedFeed = [];
 
-        inpatientsList.forEach(p => {
-          if (p.surgeries && Array.isArray(p.surgeries)) {
-            p.surgeries.forEach((s, sIdx) => {
-              const exists = directEntries.some(e => e.name === p.patientName && e.category === 'Surgery' && e.note === s.procedure);
-              if (!exists) {
-                combinedFeed.push({
-                  id: `ipd_surg_${p.id}_${sIdx}`,
-                  date: s.date || p.admitDate,
-                  category: 'Surgery',
-                  hospital: p.hospital,
-                  name: p.patientName,
-                  referredBy: p.referredBy || (p.admissionType === 'Cross-Ref' ? p.primaryConsultant : ''),
-                  scheme: s.scheme || p.primaryScheme || 'PMJAY',
-                  implantsUsed: s.implantsUsed || 'No',
-                  implantDetails: s.implantDetails || '',
-                  note: s.procedure,
-                  amount: Number(s.fee) || 0,
-                  paymentStatus: (s.scheme === 'PMJAY' || s.scheme === 'TPA') ? 'Pending' : 'Received',
-                  isFromActiveIpd: true
-                });
-              }
-            });
+        // 1. Keep only standalone entries (OPD, MR Benefit, or direct manual entries not tied to active IPD)
+        directEntries.forEach(e => {
+          const isMatchedWithIpd = inpatientsList.some(p => p.patientName.toLowerCase() === e.name.toLowerCase() && (e.category === 'Surgery' || e.category === 'Indoor'));
+          if (!isMatchedWithIpd) {
+            combinedFeed.push(e);
           }
+        });
 
-          const existsIndoor = directEntries.some(e => e.name === p.patientName && e.category === 'Indoor');
-          if (!existsIndoor) {
-            let visitsFee = 0;
-            if (p.datedVisits && Array.isArray(p.datedVisits)) {
-              p.datedVisits.forEach(v => { visitsFee += Number(v.fee) || 0; });
+        // 2. Aggregate Active Inpatients as a single master card in the ledger
+        inpatientsList.forEach(p => {
+          if (p.status === 'Active') {
+            let surgeriesTotal = 0;
+            if (p.surgeries && Array.isArray(p.surgeries)) {
+              p.surgeries.forEach(s => { surgeriesTotal += Number(s.fee) || 0; });
             }
+
+            let visitsTotal = 0;
+            if (p.datedVisits && Array.isArray(p.datedVisits)) {
+              p.datedVisits.forEach(v => { visitsTotal += Number(v.fee) || 0; });
+            }
+
+            const totalActiveDue = surgeriesTotal + visitsTotal;
+            const latestProcedure = p.surgeries && p.surgeries.length > 0 
+              ? p.surgeries[p.surgeries.length - 1].procedure 
+              : (p.diagnosis || 'Active Inpatient Stay');
+
             combinedFeed.push({
-              id: `ipd_stay_${p.id}`,
+              id: `master_ipd_${p.id}`,
               date: p.admitDate,
-              category: 'Indoor',
+              category: 'Surgery',
               hospital: p.hospital,
               name: p.patientName,
               referredBy: p.referredBy || (p.admissionType === 'Cross-Ref' ? p.primaryConsultant : ''),
-              note: `${p.diagnosis || 'Admitted'} (${p.admissionType === 'Cross-Ref' ? 'Cross-Ref Call' : 'Direct IPD'})`,
-              amount: visitsFee,
-              paymentStatus: 'Received',
-              isFromActiveIpd: true
+              scheme: p.primaryScheme || 'PMJAY',
+              implantsUsed: 'Yes',
+              implantDetails: `${p.surgeries ? p.surgeries.length : 0} Surgeries / ${p.datedVisits ? p.datedVisits.length : 0} Visits`,
+              note: latestProcedure,
+              amount: totalActiveDue,
+              paymentStatus: (p.primaryScheme === 'PMJAY' || p.primaryScheme === 'TPA') ? 'Pending' : 'Received',
+              isActiveInpatientMaster: true,
+              originalInpatientId: p.id
             });
           }
         });
@@ -1099,32 +1100,18 @@
             </div>
             <div class="text-sm font-extrabold text-white truncate">${escapeHtml(e.name || 'Unnamed Patient')}</div>
             ${e.referredBy ? `<div class="text-[11px] font-semibold text-indigo-300 flex items-center gap-1 truncate">👨‍⚕ Ref: ${escapeHtml(e.referredBy)}</div>` : ''}
-            ${e.category === 'Surgery' ? `
-              <div class="text-[10px] font-medium ${e.implantsUsed === 'Yes' ? 'text-emerald-300' : 'text-slate-400'}">
-                🔩 Implants: ${e.implantsUsed === 'Yes' ? (escapeHtml(e.implantDetails) || 'Yes') : 'No'}
-              </div>` : ''}
-            ${e.note ? `<div class="text-xs text-slate-300 truncate">${escapeHtml(e.note)}</div>` : ''}
+            <div class="text-xs text-slate-300 truncate">${escapeHtml(e.note || 'Clinical Record')}</div>
           </div>
           <div class="text-right flex flex-col items-end">
             <div class="text-sm font-black text-white">₹${(Number(e.amount)||0).toLocaleString('en-IN')}</div>
             <div class="flex items-center gap-1.5 mt-1.5">
-              ${e.paymentStatus === 'Pending' && !e.isFromActiveIpd ? `
-                <button onclick="markPaymentReceivedDirect(${e.id})" class="text-[10px] font-bold px-2 py-1 bg-emerald-900/60 text-emerald-200 border border-emerald-500/30 rounded-lg hover:bg-emerald-800/60 transition">
-                  ✓ Paid
+              ${e.isActiveInpatientMaster ? `
+                <button onclick="switchTab('inpatients')" class="text-[10px] font-bold text-indigo-200 bg-indigo-900/80 px-2.5 py-1 rounded-lg border border-indigo-400/40 shadow">
+                  Manage IPD ↗
                 </button>
-              ` : ''}
-              ${e.category === 'OPD' ? `
-                <button onclick="convertOpdToIpd(${e.id})" class="text-[11px] font-bold px-2.5 py-1 bg-indigo-900/60 hover:bg-indigo-800/60 text-indigo-200 border border-indigo-500/30 rounded-lg transition" title="Admit patient to IPD">
-                  🛏 Admit
-                </button>
-              ` : ''}
-              ${!e.isFromActiveIpd ? `
+              ` : `
                 <button onclick="editEntry(${e.id})" class="text-indigo-300 font-semibold text-xs px-2 py-1 liquid-glass rounded-lg hover:bg-slate-800 transition">✏️</button>
                 <button onclick="deleteEntry(${e.id})" class="text-rose-400 hover:text-rose-300 font-semibold text-xs px-1.5 py-1">🗑</button>
-              ` : `
-                <button onclick="switchTab('inpatients')" class="text-[10px] font-bold text-indigo-300 bg-indigo-950/60 px-2 py-1 rounded-lg border border-indigo-500/30">
-                  Active in IPD ↗
-                </button>
               `}
             </div>
           </div>
@@ -1998,8 +1985,8 @@
         else if (lower.includes('kejal') || lower.includes('lifeline')) detectedHospital = 'Kejal Lifeline Hospital, Navsari';
         else if (lower.includes('alipore')) detectedHospital = 'Alipore Hospital';
         else if (lower.includes('rhythm') || lower.includes('vyara')) detectedHospital = 'Rhythm Hospital, Vyara';
-        else if (lower.includes('atmiya') || lower.includes('mandvi')) detectedHospital = 'Atmiya Hospital, Navsari';
-        else if (lower.includes('aatithyam') || lower.includes('atithyam')) detectedHospital = 'Atithyam Hospital, Navsari';
+        else if (lower.includes('atmiya') || lower.includes('mandvi')) detectedHospital = 'Aatithyam Hospital, Navsari';
+        else if (lower.includes('aatithyam') || lower.includes('atithyam')) detectedHospital = 'Aatithyam Hospital, Navsari';
 
         const refMatch = fullText.match(/(?:Ref(?:erred)?\.?\s*By|Dr\.?\s*Ref)[:\s]+(?:Dr\.?\s*)?([A-Za-z\s]+)/i);
         if (refMatch && refMatch[1].trim().length > 2) {
