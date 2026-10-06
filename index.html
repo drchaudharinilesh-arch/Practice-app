@@ -691,8 +691,7 @@
     let currentCategoryFilter = 'ALL';
     let masterEntriesCache = [];
 
-    // Current Date Setup (October 6, 2026)
-    let currentDateCursor = new Date(2026, 9, 6);
+    let currentDateCursor = new Date(2026, 9, 6); // October 6, 2026
     let isAllTimeActive = false;
 
     const monthNames = [
@@ -916,7 +915,6 @@
       else feeInput.value = '800';
     }
 
-    // Precise Post-Operative Day (POD) & Stay Calculator
     function calculateDaysDifference(startDateStr, endDateStr) {
       if (!startDateStr) return 0;
       const start = new Date(startDateStr);
@@ -1140,7 +1138,7 @@
       return 'bg-indigo-900/60 text-indigo-200 border border-indigo-500/30';
     }
 
-    // Load Inpatients with Enhanced Prominent POD Highlighting
+    // Load Inpatients with Prominent POD Highlighting
     async function loadInpatients() {
       let allPatients = [];
       try {
@@ -1316,7 +1314,7 @@
                   </div>
                   <h3 class="text-base font-extrabold text-white mt-1.5">${escapeHtml(p.patientName)}</h3>
                   <p class="text-xs font-bold text-indigo-300 mt-0.5">OT Date: ${p.mainSurgeryDate || p.admitDate}</p>
-                  ${p.referredBy ? `<p class="text-[11px] text-slate-400">👨‍‍⚕ Ref: ${escapeHtml(p.referredBy)}</p>` : ''}
+                  ${p.referredBy ? `<p class="text-[11px] text-slate-400">👨‍⚕ Ref: ${escapeHtml(p.referredBy)}</p>` : ''}
                   ${p.diagnosis ? `<p class="text-xs text-slate-300 mt-1 font-medium liquid-glass p-2 rounded-xl border border-white/5">🔹 Plan: ${escapeHtml(p.diagnosis)}</p>` : ''}
                 </div>
                 <div class="text-right">
@@ -1348,8 +1346,8 @@
       document.getElementById('ipdAdmissionType').value = prefill.admissionType || 'Direct';
       document.getElementById('ipdPrimaryConsultant').value = prefill.primaryConsultant || '';
       document.getElementById('ipdStatusMode').value = prefill.status || 'Active';
-      document.getElementById('ipdAdmitDate').value = prefill.admitDate || "2026-10-06";
-      document.getElementById('ipdMainSurgeryDate').value = prefill.mainSurgeryDate || "2026-10-06";
+      document.getElementById('ipdAdmitDate').value = prefill.admitDate || new Date().toISOString().slice(0, 10);
+      document.getElementById('ipdMainSurgeryDate').value = prefill.mainSurgeryDate || new Date().toISOString().slice(0, 10);
       document.getElementById('ipdIcuOutDate').value = prefill.icuOutDate || '';
       document.getElementById('ipdDischargeDateInput').value = prefill.dischargeDate || '';
       document.getElementById('ipdWardBed').value = prefill.wardBed || '';
@@ -1427,7 +1425,7 @@
     function openAddDatedVisitModal(ipdId, patientName) {
       document.getElementById('targetVisitIpdId').value = ipdId;
       document.getElementById('datedVisitPatientLabel').innerText = `Patient: ${patientName}`;
-      document.getElementById('visitDateInput').value = "2026-10-06";
+      document.getElementById('visitDateInput').value = new Date().toISOString().slice(0, 10);
       document.getElementById('visitTypeSelect').value = 'Routine Round';
       document.getElementById('visitFeeInput').value = '800';
       document.getElementById('visitNoteInput').value = '';
@@ -1461,7 +1459,7 @@
       if (confirm(`Mark ${p.patientName} as Admitted for Pre-op Workup?`)) {
         await db.inpatients.update(id, { 
           status: 'Active', 
-          admitDate: "2026-10-06" 
+          admitDate: new Date().toISOString().slice(0, 10) 
         });
         switchIpdSubTab('active');
         forceRefreshAll();
@@ -1482,7 +1480,7 @@
       }
 
       const completedSurgery = {
-        date: p.mainSurgeryDate || "2026-10-06",
+        date: p.mainSurgeryDate || new Date().toISOString().slice(0, 10),
         procedure: p.diagnosis || 'Surgical Procedure',
         scheme: p.primaryScheme || 'PMJAY',
         fee: Number(feeStr) || 0,
@@ -1506,7 +1504,7 @@
     function openAddSurgeryToIpdModal(ipdId, patientName) {
       document.getElementById('targetIpdId').value = ipdId;
       document.getElementById('ipdTargetPatientLabel').innerText = `Patient: ${patientName}`;
-      document.getElementById('ipdSurgeryDate').value = "2026-10-06";
+      document.getElementById('ipdSurgeryDate').value = new Date().toISOString().slice(0, 10);
       document.getElementById('ipdSurgeryProcedure').value = '';
       document.getElementById('ipdSurgeryFee').value = '';
       document.getElementById('ipdSurgeryImplantsUsed').value = 'No';
@@ -1547,7 +1545,7 @@
       const p = await db.inpatients.get(id);
       if (!p) return;
 
-      const dischargeDate = prompt(`Confirm Discharge Date (YYYY-MM-DD):`, p.dischargeDate || "2026-10-06");
+      const dischargeDate = prompt(`Confirm Discharge Date (YYYY-MM-DD):`, p.dischargeDate || new Date().toISOString().slice(0, 10));
       if (!dischargeDate) return;
 
       await db.inpatients.update(id, { 
@@ -1593,7 +1591,7 @@
         return;
       }
 
-      const todayStr = "2026-10-06";
+      const todayStr = new Date().toISOString().slice(0, 10);
 
       listEl.innerHTML = pendingList.map(item => {
         const daysOld = calculateDaysDifference(item.date, todayStr);
@@ -1642,7 +1640,7 @@
       let msg = `PENDING CLAIMS - ${hospTitle} (${periodHeader})\n`;
       msg += `----------------------------------------\n\n`;
 
-      const todayStr = "2026-10-06";
+      const todayStr = new Date().toISOString().slice(0, 10);
 
       pendingList.forEach((item, idx) => {
         const daysOld = calculateDaysDifference(item.date, todayStr);
@@ -1850,7 +1848,7 @@
         hospital: entry.hospital,
         referredBy: entry.referredBy,
         diagnosis: entry.note || '',
-        admitDate: "2026-10-06",
+        admitDate: new Date().toISOString().slice(0, 10),
         status: 'Active'
       });
     }
@@ -1924,7 +1922,7 @@
 
     function openManualEntryModal(prefill = {}) {
       document.getElementById('entryRecordId').value = prefill.id || '';
-      document.getElementById('entryDate').value = prefill.date || "2026-10-06";
+      document.getElementById('entryDate').value = prefill.date || new Date().toISOString().slice(0, 10);
       document.getElementById('entryCategory').value = prefill.category || 'OPD';
       
       const hospSelect = document.getElementById('entryHospital');
@@ -1989,7 +1987,7 @@
 
         let detectedName = '';
         let detectedReferredBy = '';
-        let detectedDate = "2026-10-06";
+        let detectedDate = new Date().toISOString().slice(0, 10);
         let detectedAmount = '';
         let detectedNote = '';
         let detectedHospital = 'Orange Hospital, Navsari';
@@ -2001,7 +1999,7 @@
         else if (lower.includes('alipore')) detectedHospital = 'Alipore Hospital';
         else if (lower.includes('rhythm') || lower.includes('vyara')) detectedHospital = 'Rhythm Hospital, Vyara';
         else if (lower.includes('atmiya') || lower.includes('mandvi')) detectedHospital = 'Atmiya Hospital, Navsari';
-        else if (lower.includes('aatithyam') || lower.includes('atithyam')) detectedHospital = 'Aatithyam Hospital, Navsari';
+        else if (lower.includes('aatithyam') || lower.includes('atithyam')) detectedHospital = 'Atithyam Hospital, Navsari';
 
         const refMatch = fullText.match(/(?:Ref(?:erred)?\.?\s*By|Dr\.?\s*Ref)[:\s]+(?:Dr\.?\s*)?([A-Za-z\s]+)/i);
         if (refMatch && refMatch[1].trim().length > 2) {
@@ -2053,7 +2051,6 @@
         alert('OCR error: ' + err.message);
       } finally {
         showLoading(false);
-        event.target.value = '';
       }
     }
 
@@ -2070,12 +2067,12 @@
     async function exportDataBackup() {
       const entries = await db.entries.toArray();
       const inpatients = await db.inpatients.toArray();
-      const backup = { entries, inpatients, exportedAt: "2026-10-06T21:23:00.000Z" };
-      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json'>>0 ? ... : '' });
+      const backup = { entries, inpatients, exportedAt: new Date().toISOString() };
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `practice_backup_2026-10-06.json`;
+      a.download = `practice_backup_${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
     }
 
