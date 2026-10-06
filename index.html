@@ -187,7 +187,7 @@
                   ◀
                 </button>
                 <div id="currentMonthDisplay" class="px-2 text-xs font-black text-white tracking-wide min-w-[130px] text-center">
-                  Month
+                  October 2026
                 </div>
                 <button onclick="navigateMonth(1)" class="w-8 h-8 rounded-lg bg-slate-800/80 hover:bg-slate-700 active:scale-95 text-indigo-300 text-sm font-bold flex items-center justify-center transition border border-white/10">
                   ▶
@@ -672,7 +672,7 @@
   <div id="loadingOverlay" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-white text-center">
     <div class="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
     <div class="text-base font-bold mb-1">Reading Document...</div>
-    <div class="text-xs text-slate-400 max-w-xs">Extracting details directly on device.</div>
+    <div class="text-xs text-slate-400 max-w-xs">Entry processing...</div>
   </div>
 
   <script>
@@ -682,7 +682,6 @@
       });
     }
 
-    // 100% Stable Local Database (Dexie.js)
     const db = new Dexie('NeuroPracticeDB');
     db.version(12).stores({
       entries: '++id, date, category, hospital, name, referredBy, scheme, implantsUsed, implantDetails, note, amount, paymentStatus, paymentReceivedDate',
@@ -692,8 +691,8 @@
     let currentCategoryFilter = 'ALL';
     let masterEntriesCache = [];
 
-    // Date & Month Switcher State
-    let currentDateCursor = new Date(2026, 9, 4); // October 2026
+    // Current Date Setup (October 6, 2026)
+    let currentDateCursor = new Date(2026, 9, 6);
     let isAllTimeActive = false;
 
     const monthNames = [
@@ -703,7 +702,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       try {
-        const todayStr = "2026-10-04";
+        const todayStr = "2026-10-06";
         const elAdmit = document.getElementById('ipdAdmitDate');
         const elSurg = document.getElementById('ipdSurgeryDate');
         const elMainSurg = document.getElementById('ipdMainSurgeryDate');
@@ -766,16 +765,16 @@
       const navInpatients = document.getElementById('navTabInpatients');
 
       if (tab === 'entries') {
-        viewEntries.classList.remove('hidden');
-        viewInpatients.classList.add('hidden');
-        navEntries.className = 'flex flex-col items-center justify-center text-indigo-400 font-bold text-xs rounded-2xl transition';
-        navInpatients.className = 'flex flex-col items-center justify-center text-slate-400 font-medium text-xs rounded-2xl transition';
+        if (viewEntries) viewEntries.classList.remove('hidden');
+        if (viewInpatients) viewInpatients.classList.add('hidden');
+        if (navEntries) navEntries.className = 'flex flex-col items-center justify-center text-indigo-400 font-bold text-xs rounded-2xl transition';
+        if (navInpatients) navInpatients.className = 'flex flex-col items-center justify-center text-slate-400 font-medium text-xs rounded-2xl transition';
         forceRefreshAll();
       } else {
-        viewEntries.classList.add('hidden');
-        viewInpatients.classList.remove('hidden');
-        navInpatients.className = 'flex flex-col items-center justify-center text-indigo-400 font-bold text-xs rounded-2xl transition';
-        navEntries.className = 'flex flex-col items-center justify-center text-slate-400 font-medium text-xs rounded-2xl transition';
+        if (viewEntries) viewEntries.classList.add('hidden');
+        if (viewInpatients) viewInpatients.classList.remove('hidden');
+        if (navInpatients) navInpatients.className = 'flex flex-col items-center justify-center text-indigo-400 font-bold text-xs rounded-2xl transition';
+        if (navEntries) navEntries.className = 'flex flex-col items-center justify-center text-slate-400 font-medium text-xs rounded-2xl transition';
         loadInpatients();
       }
     }
@@ -810,19 +809,19 @@
       const subheading = document.getElementById('ipdSectionSubheading');
 
       if (subTab === 'active') {
-        activeList.classList.remove('hidden');
-        pipelineList.classList.add('hidden');
-        activeBtn.className = 'py-2.5 rounded-xl bg-indigo-600 text-white shadow transition';
-        pipelineBtn.className = 'py-2.5 rounded-xl text-slate-400 hover:text-white transition';
-        heading.innerText = 'Active Inpatients (IPD)';
-        subheading.innerText = 'Live Stay, Dated Visits & Surgeries';
+        if (activeList) activeList.classList.remove('hidden');
+        if (pipelineList) pipelineList.classList.add('hidden');
+        if (activeBtn) activeBtn.className = 'py-2.5 rounded-xl bg-indigo-600 text-white shadow transition';
+        if (pipelineBtn) pipelineBtn.className = 'py-2.5 rounded-xl text-slate-400 hover:text-white transition';
+        if (heading) heading.innerText = 'Active Inpatients (IPD)';
+        if (subheading) subheading.innerText = 'Live Stay, Dated Visits & Surgeries';
       } else {
-        activeList.classList.add('hidden');
-        pipelineList.classList.remove('hidden');
-        pipelineBtn.className = 'py-2.5 rounded-xl bg-indigo-600 text-white shadow transition';
-        activeBtn.className = 'py-2.5 rounded-xl text-slate-400 hover:text-white transition';
-        heading.innerText = 'Upcoming OT Pipeline';
-        subheading.innerText = 'Scheduled surgeries, workup and fitness';
+        if (activeList) activeList.classList.add('hidden');
+        if (pipelineList) pipelineList.classList.remove('hidden');
+        if (pipelineBtn) pipelineBtn.className = 'py-2.5 rounded-xl bg-indigo-600 text-white shadow transition';
+        if (activeBtn) activeBtn.className = 'py-2.5 rounded-xl text-slate-400 hover:text-white transition';
+        if (heading) heading.innerText = 'Upcoming OT Pipeline';
+        if (subheading) subheading.innerText = 'Scheduled surgeries, workup and fitness';
       }
     }
 
@@ -846,40 +845,52 @@
       const container = document.getElementById('entrySurgeryFields');
       const pStatus = document.getElementById('entryPaymentStatus');
       if (cat === 'Surgery') {
-        container.classList.remove('hidden');
-        pStatus.value = 'Pending';
+        if (container) container.classList.remove('hidden');
+        if (pStatus) pStatus.value = 'Pending';
       } else {
-        container.classList.add('hidden');
-        pStatus.value = 'Received';
+        if (container) container.classList.add('hidden');
+        if (pStatus) pStatus.value = 'Received';
       }
     }
 
     function toggleCrossReferenceFields() {
       const type = document.getElementById('ipdAdmissionType').value;
       const container = document.getElementById('crossRefContainer');
-      if (type === 'Cross-Ref') container.classList.remove('hidden');
-      else container.classList.add('hidden');
+      if (type === 'Cross-Ref') {
+        if (container) container.classList.remove('hidden');
+      } else {
+        if (container) container.classList.add('hidden');
+      }
     }
 
     function toggleEntryImplantDetails() {
       const val = document.getElementById('entryImplantsUsed').value;
       const container = document.getElementById('entryImplantDetailsContainer');
-      if (val === 'Yes') container.classList.remove('hidden');
-      else container.classList.add('hidden');
+      if (val === 'Yes') {
+        if (container) container.classList.remove('hidden');
+      } else {
+        if (container) container.classList.add('hidden');
+      }
     }
 
     function toggleIpdSurgeryImplantDetails() {
       const val = document.getElementById('ipdSurgeryImplantsUsed').value;
       const container = document.getElementById('ipdSurgeryImplantDetailsContainer');
-      if (val === 'Yes') container.classList.remove('hidden');
-      else container.classList.add('hidden');
+      if (val === 'Yes') {
+        if (container) container.classList.remove('hidden');
+      } else {
+        if (container) container.classList.add('hidden');
+      }
     }
 
     function toggleCustomHospitalInput() {
       const select = document.getElementById('entryHospital');
       const customContainer = document.getElementById('customHospitalContainer');
-      if (select.value === 'Other') customContainer.classList.remove('hidden');
-      else customContainer.classList.add('hidden');
+      if (select.value === 'Other') {
+        if (customContainer) customContainer.classList.remove('hidden');
+      } else {
+        if (customContainer) customContainer.classList.add('hidden');
+      }
     }
 
     function toggleSchemeConversionInputs() {
@@ -888,34 +899,35 @@
       const convContainer = document.getElementById('convertedSchemeContainer');
 
       if (isConv === 'Yes') {
-        singleContainer.classList.add('hidden');
-        convContainer.classList.remove('hidden');
+        if (singleContainer) singleContainer.classList.add('hidden');
+        if (convContainer) convContainer.classList.remove('hidden');
       } else {
-        singleContainer.classList.remove('hidden');
-        convContainer.classList.add('hidden');
+        if (singleContainer) singleContainer.classList.remove('hidden');
+        if (convContainer) convContainer.classList.add('hidden');
       }
     }
 
     function updateDefaultVisitFee() {
       const type = document.getElementById('visitTypeSelect').value;
       const feeInput = document.getElementById('visitFeeInput');
+      if (!feeInput) return;
       if (type === 'Emergency Call') feeInput.value = '1500';
       else if (type === 'Reference Review') feeInput.value = '1000';
       else feeInput.value = '800';
     }
 
+    // Precise Post-Operative Day (POD) & Stay Calculator
     function calculateDaysDifference(startDateStr, endDateStr) {
       if (!startDateStr) return 0;
       const start = new Date(startDateStr);
-      const end = endDateStr ? new Date(endDateStr) : new Date(2026, 9, 4);
+      const end = endDateStr ? new Date(endDateStr) : new Date(2026, 9, 6);
       start.setHours(0,0,0,0);
       end.setHours(0,0,0,0);
       const diffTime = end - start;
-      const days = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
-      return days > 0 ? days : 1;
+      const days = Math.round(diffTime / (1000 * 60 * 60 * 24));
+      return days >= 0 ? days : 0;
     }
 
-    // Direct Local Master Feed Aggregator
     async function forceRefreshAll() {
       try {
         let directEntries = [];
@@ -1128,7 +1140,7 @@
       return 'bg-indigo-900/60 text-indigo-200 border border-indigo-500/30';
     }
 
-    // Load Inpatients
+    // Load Inpatients with Enhanced Prominent POD Highlighting
     async function loadInpatients() {
       let allPatients = [];
       try {
@@ -1147,14 +1159,14 @@
 
       const activeListEl = document.getElementById('inpatientsActiveList');
       const pipelineListEl = document.getElementById('inpatientsPipelineList');
-      const todayStr = "2026-10-04";
+      const todayStr = "2026-10-06";
 
       if (activeListEl) {
         if (activePatients.length === 0) {
           activeListEl.innerHTML = `<div class="liquid-glass rounded-3xl p-8 text-center text-slate-500 text-xs border border-white/5">No active admitted patients currently.</div>`;
         } else {
           activeListEl.innerHTML = activePatients.map(p => {
-            const totalStay = calculateDaysDifference(p.admitDate, p.dischargeDate || todayStr);
+            const stayDays = calculateDaysDifference(p.admitDate, todayStr) + 1;
             
             let preopDays = 0;
             if (p.mainSurgeryDate && p.mainSurgeryDate >= p.admitDate) {
@@ -1165,7 +1177,7 @@
             if (p.icuOutDate && p.icuOutDate >= p.admitDate) {
               icuDays = calculateDaysDifference(p.admitDate, p.icuOutDate);
             }
-            const wardDays = totalStay > icuDays ? (totalStay - icuDays) : 0;
+            const wardDays = stayDays > icuDays ? (stayDays - icuDays) : 0;
 
             const surgeries = p.surgeries || [];
             let surgeriesTotal = 0;
@@ -1186,7 +1198,7 @@
                         ${isCrossRef ? 'Cross-Ref Call' : 'Direct IPD'}
                       </span>
                       <span class="text-[10px] font-semibold text-slate-300 bg-slate-800/60 px-2 py-0.5 rounded-md border border-white/5">
-                        Stay: ${totalStay}d (ICU: ${icuDays}d | Ward: ${wardDays}d)
+                        Stay: ${stayDays}d (ICU: ${icuDays}d | Ward: ${wardDays}d)
                       </span>
                       <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-blue-900/50 text-blue-200 border border-blue-500/30">
                         ${p.primaryScheme || 'PMJAY'}
@@ -1233,7 +1245,7 @@
                   ` : `<div class="text-[11px] text-slate-500 text-center py-1">No dated visits logged yet.</div>`}
                 </div>
 
-                <!-- Surgeries Linked Section -->
+                <!-- Surgeries Linked Section with Prominent POD -->
                 <div class="space-y-1.5">
                   <div class="flex justify-between items-center text-xs">
                     <span class="font-extrabold text-slate-300">Surgeries Linked (${surgeries.length})</span>
@@ -1243,24 +1255,27 @@
                   </div>
 
                   ${surgeries.length > 0 ? surgeries.map((s, sIdx) => {
-                    const pod = calculateDaysDifference(s.date, todayStr) - 1;
+                    const pod = calculateDaysDifference(s.date, todayStr);
+                    const podBadgeStyle = pod <= 2 
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' 
+                      : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
                     return `
-                      <div class="liquid-glass border border-emerald-500/20 rounded-2xl p-3 text-xs space-y-1">
-                        <div class="flex justify-between items-start">
-                          <div>
-                            <span class="font-bold text-white">${sIdx + 1}. ${escapeHtml(s.procedure)}</span>
-                            <span class="text-[10px] ml-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.2 rounded font-semibold">
-                              ${pod >= 0 ? `POD ${pod}` : 'Scheduled'}
-                            </span>
-                          </div>
-                          <div class="font-extrabold text-emerald-300">₹${(Number(s.fee)||0).toLocaleString('en-IN')}</div>
-                        </div>
-                        <div class="text-[10px] text-slate-400 flex items-center gap-2">
-                          <span>OT: ${s.date}</span>
-                          <span class="font-bold text-blue-300">${s.scheme || 'PMJAY'}</span>
-                          <span class="font-medium ${s.implantsUsed === 'Yes' ? 'text-emerald-300' : 'text-slate-500'}">
-                            🔩 Implants: ${s.implantsUsed === 'Yes' ? (escapeHtml(s.implantDetails) || 'Yes') : 'No'}
+                      <div class="liquid-glass border border-emerald-500/30 rounded-2xl p-3.5 text-xs space-y-1.5">
+                        <div class="flex justify-between items-center">
+                          <span class="font-black text-sm text-white">${sIdx + 1}. ${escapeHtml(s.procedure)}</span>
+                          <span class="text-xs px-2.5 py-1 rounded-lg border font-black tracking-wide shadow-sm ${podBadgeStyle}">
+                            POD ${pod}
                           </span>
+                        </div>
+                        <div class="flex justify-between items-center text-[11px] text-slate-400 pt-1 border-t border-white/5">
+                          <div class="flex items-center gap-2">
+                            <span>OT: ${s.date}</span>
+                            <span class="font-bold text-blue-300">${s.scheme || 'PMJAY'}</span>
+                          </div>
+                          <div class="font-extrabold text-emerald-300 text-sm">₹${(Number(s.fee)||0).toLocaleString('en-IN')}</div>
+                        </div>
+                        <div class="text-[10px] ${s.implantsUsed === 'Yes' ? 'text-emerald-400 font-semibold' : 'text-slate-500'}">
+                          🔩 Implants: ${s.implantsUsed === 'Yes' ? (escapeHtml(s.implantDetails) || 'Yes') : 'No'}
                         </div>
                       </div>
                     `;
@@ -1301,7 +1316,7 @@
                   </div>
                   <h3 class="text-base font-extrabold text-white mt-1.5">${escapeHtml(p.patientName)}</h3>
                   <p class="text-xs font-bold text-indigo-300 mt-0.5">OT Date: ${p.mainSurgeryDate || p.admitDate}</p>
-                  ${p.referredBy ? `<p class="text-[11px] text-slate-400">👨‍⚕ Ref: ${escapeHtml(p.referredBy)}</p>` : ''}
+                  ${p.referredBy ? `<p class="text-[11px] text-slate-400">👨‍‍⚕ Ref: ${escapeHtml(p.referredBy)}</p>` : ''}
                   ${p.diagnosis ? `<p class="text-xs text-slate-300 mt-1 font-medium liquid-glass p-2 rounded-xl border border-white/5">🔹 Plan: ${escapeHtml(p.diagnosis)}</p>` : ''}
                 </div>
                 <div class="text-right">
@@ -1333,8 +1348,8 @@
       document.getElementById('ipdAdmissionType').value = prefill.admissionType || 'Direct';
       document.getElementById('ipdPrimaryConsultant').value = prefill.primaryConsultant || '';
       document.getElementById('ipdStatusMode').value = prefill.status || 'Active';
-      document.getElementById('ipdAdmitDate').value = prefill.admitDate || "2026-10-04";
-      document.getElementById('ipdMainSurgeryDate').value = prefill.mainSurgeryDate || "2026-10-04";
+      document.getElementById('ipdAdmitDate').value = prefill.admitDate || "2026-10-06";
+      document.getElementById('ipdMainSurgeryDate').value = prefill.mainSurgeryDate || "2026-10-06";
       document.getElementById('ipdIcuOutDate').value = prefill.icuOutDate || '';
       document.getElementById('ipdDischargeDateInput').value = prefill.dischargeDate || '';
       document.getElementById('ipdWardBed').value = prefill.wardBed || '';
@@ -1412,7 +1427,7 @@
     function openAddDatedVisitModal(ipdId, patientName) {
       document.getElementById('targetVisitIpdId').value = ipdId;
       document.getElementById('datedVisitPatientLabel').innerText = `Patient: ${patientName}`;
-      document.getElementById('visitDateInput').value = "2026-10-04";
+      document.getElementById('visitDateInput').value = "2026-10-06";
       document.getElementById('visitTypeSelect').value = 'Routine Round';
       document.getElementById('visitFeeInput').value = '800';
       document.getElementById('visitNoteInput').value = '';
@@ -1446,7 +1461,7 @@
       if (confirm(`Mark ${p.patientName} as Admitted for Pre-op Workup?`)) {
         await db.inpatients.update(id, { 
           status: 'Active', 
-          admitDate: "2026-10-04" 
+          admitDate: "2026-10-06" 
         });
         switchIpdSubTab('active');
         forceRefreshAll();
@@ -1467,7 +1482,7 @@
       }
 
       const completedSurgery = {
-        date: p.mainSurgeryDate || "2026-10-04",
+        date: p.mainSurgeryDate || "2026-10-06",
         procedure: p.diagnosis || 'Surgical Procedure',
         scheme: p.primaryScheme || 'PMJAY',
         fee: Number(feeStr) || 0,
@@ -1491,7 +1506,7 @@
     function openAddSurgeryToIpdModal(ipdId, patientName) {
       document.getElementById('targetIpdId').value = ipdId;
       document.getElementById('ipdTargetPatientLabel').innerText = `Patient: ${patientName}`;
-      document.getElementById('ipdSurgeryDate').value = "2026-10-04";
+      document.getElementById('ipdSurgeryDate').value = "2026-10-06";
       document.getElementById('ipdSurgeryProcedure').value = '';
       document.getElementById('ipdSurgeryFee').value = '';
       document.getElementById('ipdSurgeryImplantsUsed').value = 'No';
@@ -1532,7 +1547,7 @@
       const p = await db.inpatients.get(id);
       if (!p) return;
 
-      const dischargeDate = prompt(`Confirm Discharge Date (YYYY-MM-DD):`, p.dischargeDate || "2026-10-04");
+      const dischargeDate = prompt(`Confirm Discharge Date (YYYY-MM-DD):`, p.dischargeDate || "2026-10-06");
       if (!dischargeDate) return;
 
       await db.inpatients.update(id, { 
@@ -1578,10 +1593,10 @@
         return;
       }
 
-      const todayStr = "2026-10-04";
+      const todayStr = "2026-10-06";
 
       listEl.innerHTML = pendingList.map(item => {
-        const daysOld = calculateDaysDifference(item.date, todayStr) - 1;
+        const daysOld = calculateDaysDifference(item.date, todayStr);
         let agingBadge = 'bg-slate-800 text-slate-300 border border-white/10';
         if (daysOld >= 60) agingBadge = 'bg-rose-950/70 text-rose-200 font-bold border border-rose-500/40';
         else if (daysOld >= 30) agingBadge = 'bg-amber-950/70 text-amber-200 font-bold border border-amber-500/40';
@@ -1627,10 +1642,10 @@
       let msg = `PENDING CLAIMS - ${hospTitle} (${periodHeader})\n`;
       msg += `----------------------------------------\n\n`;
 
-      const todayStr = "2026-10-04";
+      const todayStr = "2026-10-06";
 
       pendingList.forEach((item, idx) => {
-        const daysOld = calculateDaysDifference(item.date, todayStr) - 1;
+        const daysOld = calculateDaysDifference(item.date, todayStr);
         const fee = Number(item.amount) || 0;
         totalDue += fee;
 
@@ -1835,7 +1850,7 @@
         hospital: entry.hospital,
         referredBy: entry.referredBy,
         diagnosis: entry.note || '',
-        admitDate: "2026-10-04",
+        admitDate: "2026-10-06",
         status: 'Active'
       });
     }
@@ -1909,7 +1924,7 @@
 
     function openManualEntryModal(prefill = {}) {
       document.getElementById('entryRecordId').value = prefill.id || '';
-      document.getElementById('entryDate').value = prefill.date || "2026-10-04";
+      document.getElementById('entryDate').value = prefill.date || "2026-10-06";
       document.getElementById('entryCategory').value = prefill.category || 'OPD';
       
       const hospSelect = document.getElementById('entryHospital');
@@ -1974,7 +1989,7 @@
 
         let detectedName = '';
         let detectedReferredBy = '';
-        let detectedDate = "2026-10-04";
+        let detectedDate = "2026-10-06";
         let detectedAmount = '';
         let detectedNote = '';
         let detectedHospital = 'Orange Hospital, Navsari';
@@ -1985,7 +2000,7 @@
         else if (lower.includes('kejal') || lower.includes('lifeline')) detectedHospital = 'Kejal Lifeline Hospital, Navsari';
         else if (lower.includes('alipore')) detectedHospital = 'Alipore Hospital';
         else if (lower.includes('rhythm') || lower.includes('vyara')) detectedHospital = 'Rhythm Hospital, Vyara';
-        else if (lower.includes('atmiya') || lower.includes('mandvi')) detectedHospital = 'Atmiya Hospital, Mandvi';
+        else if (lower.includes('atmiya') || lower.includes('mandvi')) detectedHospital = 'Atmiya Hospital, Navsari';
         else if (lower.includes('aatithyam') || lower.includes('atithyam')) detectedHospital = 'Aatithyam Hospital, Navsari';
 
         const refMatch = fullText.match(/(?:Ref(?:erred)?\.?\s*By|Dr\.?\s*Ref)[:\s]+(?:Dr\.?\s*)?([A-Za-z\s]+)/i);
@@ -2055,12 +2070,12 @@
     async function exportDataBackup() {
       const entries = await db.entries.toArray();
       const inpatients = await db.inpatients.toArray();
-      const backup = { entries, inpatients, exportedAt: "2026-10-04T17:34:00.000Z" };
-      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+      const backup = { entries, inpatients, exportedAt: "2026-10-06T21:23:00.000Z" };
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json'>>0 ? ... : '' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `practice_backup_2026-10-04.json`;
+      a.download = `practice_backup_2026-10-06.json`;
       a.click();
     }
 
