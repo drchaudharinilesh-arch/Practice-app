@@ -1106,7 +1106,7 @@
                   Manage IPD ↗
                 </button>
               ` : `
-                <button onclick="editEntry(${e.id})" class="text-indigo-300 font-semibold text-xs px-2 py-1 liquid-glass rounded-lg hover:bg-slate-800 transition">✏️️</button>
+                <button onclick="editEntry(${e.id})" class="text-indigo-300 font-semibold text-xs px-2 py-1 liquid-glass rounded-lg hover:bg-slate-800 transition">✏️</button>
                 <button onclick="deleteEntry(${e.id})" class="text-rose-400 hover:text-rose-300 font-semibold text-xs px-1.5 py-1">🗑</button>
               `}
             </div>
@@ -1950,7 +1950,7 @@
       document.getElementById('entryModal').classList.remove('hidden');
     }
 
-    // UPDATED AI SCANNER FUNCTION WITH SAFE ERROR HANDLING
+    // FIXED GEMINI API SCANNER FUNCTION FOR IMAGES
     async function handleImageSelected(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -1958,7 +1958,8 @@
       showLoading(true);
 
       try {
-        const base64Image = await toBase64(file);
+        const base64String = await toBase64(file);
+        const base64Data = base64String.split(',')[1] || base64String;
         const apiKey = 'AQ.Ab8RN6KDZBtbVfLuSOfHhmLwEX9yEu8oGPD2KrrxZ4ktII9qKQ';
 
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
@@ -1968,12 +1969,12 @@
             "contents": [{
               "parts": [
                 {
-                  "text": "Analyze this prescription or discharge summary image. Extract the following details strictly in valid JSON format with keys: 'patient_name', 'referred_by', 'hospital', 'date', 'is_surgery', 'scheme', 'diagnosis_note', 'amount'. For hospital, match one of: ['Orange Hospital, Navsari', 'Parsi Hospital, Navsari', 'Kejal Lifeline Hospital, Navsari', 'Alipore Hospital', 'Rhythm Hospital, Vyara', 'Atmiya Hospital, Mandvi', 'Aatithyam Hospital, Navsari'] if applicable, or return the name found. Do not include markdown or extra text, just pure JSON."
+                  "text": "Analyze this medical prescription or slip image. Extract the following details strictly in valid JSON format with keys: 'patient_name', 'referred_by', 'hospital', 'date', 'is_surgery', 'scheme', 'diagnosis_note', 'amount'. For hospital, match one of: ['Orange Hospital, Navsari', 'Parsi Hospital, Navsari', 'Kejal Lifeline Hospital, Navsari', 'Alipore Hospital', 'Rhythm Hospital, Vyara', 'Atmiya Hospital, Mandvi', 'Aatithyam Hospital, Navsari'] if applicable, or return the name found. Do not include markdown or extra text, just pure JSON."
                 },
                 {
                   "inline_data": {
-                    "mime_type": file.type,
-                    "data": base64Image.split(',')[1]
+                    "mime_type": file.type || "image/jpeg",
+                    "data": base64Data
                   }
                 }
               ]
@@ -1983,7 +1984,6 @@
 
         const result = await response.json();
         
-        // सुरक्षित जाँच ताकि एरर न आए
         if (!result.candidates || !result.candidates[0].content || !result.candidates[0].content.parts) {
           throw new Error("AI से सही डेटा नहीं मिल पाया। कृपया दूसरी साफ फोटो ट्राई करें।");
         }
