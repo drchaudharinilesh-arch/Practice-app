@@ -1997,7 +1997,7 @@
           amount: data.amount || '',
           paymentStatus: (data.is_surgery === true) ? 'Pending' : 'Received'
         });
-
+        
       } catch (err) {
         alert('AI Scanning error: ' + err.message);
       } finally {
