@@ -130,7 +130,7 @@
             <button onclick="openOpdAuditModal()" class="liquid-glass hover:bg-blue-950/30 active:scale-98 rounded-2xl p-3.5 border border-blue-500/20 relative overflow-hidden flex flex-col justify-between text-left transition h-28">
               <div class="flex justify-between items-start">
                 <span class="text-[10px] font-bold text-blue-300 uppercase tracking-wider">OPD Cons.</span>
-                <span class="text-[10px] text-blue-400 font-bold">Register ↗</span>
+                <span class="text-[10px] font-blue-400 font-bold">Register ↗</span>
               </div>
               <div>
                 <div id="statOpdIndoor" class="text-xl font-black text-white tracking-tight">₹0</div>
@@ -576,7 +576,7 @@
           <option value="All">All Hospitals</option>
           <option value="Orange Hospital, Navsari">Orange Hospital, Navsari</option>
           <option value="Parsi Hospital, Navsari">Parsi Hospital, Navsari</option>
-          <option value="Kejal Lifeline Hospital, Navsari">Kejal Lifeline, Navsari</option>
+          <option value="Kejal Lifeline Hospital, Navsari">Kejal Lifeline Hospital, Navsari</option>
           <option value="Alipore Hospital">Alipore Hospital</option>
           <option value="Rhythm Hospital, Vyara">Rhythm Hospital, Vyara</option>
           <option value="Atmiya Hospital, Mandvi">Atmiya Hospital, Mandvi</option>
@@ -648,10 +648,11 @@
           <option value="All">All Hospitals</option>
           <option value="Orange Hospital, Navsari">Orange Hospital, Navsari</option>
           <option value="Parsi Hospital, Navsari">Parsi Hospital, Navsari</option>
-          <option value="Kejal Lifeline Hospital, Navsari">Kejal Lifeline, Navsari</option>
+          <option value="Kejal Lifeline Hospital, Navsari">Kejal Lifeline Hospital, Navsari</option>
           <option value="Alipore Hospital">Alipore Hospital</option>
           <option value="Rhythm Hospital, Vyara">Rhythm Hospital, Vyara</option>
-          <option value="Atmiya Hospital, Navsari">Aatithyam Hospital, Navsari</option>
+          <option value="Atmiya Hospital, Mandvi">Atmiya Hospital, Mandvi</option>
+          <option value="Aatithyam Hospital, Navsari">Aatithyam Hospital, Navsari</option>
         </select>
       </div>
 
@@ -1948,7 +1949,7 @@
       document.getElementById('entryModal').classList.remove('hidden');
     }
 
-    // स्मार्ट एआई स्कैनर (Google Cloud Vision API with correct key)
+    // सुपर स्मार्ट एआई स्कैनर (विभिन्न अस्पतालों की पर्चियों के लिए अनुकूलित)
     async function handleImageSelected(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -1957,7 +1958,6 @@
 
       try {
         const base64Data = await resizeImageAndGetBase64(file);
-        // आपकी नई API Key यहाँ बिल्कुल सही तरीके से जोड़ दी गई है
         const apiKey = 'AIzaSyAxDoA07tLYB_NC4m_91EZWh_rbE_Bj2xw';
 
         const response = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`, {
@@ -1998,40 +1998,72 @@
         let detectedHospital = "Orange Hospital, Navsari";
         let detectedConsultant = "";
 
-        // आपके द्वारा भेजी गई पर्ची (जैसे MOHAMMADIQBAL SHAIKH वाली स्लिप) के हिसाब से बेहतर पार्सर
+        // अस्पताल की पहचान
+        const fullLower = fullText.toLowerCase();
+        if (fullLower.includes('parsi') || fullLower.includes('dorabji')) {
+          detectedHospital = "Parsi Hospital, Navsari";
+        } else if (fullLower.includes('orange')) {
+          detectedHospital = "Orange Hospital, Navsari";
+        } else if (fullLower.includes('kejal')) {
+          detectedHospital = "Kejal Lifeline Hospital, Navsari";
+        } else if (fullLower.includes('alipore')) {
+          detectedHospital = "Alipore Hospital";
+        } else if (fullLower.includes('rhythm') || fullLower.includes('vyara')) {
+          detectedHospital = "Rhythm Hospital, Vyara";
+        } else if (fullLower.includes('atmiya') || fullLower.includes('mandvi')) {
+          detectedHospital = "Atmiya Hospital, Mandvi";
+        }
+
+        // सभी पर्चियों के फॉर्मेट से पेशेंट का नाम ढूंढने के लिए स्मार्ट लूप
         for (let i = 0; i < lines.length; i++) {
           let line = lines[i];
           let upperLine = line.toUpperCase();
 
-          if (upperLine.includes('NAME')) {
+          // अगर लाइन में Name, Patient Name या nization (जैसे Parsi/Orange स्लिप्स में होता है) लिखा हो
+          if (upperLine.includes('NAME') || upperLine.includes('PATIENT') || upperLine.includes('NIZATION')) {
             let parts = line.split(':');
-            if (parts[1] && parts[1].trim().length > 1) {
+            if (parts[1] && parts[1].trim().length > 2) {
               detectedName = parts[1].trim();
-            } else if (lines[i + 1]) {
-              detectedName = lines[i + 1].trim();
-            }
-          }
-
-          if (upperLine.includes('CONSULTANT') || upperLine.includes('DR.')) {
-            if (upperLine.includes('NILESH')) {
-              detectedConsultant = "Dr. Nilesh Chaudhari";
+              break;
+            } else if (lines[i + 1] && lines[i + 1].trim().length > 2) {
+              // अगर कॉलन के बाद नाम नहीं है, तो अगली लाइन चेक करें
+              let nextLine = lines[i + 1].replace(/^[:\-\s]+/, '').trim();
+              if (nextLine.length > 2) {
+                detectedName = nextLine;
+                break;
+              }
             }
           }
         }
 
-        // यदि 'Name' कीवर्ड सीधा नहीं मिला, तो बड़े अक्षरों वाले संभावित नाम को ढूंढना
+        // यदि ऊपर वाले लूप से नाम न मिले, तो Mr./Shri या बड़े अक्षरों वाले संभावित नाम को खोजें
         if (!detectedName) {
           for (let line of lines) {
-            if (line === line.toUpperCase() && line.length > 5 && !/HOSPITAL|UHID|NAVBAR|ADDRESS|MOBILE|CONSULTANT|DATE/i.test(line)) {
-              detectedName = line;
+            if (/^(Mr\.|Mrs\.|Shri|Kum\.)/i.test(line)) {
+              detectedName = line.replace(/^(Mr\.|Mrs\.|Shri|Kum\.)\s*/i, '').trim();
               break;
             }
           }
         }
 
-        const dateMatch = fullText.match(/(\d{2})[\/\.-](\d{2})[\/\.-](\d{4})/);
+        // डॉक्टर का नाम ढूंढना
+        for (let line of lines) {
+          if (line.toUpperCase().includes('NILESH')) {
+            detectedConsultant = "Dr. Nilesh Chaudhari";
+            break;
+          }
+        }
+
+        // तारीख ढूंढना (DD/MM/YYYY या YYYY-MM-DD फॉर्मेट)
+        const dateMatch = fullText.match(/(\d{1,2})[\/\.-](\d{1,2})[\/\.-](\d{2,4})/);
         if (dateMatch) {
-          detectedDate = `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`;
+          let [_, d, m, y] = dateMatch;
+          if (y.length === 2) y = '20' + y;
+          if (d.length === 1) d = '0' + d;
+          if (m.length === 1) m = '0' + m;
+          if (Number(m) <= 12 && Number(d) <= 31) {
+            detectedDate = `${y}-${m}-${d}`;
+          }
         }
 
         openManualEntryModal({
