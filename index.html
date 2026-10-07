@@ -258,7 +258,7 @@
   </div>
 
   <!-- Multi-Field 1-Touch Smart Picker Modal -->
-  <div id="ocrReviewModal" class="hidden fixed inset-0 z-50 bg-black/9iling backdrop-blur-md flex items-center justify-center p-3">
+  <div id="ocrReviewModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3">
     <div class="frosted-glass rounded-3xl p-4 w-full max-w-md max-h-[92vh] flex flex-col shadow-2xl border border-white/20 space-y-3">
       <div class="flex justify-between items-center border-b border-white/10 pb-2">
         <h3 class="text-sm font-bold text-white">⚡ Smart 1-Touch Form Filler</h3>
@@ -283,7 +283,7 @@
 
       <!-- Scanned Line Options -->
       <p class="text-[10px] text-slate-400">पर्ची की लाइन पर टच करें (जितनी बार चाहें):</p>
-      <div id="wzOptionsContainer" class="w-full h-48 liquid-glass p-2 rounded-2xl overflow-y-auto space-y-1.5 border border-white/10"></div>
+      <div id="wzOptionsContainer" class="w-full h-44 liquid-glass p-2 rounded-2xl overflow-y-auto space-y-1.5 border border-white/10"></div>
 
       <!-- Action Buttons -->
       <div class="flex gap-2 pt-1">
@@ -1989,7 +1989,7 @@
       document.getElementById('entryModal').classList.remove('hidden');
     }
 
-    // MULTI-FIELD SMART WIZARD SYSTEM
+    // MULTI-FIELD SMART WIZARD SYSTEM WITH FULL MANUAL EDITING FIX
     let scannedLinesGlobal = [];
     let activeWizardField = 'name'; // 'name', 'date', 'note'
     let wizardData = { name: '', date: new Date().toISOString().slice(0, 10), note: '', hospital: 'Orange Hospital, Navsari' };
@@ -2050,7 +2050,7 @@
           wizardData.hospital = "Atmiya Hospital, Mandvi";
         }
 
-        // तारीख ऑटो-डिटेक्ट
+        // तारीख ऑटो-डिटेक्ट (YYYY-MM-DD फॉर्मेट में ठीक से कन्वर्ट करना)
         const dateMatch = fullText.match(/(\d{1,2})[\/\.-](\d{1,2})[\/\.-](\d{2,4})/);
         if (dateMatch) {
           let [_, d, m, y] = dateMatch;
@@ -2091,9 +2091,15 @@
       const labelMap = { name: 'Patient Name (नाम चुनें)', date: 'Date (तारीख चुनें)', note: 'Procedure / Note (नोट चुनें)' };
       document.getElementById('wzActiveLabel').innerText = `Target: ${labelMap[field]}`;
 
-      // करंट इनपुट अपडेट
+      // करंट इनपुट अपडेट (अब यह readonly नहीं है, डॉक्टर साहब इसे कीबोर्ड से भी एडिट कर सकते हैं)
       const targetInput = document.getElementById('wzTargetInput');
+      targetInput.readOnly = false; // मैनुअल टाइपिंग की अनुमति दी गई
       targetInput.value = wizardData[field] || '';
+      
+      // जब डॉक्टर साहब इनपुट में टाइप करके बदलें, तो वह डेटा सेव हो जाए
+      targetInput.oninput = function() {
+        wizardData[activeWizardField] = targetInput.value;
+      };
 
       // ऑप्शन लिस्ट रेंडर करना
       const container = document.getElementById('wzOptionsContainer');
@@ -2110,7 +2116,8 @@
       if (!cleaned) cleaned = text;
 
       wizardData[activeWizardField] = wizardData[activeWizardField] ? wizardData[activeWizardField] + " " + cleaned : cleaned;
-      document.getElementById('wzTargetInput').value = wizardData[activeWizardField];
+      const targetInput = document.getElementById('wzTargetInput');
+      targetInput.value = wizardData[activeWizardField];
     }
 
     function clearActiveWizardField() {
