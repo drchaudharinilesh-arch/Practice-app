@@ -130,7 +130,7 @@
             <button onclick="openOpdAuditModal()" class="liquid-glass hover:bg-blue-950/30 active:scale-98 rounded-2xl p-3.5 border border-blue-500/20 relative overflow-hidden flex flex-col justify-between text-left transition h-28">
               <div class="flex justify-between items-start">
                 <span class="text-[10px] font-bold text-blue-300 uppercase tracking-wider">OPD Cons.</span>
-                <span class="text-[10px] font-blue-400 font-bold">Register ↗</span>
+                <span class="text-[10px] text-blue-400 font-bold">Register ↗</span>
               </div>
               <div>
                 <div id="statOpdIndoor" class="text-xl font-black text-white tracking-tight">₹0</div>
@@ -255,6 +255,34 @@
         </button>
       </div>
     </nav>
+  </div>
+
+  <!-- OCR Text Review & Click-to-Fill Modal -->
+  <div id="ocrReviewModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3">
+    <div class="frosted-glass rounded-3xl p-5 w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl border border-white/20 space-y-3">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
+        <h3 class="text-base font-bold text-white">Select Patient Name from Scan</h3>
+        <button onclick="closeModal('ocrReviewModal')" class="text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
+      </div>
+      <p class="text-[11px] text-indigo-300">नीचे पर्ची से पढ़ा गया पूरा टेक्स्ट है। जिस नाम को आप फॉर्म में डालना चाहते हैं, उसे चुनकर नीचे दिए गए बटन पर क्लिक करें:</p>
+      
+      <!-- Raw Scanned Text Box -->
+      <div id="scannedTextBox" class="w-full h-48 liquid-glass p-3 rounded-2xl text-xs text-slate-200 overflow-y-auto whitespace-pre-wrap select-all border border-white/10"></div>
+      
+      <div class="p-2.5 bg-indigo-950/40 rounded-xl border border-indigo-500/20">
+        <label class="block text-[10px] font-bold text-indigo-300 uppercase mb-1">चयनित नाम (Selected Text):</label>
+        <input type="text" id="selectedOcrText" readonly class="w-full glass-input rounded-xl p-2.5 text-xs font-bold text-white" placeholder="ऊपर टेक्स्ट से नाम सेलेक्ट करें..." />
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button onclick="applySelectedOcrName()" class="flex-1 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-bold py-3 rounded-2xl text-xs shadow-lg shadow-indigo-600/30">
+          ✓ Use as Patient Name
+        </button>
+        <button onclick="skipOcrReview()" class="px-4 liquid-glass text-slate-300 font-semibold py-3 rounded-2xl text-xs">
+          Skip / Manual
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- Entry Form Modal -->
@@ -394,7 +422,7 @@
             <select id="ipdHospital" class="w-full glass-input rounded-xl p-3 text-xs">
               <option value="Orange Hospital, Navsari">Orange Hospital, Navsari</option>
               <option value="Parsi Hospital, Navsari">Parsi Hospital, Navsari</option>
-              <option value="Kejal Lifeline Hospital, Navsari">Kejal Lifeline, Navsari</option>
+              <option value="Kejal Lifeline Hospital, Navsari">Kejal Lifeline Hospital, Navsari</option>
               <option value="Alipore Hospital">Alipore Hospital</option>
               <option value="Rhythm Hospital, Vyara">Rhythm Hospital, Vyara</option>
               <option value="Atmiya Hospital, Mandvi">Atmiya Hospital, Mandvi</option>
@@ -1949,7 +1977,10 @@
       document.getElementById('entryModal').classList.remove('hidden');
     }
 
-    // सुपर स्मार्ट एआई स्कैनर (विभिन्न अस्पतालों की पर्चियों के लिए अनुकूलित)
+    // CLICK-TO-FILL / INTERACTIVE OCR REVIEW SYSTEM
+    let tempScannedHospital = "Orange Hospital, Navsari";
+    let tempScannedDate = new Date().toISOString().slice(0, 10);
+
     async function handleImageSelected(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -1980,81 +2011,32 @@
         });
 
         const result = await response.json();
-        
-        if (result.error) {
-          throw new Error(result.error.message || "Cloud Vision API Error");
-        }
+        if (result.error) throw new Error(result.error.message || "Vision API Error");
 
         const annotations = result.responses[0].textAnnotations;
         if (!annotations || annotations.length === 0) {
-          throw new Error("तस्वीर से कोई टेक्स्ट नहीं पढ़ा जा सका। कृपया दूसरी साफ फोटो लें।");
+          throw new Error("तस्वीर से कोई टेक्स्ट नहीं पढ़ा जा सका।");
         }
 
         const fullText = annotations[0].description || '';
-        const lines = fullText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-
-        let detectedName = '';
-        let detectedDate = new Date().toISOString().slice(0, 10);
-        let detectedHospital = "Orange Hospital, Navsari";
-        let detectedConsultant = "";
-
+        
         // अस्पताल की पहचान
         const fullLower = fullText.toLowerCase();
         if (fullLower.includes('parsi') || fullLower.includes('dorabji')) {
-          detectedHospital = "Parsi Hospital, Navsari";
+          tempScannedHospital = "Parsi Hospital, Navsari";
         } else if (fullLower.includes('orange')) {
-          detectedHospital = "Orange Hospital, Navsari";
+          tempScannedHospital = "Orange Hospital, Navsari";
         } else if (fullLower.includes('kejal')) {
-          detectedHospital = "Kejal Lifeline Hospital, Navsari";
+          tempScannedHospital = "Kejal Lifeline Hospital, Navsari";
         } else if (fullLower.includes('alipore')) {
-          detectedHospital = "Alipore Hospital";
+          tempScannedHospital = "Alipore Hospital";
         } else if (fullLower.includes('rhythm') || fullLower.includes('vyara')) {
-          detectedHospital = "Rhythm Hospital, Vyara";
+          tempScannedHospital = "Rhythm Hospital, Vyara";
         } else if (fullLower.includes('atmiya') || fullLower.includes('mandvi')) {
-          detectedHospital = "Atmiya Hospital, Mandvi";
+          tempScannedHospital = "Atmiya Hospital, Mandvi";
         }
 
-        // सभी पर्चियों के फॉर्मेट से पेशेंट का नाम ढूंढने के लिए स्मार्ट लूप
-        for (let i = 0; i < lines.length; i++) {
-          let line = lines[i];
-          let upperLine = line.toUpperCase();
-
-          // अगर लाइन में Name, Patient Name या nization (जैसे Parsi/Orange स्लिप्स में होता है) लिखा हो
-          if (upperLine.includes('NAME') || upperLine.includes('PATIENT') || upperLine.includes('NIZATION')) {
-            let parts = line.split(':');
-            if (parts[1] && parts[1].trim().length > 2) {
-              detectedName = parts[1].trim();
-              break;
-            } else if (lines[i + 1] && lines[i + 1].trim().length > 2) {
-              // अगर कॉलन के बाद नाम नहीं है, तो अगली लाइन चेक करें
-              let nextLine = lines[i + 1].replace(/^[:\-\s]+/, '').trim();
-              if (nextLine.length > 2) {
-                detectedName = nextLine;
-                break;
-              }
-            }
-          }
-        }
-
-        // यदि ऊपर वाले लूप से नाम न मिले, तो Mr./Shri या बड़े अक्षरों वाले संभावित नाम को खोजें
-        if (!detectedName) {
-          for (let line of lines) {
-            if (/^(Mr\.|Mrs\.|Shri|Kum\.)/i.test(line)) {
-              detectedName = line.replace(/^(Mr\.|Mrs\.|Shri|Kum\.)\s*/i, '').trim();
-              break;
-            }
-          }
-        }
-
-        // डॉक्टर का नाम ढूंढना
-        for (let line of lines) {
-          if (line.toUpperCase().includes('NILESH')) {
-            detectedConsultant = "Dr. Nilesh Chaudhari";
-            break;
-          }
-        }
-
-        // तारीख ढूंढना (DD/MM/YYYY या YYYY-MM-DD फॉर्मेट)
+        // तारीख ढूंढना
         const dateMatch = fullText.match(/(\d{1,2})[\/\.-](\d{1,2})[\/\.-](\d{2,4})/);
         if (dateMatch) {
           let [_, d, m, y] = dateMatch;
@@ -2062,23 +2044,59 @@
           if (d.length === 1) d = '0' + d;
           if (m.length === 1) m = '0' + m;
           if (Number(m) <= 12 && Number(d) <= 31) {
-            detectedDate = `${y}-${m}-${d}`;
+            tempScannedDate = `${y}-${m}-${d}`;
           }
         }
 
-        openManualEntryModal({
-          name: detectedName || '',
-          hospital: detectedHospital,
-          date: detectedDate,
-          note: detectedConsultant ? `Consultant: ${detectedConsultant}` : 'Scanned Slip',
-          category: 'OPD'
-        });
+        // टेक्स्ट को प्रिव्यू बॉक्स में दिखाएं ताकि डॉक्टर साहब खुद उंगली से सेलेक्ट कर सकें
+        document.getElementById('scannedTextBox').innerText = fullText;
+        document.getElementById('selectedOcrText').value = '';
+        document.getElementById('ocrReviewModal').classList.remove('hidden');
+
+        // टेक्स्ट बॉक्स में किसी भी शब्द को सेलेक्ट करने पर वह अपने आप इनपुट में आ जाएगा
+        document.getElementById('scannedTextBox').onmouseup = function() {
+          const selectedText = window.getSelection().toString().trim();
+          if (selectedText) {
+            document.getElementById('selectedOcrText').value = selectedText;
+          }
+        };
+
+        document.getElementById('scannedTextBox').ontouchend = function() {
+          const selectedText = window.getSelection().toString().trim();
+          if (selectedText) {
+            document.getElementById('selectedOcrText').value = selectedText;
+          }
+        };
 
       } catch (err) {
         alert('Scanning Error: ' + err.message);
       } finally {
         showLoading(false);
       }
+    }
+
+    function applySelectedOcrName() {
+      const chosenName = document.getElementById('selectedOcrText').value.trim();
+      if (!chosenName) {
+        alert('कृपया पहले ऊपर दिए गए टेक्स्ट से पेशेंट का नाम सेलेक्ट करें!');
+        return;
+      }
+      closeModal('ocrReviewModal');
+      openManualEntryModal({
+        name: chosenName,
+        hospital: tempScannedHospital,
+        date: tempScannedDate,
+        category: 'OPD'
+      });
+    }
+
+    function skipOcrReview() {
+      closeModal('ocrReviewModal');
+      openManualEntryModal({
+        hospital: tempScannedHospital,
+        date: tempScannedDate,
+        category: 'OPD'
+      });
     }
 
     function resizeImageAndGetBase64(file) {
