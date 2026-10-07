@@ -85,7 +85,7 @@
         </div>
       </div>
       <div class="flex items-center gap-1.5">
-        <button onclick="forceRefreshAll()" class="p-2 bg-slate-800/65 hover:bg-slate-700/80 border border-white/10 rounded-xl text-xs text-indigo-300" title="Refresh Records">
+        <button onclick="forceRefreshAll()" class="p-2 bg-slate-800/60 hover:bg-slate-700/80 border border-white/10 rounded-xl text-xs text-indigo-300" title="Refresh Records">
           🔄
         </button>
         <button onclick="exportDataBackup()" class="p-2 bg-indigo-900/40 hover:bg-indigo-800/60 border border-indigo-500/30 rounded-xl text-xs font-semibold text-indigo-200 flex items-center gap-1">
@@ -257,32 +257,41 @@
     </nav>
   </div>
 
-  <!-- Smart One-Touch Clickable Options Modal -->
-  <div id="ocrReviewModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3">
-    <div class="frosted-glass rounded-3xl p-5 w-full max-w-md max-h-[92vh] flex flex-col shadow-2xl border border-white/20 space-y-3">
-      <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
-        <h3 class="text-base font-bold text-white">1-Touch Patient Name Picker</h3>
+  <!-- Multi-Field 1-Touch Smart Picker Modal -->
+  <div id="ocrReviewModal" class="hidden fixed inset-0 z-50 bg-black/9iling backdrop-blur-md flex items-center justify-center p-3">
+    <div class="frosted-glass rounded-3xl p-4 w-full max-w-md max-h-[92vh] flex flex-col shadow-2xl border border-white/20 space-y-3">
+      <div class="flex justify-between items-center border-b border-white/10 pb-2">
+        <h3 class="text-sm font-bold text-white">⚡ Smart 1-Touch Form Filler</h3>
         <button onclick="closeModal('ocrReviewModal')" class="text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
       </div>
-      <p class="text-[11px] text-indigo-300">पर्ची से मिले ये टेक्स्ट विकल्प हैं। जो हिस्सा नाम में जोड़ना हो उस पर <b>टच (क्लिक)</b> करें। (एक से अधिक बार क्लिक करके जोड़ सकते हैं):</p>
-      
-      <!-- Clickable Line Options Container -->
-      <div id="ocrOptionsContainer" class="w-full h-44 liquid-glass p-2.5 rounded-2xl overflow-y-auto space-y-1.5 border border-white/10"></div>
-      
-      <div class="p-2.5 bg-indigo-950/40 rounded-xl border border-indigo-500/20 space-y-1">
-        <label class="block text-[10px] font-bold text-indigo-300 uppercase">Current Name Builder:</label>
-        <div class="flex gap-2">
-          <input type="text" id="selectedOcrText" class="w-full glass-input rounded-xl p-2.5 text-xs font-bold text-white" placeholder="यहाँ नाम बनता जाएगा..." />
-          <button onclick="document.getElementById('selectedOcrText').value = ''" class="px-3 bg-rose-950/60 hover:bg-rose-900/80 text-rose-200 border border-rose-500/30 rounded-xl text-xs font-bold">Clear</button>
-        </div>
+
+      <!-- Field Selector Tabs -->
+      <div class="grid grid-cols-3 gap-1.5 bg-slate-900/80 p-1.5 rounded-2xl border border-white/10 text-xs font-bold">
+        <button type="button" onclick="setWizardTarget('name')" id="wzTab-name" class="field-tab py-2 rounded-xl bg-indigo-600 text-white transition text-center">👤 Name</button>
+        <button type="button" onclick="setWizardTarget('date')" id="wzTab-date" class="field-tab py-2 rounded-xl text-slate-400 hover:text-white transition text-center">📅 Date</button>
+        <button type="button" onclick="setWizardTarget('note')" id="wzTab-note" class="field-tab py-2 rounded-xl text-slate-400 hover:text-white transition text-center">📋 Note</button>
       </div>
 
+      <!-- Active Field Input & Preview -->
+      <div class="p-2.5 bg-indigo-950/40 rounded-xl border border-indigo-500/20 space-y-1">
+        <div class="flex justify-between items-center text-[10px] font-bold text-indigo-300 uppercase">
+          <span id="wzActiveLabel">Target: Patient Name (टच करके जोड़ें)</span>
+          <button onclick="clearActiveWizardField()" class="text-rose-400 hover:underline">Clear</button>
+        </div>
+        <input type="text" id="wzTargetInput" readonly class="w-full glass-input rounded-xl p-2.5 text-xs font-bold text-white" placeholder="नीचे लिस्ट से टच करें..." />
+      </div>
+
+      <!-- Scanned Line Options -->
+      <p class="text-[10px] text-slate-400">पर्ची की लाइन पर टच करें (जितनी बार चाहें):</p>
+      <div id="wzOptionsContainer" class="w-full h-48 liquid-glass p-2 rounded-2xl overflow-y-auto space-y-1.5 border border-white/10"></div>
+
+      <!-- Action Buttons -->
       <div class="flex gap-2 pt-1">
-        <button onclick="applySelectedOcrName()" class="flex-1 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-bold py-3 rounded-2xl text-xs shadow-lg shadow-indigo-600/30 active:scale-95 transition">
-          ✓ Confirm & Fill Name
+        <button onclick="applyWizardAndProceed()" class="flex-1 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-bold py-3 rounded-2xl text-xs shadow-lg shadow-indigo-600/30 active:scale-95 transition">
+          ✓ Save & Open Entry Form
         </button>
-        <button onclick="skipOcrReview()" class="px-4 liquid-glass text-slate-300 font-semibold py-3 rounded-2xl text-xs">
-          Skip
+        <button onclick="closeModal('ocrReviewModal')" class="px-3 liquid-glass text-slate-300 font-semibold py-3 rounded-2xl text-xs">
+          Cancel
         </button>
       </div>
     </div>
@@ -1980,9 +1989,10 @@
       document.getElementById('entryModal').classList.remove('hidden');
     }
 
-    // ONE-TOUCH SMART OPTIONS PICKER (लाइनों को क्लिकेबल ऑप्शन में बदलना)
-    let tempScannedHospital = "Orange Hospital, Navsari";
-    let tempScannedDate = new Date().toISOString().slice(0, 10);
+    // MULTI-FIELD SMART WIZARD SYSTEM
+    let scannedLinesGlobal = [];
+    let activeWizardField = 'name'; // 'name', 'date', 'note'
+    let wizardData = { name: '', date: new Date().toISOString().slice(0, 10), note: '', hospital: 'Orange Hospital, Navsari' };
 
     async function handleImageSelected(event) {
       const file = event.target.files[0];
@@ -2018,29 +2028,29 @@
 
         const annotations = result.responses[0].textAnnotations;
         if (!annotations || annotations.length === 0) {
-          throw new Error("तस्वीर से कोई टेक्स्ट नहीं पढ़ا जा सका।");
+          throw new Error("तस्वीर से कोई टेक्स्ट नहीं पढ़ा जा सका।");
         }
 
         const fullText = annotations[0].description || '';
-        const lines = fullText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        scannedLinesGlobal = fullText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
         
-        // अस्पताल की पहचान
+        // हॉस्पिटल ऑटो-डिटेक्ट
         const fullLower = fullText.toLowerCase();
         if (fullLower.includes('parsi') || fullLower.includes('dorabji')) {
-          tempScannedHospital = "Parsi Hospital, Navsari";
+          wizardData.hospital = "Parsi Hospital, Navsari";
         } else if (fullLower.includes('orange')) {
-          tempScannedHospital = "Orange Hospital, Navsari";
+          wizardData.hospital = "Orange Hospital, Navsari";
         } else if (fullLower.includes('kejal')) {
-          tempScannedHospital = "Kejal Lifeline Hospital, Navsari";
+          wizardData.hospital = "Kejal Lifeline Hospital, Navsari";
         } else if (fullLower.includes('alipore')) {
-          tempScannedHospital = "Alipore Hospital";
+          wizardData.hospital = "Alipore Hospital";
         } else if (fullLower.includes('rhythm') || fullLower.includes('vyara')) {
-          tempScannedHospital = "Rhythm Hospital, Vyara";
+          wizardData.hospital = "Rhythm Hospital, Vyara";
         } else if (fullLower.includes('atmiya') || fullLower.includes('mandvi')) {
-          tempScannedHospital = "Atmiya Hospital, Mandvi";
+          wizardData.hospital = "Atmiya Hospital, Mandvi";
         }
 
-        // तारीख ढूंढना
+        // तारीख ऑटो-डिटेक्ट
         const dateMatch = fullText.match(/(\d{1,2})[\/\.-](\d{1,2})[\/\.-](\d{2,4})/);
         if (dateMatch) {
           let [_, d, m, y] = dateMatch;
@@ -2048,20 +2058,14 @@
           if (d.length === 1) d = '0' + d;
           if (m.length === 1) m = '0' + m;
           if (Number(m) <= 12 && Number(d) <= 31) {
-            tempScannedDate = `${y}-${m}-${d}`;
+            wizardData.date = `${y}-${m}-${d}`;
           }
         }
 
-        // हर लाइन को एक सुंदर क्लिकेबल बटन में बदलना ताकि 1 टच से नाम जोड़ा जा सके
-        const container = document.getElementById('ocrOptionsContainer');
-        container.innerHTML = lines.map(line => `
-          <button type="button" onclick="appendNameToBuilder('${escapeHtml(line).replace(/'/g, "\\'")}')" class="w-full text-left p-2.5 rounded-xl bg-slate-900/80 hover:bg-indigo-900/50 border border-white/10 text-xs text-slate-200 font-medium active:scale-98 transition flex justify-between items-center">
-            <span class="truncate pr-2">${escapeHtml(line)}</span>
-            <span class="text-[10px] text-indigo-400 font-bold shrink-0">+ Add</span>
-          </button>
-        `).join('');
+        wizardData.name = '';
+        wizardData.note = '';
 
-        document.getElementById('selectedOcrText').value = '';
+        setWizardTarget('name');
         document.getElementById('ocrReviewModal').classList.remove('hidden');
 
       } catch (err) {
@@ -2071,39 +2075,56 @@
       }
     }
 
-    function appendNameToBuilder(text) {
-      // कॉलन, यूएचआईडी या लेबल्स को हटाकर शुद्ध नाम का हिस्सा निकालना
-      let cleaned = text.replace(/^(name|patient name|nization|uhid|reg no)[\s:]*/i, '').trim();
+    function setWizardTarget(field) {
+      activeWizardField = field;
+      
+      // टैब हाइलाइट बदलना
+      ['name', 'date', 'note'].forEach(f => {
+        const btn = document.getElementById(`wzTab-${f}`);
+        if (f === field) {
+          btn.className = 'field-tab py-2 rounded-xl bg-indigo-600 text-white transition text-center';
+        } else {
+          btn.className = 'field-tab py-2 rounded-xl text-slate-400 hover:text-white transition text-center';
+        }
+      });
+
+      const labelMap = { name: 'Patient Name (नाम चुनें)', date: 'Date (तारीख चुनें)', note: 'Procedure / Note (नोट चुनें)' };
+      document.getElementById('wzActiveLabel').innerText = `Target: ${labelMap[field]}`;
+
+      // करंट इनपुट अपडेट
+      const targetInput = document.getElementById('wzTargetInput');
+      targetInput.value = wizardData[field] || '';
+
+      // ऑप्शन लिस्ट रेंडर करना
+      const container = document.getElementById('wzOptionsContainer');
+      container.innerHTML = scannedLinesGlobal.map(line => `
+        <button type="button" onclick="appendWizardText('${escapeHtml(line).replace(/'/g, "\\'")}')" class="w-full text-left p-2.5 rounded-xl bg-slate-900/80 hover:bg-indigo-900/50 border border-white/10 text-xs text-slate-200 font-medium active:scale-98 transition flex justify-between items-center">
+          <span class="truncate pr-2">${escapeHtml(line)}</span>
+          <span class="text-[10px] text-indigo-400 font-bold shrink-0">+ Add</span>
+        </button>
+      `).join('');
+    }
+
+    function appendWizardText(text) {
+      let cleaned = text.replace(/^(name|patient name|nization|uhid|reg no|date|consultant)[\s:]*/i, '').trim();
       if (!cleaned) cleaned = text;
 
-      const input = document.getElementById('selectedOcrText');
-      if (input.value) {
-        input.value += " " + cleaned;
-      } else {
-        input.value = cleaned;
-      }
+      wizardData[activeWizardField] = wizardData[activeWizardField] ? wizardData[activeWizardField] + " " + cleaned : cleaned;
+      document.getElementById('wzTargetInput').value = wizardData[activeWizardField];
     }
 
-    function applySelectedOcrName() {
-      const chosenName = document.getElementById('selectedOcrText').value.trim();
-      if (!chosenName) {
-        alert('कृपया नीचे दिए गए टेक्स्ट विकल्पों में से कम से कम एक पर क्लिक करें!');
-        return;
-      }
-      closeModal('ocrReviewModal');
-      openManualEntryModal({
-        name: chosenName,
-        hospital: tempScannedHospital,
-        date: tempScannedDate,
-        category: 'OPD'
-      });
+    function clearActiveWizardField() {
+      wizardData[activeWizardField] = '';
+      document.getElementById('wzTargetInput').value = '';
     }
 
-    function skipOcrReview() {
+    function applyWizardAndProceed() {
       closeModal('ocrReviewModal');
       openManualEntryModal({
-        hospital: tempScannedHospital,
-        date: tempScannedDate,
+        name: wizardData.name,
+        date: wizardData.date,
+        hospital: wizardData.hospital,
+        note: wizardData.note || 'Scanned Slip',
         category: 'OPD'
       });
     }
