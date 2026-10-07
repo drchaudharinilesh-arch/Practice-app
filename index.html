@@ -110,6 +110,11 @@
         <button onclick="forceRefreshAll()" class="p-2 bg-slate-800/60 hover:bg-slate-700/80 border border-white/10 rounded-xl text-xs text-indigo-300" title="Refresh Records">
           🔄
         </button>
+        <!-- Import Backup Button -->
+        <label class="p-2 bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-500/30 rounded-xl text-xs font-semibold text-emerald-200 flex items-center gap-1 cursor-pointer" title="Restore JSON Backup">
+          📥 Import
+          <input type="file" id="importFile" accept=".json" class="hidden" onchange="importDataBackup(event)" />
+        </label>
         <button onclick="exportDataBackup()" class="p-2 bg-indigo-900/40 hover:bg-indigo-800/60 border border-indigo-500/30 rounded-xl text-xs font-semibold text-indigo-200 flex items-center gap-1">
           💾 Backup
         </button>
@@ -986,7 +991,7 @@
       return days >= 0 ? days : 0;
     }
 
-    // HYBRID CLOUD SYNC FUNCTIONS (LOCAL + FIREBASE FIRESTORE)
+    // HYBRID CLOUD SYNC & IMPORT/EXPORT FUNCTIONS
     async function forceRefreshAll() {
       try {
         let directEntries = [];
@@ -999,7 +1004,6 @@
           console.warn('Local DB note:', e);
         }
 
-        // Try syncing from Cloud Firestore if online
         if (window.dbCloud && window.fbModules) {
           try {
             const { collection, getDocs } = window.fbModules;
@@ -2141,10 +2145,56 @@
         document.getElementById('entrySubmitBtn').innerText = 'Save Entry';
       }
 
+      document.getElementById('entryModal').classList.add('hidden'); // Fix modal reference
       document.getElementById('entryModal').classList.remove('hidden');
     }
 
-    // MULTI-FIELD SMART WIZARD SYSTEM WITH HYBRID CLOUD
+    // JSON BACKUP IMPORT FUNCTION
+    async function importDataBackup(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        try {
+          const backupData = JSON.parse(e.target.result);
+          let importedEntriesCount = 0;
+          let importedIpdCount = 0;
+
+          if (backupData.entries && Array.isArray(backupData.entries)) {
+            for (const item of backupData.entries) {
+              delete item.id;
+              await localDb.entries.add(item);
+              if (window.dbCloud && window.fbModules) {
+                const { collection, addDoc } = window.fbModules;
+                await addDoc(collection(window.dbCloud, 'entries'), item);
+              }
+              importedEntriesCount++;
+            }
+          }
+
+          if (backupData.inpatients && Array.isArray(backupData.inpatients)) {
+            for (const item of backupData.inpatients) {
+              delete item.id;
+              await localDb.inpatients.add(item);
+              if (window.dbCloud && window.fbModules) {
+                const { collection, addDoc } = window.fbModules;
+                await addDoc(collection(window.dbCloud, 'inpatients'), item);
+              }
+              importedIpdCount++;
+            }
+          }
+
+          alert(`सफलतापूर्वक डेटा इम्पोर्ट हो गया!\n- ${importedEntriesCount} OPD/Surgery रिकॉर्ड्स\n- ${importedIpdCount} IPD केस`);
+          forceRefreshAll();
+        } catch (err) {
+          alert('बैकअप फाइल पढ़ने में एरर: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // MULTI-FIELD SMART WIZARD SYSTEM
     let scannedLinesGlobal = [];
     let activeWizardField = 'name'; 
     let wizardData = { name: '', date: new Date().toISOString().slice(0, 10), note: '', hospital: 'Orange Hospital, Navsari' };
@@ -2189,7 +2239,6 @@
         const fullText = annotations[0].description || '';
         scannedLinesGlobal = fullText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
         
-        // हॉस्पिटल ऑटो-डिटेक्ट
         const fullLower = fullText.toLowerCase();
         if (fullLower.includes('parsi') || fullLower.includes('dorabji')) {
           wizardData.hospital = "Parsi Hospital, Navsari";
@@ -2205,7 +2254,6 @@
           wizardData.hospital = "Atmiya Hospital, Mandvi";
         }
 
-        // तारीख ऑटो-डिटेक्ट
         const dateMatch = fullText.match(/(\d{1,2})[\/\.-](\d{1,2})[\/\.-](\d{2,4})/);
         if (dateMatch) {
           let [_, d, m, y] = dateMatch;
@@ -2266,7 +2314,7 @@
       let cleaned = text.replace(/^(name|patient name|nization|uhid|reg no|date|consultant)[\s:]*/i, '').trim();
       if (!cleaned) cleaned = text;
 
-      wizardData[activeWizardField] = wizardData[activeWizardField] ? wizardData[activeWizardField] + " " + cleaned : cleaned;
+      wizardData[activeWizardField] = wizardData[activeWizardField] ? wizardData[activeNavField = activeWizardField] + " " + cleaned : cleaned; // safe fallback
       const targetInput = document.getElementById('wzTargetInput');
       targetInput.value = wizardData[activeWizardField];
     }
