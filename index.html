@@ -12,7 +12,7 @@
   <!-- Firebase SDKs (Modular v10) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, getDocs, doc, setDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyB3Z4PVl7TLsxijb1emIIs4fKt6SwwSuEE",
@@ -27,7 +27,7 @@
     const fbApp = initializeApp(firebaseConfig);
     const dbCloud = getFirestore(fbApp);
     window.dbCloud = dbCloud;
-    window.fbModules = { collection, addDoc, getDocs, doc, setDoc, deleteDoc };
+    window.fbModules = { collection, addDoc, getDocs, doc, setDoc, deleteDoc, getDoc };
   </script>
 
   <style>
@@ -991,7 +991,7 @@
       return days >= 0 ? days : 0;
     }
 
-    // HYBRID CLOUD SYNC & IMPORT/EXPORT FUNCTIONS
+    // ROBUST HYBRID CLOUD SYNC & IPD FIXES
     async function forceRefreshAll() {
       try {
         let directEntries = [];
@@ -1173,37 +1173,40 @@
         return;
       }
 
-      listEl.innerHTML = displayList.map(e => `
-        <div class="frosted-card p-3.5 rounded-2xl flex items-center justify-between border border-white/10 shadow-lg">
-          <div class="space-y-1 max-w-[65%]">
-            <div class="flex items-center gap-1.5 flex-wrap">
-              <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full ${getCategoryBadge(e.category)}">${e.category}</span>
-              ${e.scheme ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-900/60 text-blue-200 border border-blue-500/20">${e.scheme}</span>` : ''}
-              ${e.paymentStatus === 'Pending' ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-900/60 text-amber-200 border border-amber-500/20">⏳ Pending</span>` : ''}
-              <span class="text-[10px] font-semibold bg-slate-800/60 text-slate-300 px-1.5 py-0.5 rounded truncate max-w-[120px]">
-                🏥 ${escapeHtml(e.hospital || 'General')}
-              </span>
-              <span class="text-[10px] text-slate-400">${e.date || ''}</span>
+      listEl.innerHTML = displayList.map(e => {
+        const editId = e.firestoreId ? `'${e.firestoreId}'` : e.id;
+        return `
+          <div class="frosted-card p-3.5 rounded-2xl flex items-center justify-between border border-white/10 shadow-lg">
+            <div class="space-y-1 max-w-[65%]">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full ${getCategoryBadge(e.category)}">${e.category}</span>
+                ${e.scheme ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-900/60 text-blue-200 border border-blue-500/20">${e.scheme}</span>` : ''}
+                ${e.paymentStatus === 'Pending' ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-900/60 text-amber-200 border border-amber-500/20">⏳ Pending</span>` : ''}
+                <span class="text-[10px] font-semibold bg-slate-800/60 text-slate-300 px-1.5 py-0.5 rounded truncate max-w-[120px]">
+                  🏥 ${escapeHtml(e.hospital || 'General')}
+                </span>
+                <span class="text-[10px] text-slate-400">${e.date || ''}</span>
+              </div>
+              <div class="text-sm font-extrabold text-white truncate">${escapeHtml(e.name || 'Unnamed Patient')}</div>
+              ${e.referredBy ? `<div class="text-[11px] font-semibold text-indigo-300 flex items-center gap-1 truncate">👨‍⚕ Ref: ${escapeHtml(e.referredBy)}</div>` : ''}
+              <div class="text-xs text-slate-300 truncate">${escapeHtml(e.note || 'Clinical Record')}</div>
             </div>
-            <div class="text-sm font-extrabold text-white truncate">${escapeHtml(e.name || 'Unnamed Patient')}</div>
-            ${e.referredBy ? `<div class="text-[11px] font-semibold text-indigo-300 flex items-center gap-1 truncate">👨‍⚕ Ref: ${escapeHtml(e.referredBy)}</div>` : ''}
-            <div class="text-xs text-slate-300 truncate">${escapeHtml(e.note || 'Clinical Record')}</div>
-          </div>
-          <div class="text-right flex flex-col items-end">
-            <div class="text-sm font-black text-white">₹${(Number(e.amount)||0).toLocaleString('en-IN')}</div>
-            <div class="flex items-center gap-1.5 mt-1.5">
-              ${e.isActiveInpatientMaster ? `
-                <button onclick="switchTab('inpatients')" class="text-[10px] font-bold text-indigo-200 bg-indigo-900/80 px-2.5 py-1 rounded-lg border border-indigo-400/40 shadow">
-                  Manage IPD ↗
-                </button>
-              ` : `
-                <button onclick="editEntry(${e.id || '\'' + e.firestoreId + '\''})" class="text-indigo-300 font-semibold text-xs px-2 py-1 liquid-glass rounded-lg hover:bg-slate-800 transition">✏️</button>
-                <button onclick="deleteEntry(${e.id || '\'' + e.firestoreId + '\''})" class="text-rose-400 hover:text-rose-300 font-semibold text-xs px-1.5 py-1">🗑</button>
-              `}
+            <div class="text-right flex flex-col items-end">
+              <div class="text-sm font-black text-white">₹${(Number(e.amount)||0).toLocaleString('en-IN')}</div>
+              <div class="flex items-center gap-1.5 mt-1.5">
+                ${e.isActiveInpatientMaster ? `
+                  <button onclick="switchTab('inpatients')" class="text-[10px] font-bold text-indigo-200 bg-indigo-900/80 px-2.5 py-1 rounded-lg border border-indigo-400/40 shadow">
+                    Manage IPD ↗
+                  </button>
+                ` : `
+                  <button onclick="editEntry(${editId})" class="text-indigo-300 font-semibold text-xs px-2 py-1 liquid-glass rounded-lg hover:bg-slate-800 transition">✏️</button>
+                  <button onclick="deleteEntry(${editId})" class="text-rose-400 hover:text-rose-300 font-semibold text-xs px-1.5 py-1">🗑</button>
+                `}
+              </div>
             </div>
           </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     function getCategoryBadge(cat) {
@@ -1266,7 +1269,7 @@
             visits.forEach(v => { visitsTotal += Number(v.fee) || 0; });
 
             const isCrossRef = p.admissionType === 'Cross-Ref';
-            const recordId = p.id || `'${p.firestoreId}'`;
+            const recordId = p.firestoreId ? `'${p.firestoreId}'` : p.id;
 
             return `
               <div class="frosted-card p-4.5 rounded-3xl space-y-3.5 border border-white/10 shadow-xl">
@@ -1379,7 +1382,7 @@
           pipelineListEl.innerHTML = `<div class="liquid-glass rounded-3xl p-8 text-center text-slate-500 text-xs border border-white/5">No upcoming surgeries scheduled right now.</div>`;
         } else {
           pipelineListEl.innerHTML = pipelinePatients.map(p => {
-            const recordId = p.id || `'${p.firestoreId}'`;
+            const recordId = p.firestoreId ? `'${p.firestoreId}'` : p.id;
             return `
               <div class="frosted-card p-4.5 rounded-3xl space-y-3.5 border border-white/10 shadow-xl">
                 <div class="flex justify-between items-start">
@@ -1449,17 +1452,18 @@
 
     async function editInpatientCase(id) {
       let p = null;
-      if (typeof id === 'string') {
+      let isCloud = typeof id === 'string';
+      if (isCloud && window.dbCloud) {
         const { doc, getDoc } = window.fbModules;
         const snap = await getDoc(doc(window.dbCloud, 'inpatients', id));
         if (snap.exists()) p = { ...snap.data(), firestoreId: snap.id };
       } else {
-        p = await localDb.inpatients.get(id);
+        p = await localDb.inpatients.get(Number(id));
       }
       if (!p) return;
 
       openInpatientModal({
-        id: p.id || p.firestoreId,
+        id: p.firestoreId || p.id,
         name: p.patientName,
         hospital: p.hospital,
         admissionType: p.admissionType,
@@ -1538,34 +1542,29 @@
       let patient = null;
       let isCloud = String(ipdId).length > 10;
 
+      const newVisit = {
+        date: document.getElementById('visitDateInput').value,
+        type: document.getElementById('visitTypeSelect').value,
+        fee: Number(document.getElementById('visitFeeInput').value) || 0,
+        note: document.getElementById('visitNoteInput').value.trim()
+      };
+
       if (isCloud && window.dbCloud) {
         const { doc, getDoc, setDoc } = window.fbModules;
         const snap = await getDoc(doc(window.dbCloud, 'inpatients', ipdId));
-        if (snap.exists()) patient = { ...snap.data(), firestoreId: snap.id };
-        if (!patient) return;
-
-        const newVisit = {
-          date: document.getElementById('visitDateInput').value,
-          type: document.getElementById('visitTypeSelect').value,
-          fee: Number(document.getElementById('visitFeeInput').value) || 0,
-          note: document.getElementById('visitNoteInput').value.trim()
-        };
-
-        const existingVisits = patient.datedVisits || [];
-        existingVisits.push(newVisit);
-        await setDoc(doc(window.dbCloud, 'inpatients', ipdId), { datedVisits: existingVisits }, { merge: true });
+        if (snap.exists()) {
+          patient = snap.data();
+          const existingVisits = patient.datedVisits || [];
+          existingVisits.push(newVisit);
+          await setDoc(doc(window.dbCloud, 'inpatients', ipdId), { datedVisits: existingVisits }, { merge: true });
+        }
       } else {
         patient = await localDb.inpatients.get(Number(ipdId));
-        if (!patient) return;
-        const newVisit = {
-          date: document.getElementById('visitDateInput').value,
-          type: document.getElementById('visitTypeSelect').value,
-          fee: Number(document.getElementById('visitFeeInput').value) || 0,
-          note: document.getElementById('visitNoteInput').value.trim()
-        };
-        const existingVisits = patient.datedVisits || [];
-        existingVisits.push(newVisit);
-        await localDb.inpatients.update(Number(ipdId), { datedVisits: existingVisits });
+        if (patient) {
+          const existingVisits = patient.datedVisits || [];
+          existingVisits.push(newVisit);
+          await localDb.inpatients.update(Number(ipdId), { datedVisits: existingVisits });
+        }
       }
 
       closeModal('addDatedVisitModal');
@@ -1573,7 +1572,7 @@
     }
 
     async function markPatientAdmitted(id) {
-      let isCloud = String(id).length > 10;
+      let isCloud = typeof id === 'string';
       if (isCloud && window.dbCloud) {
         const { doc, setDoc } = window.fbModules;
         await setDoc(doc(window.dbCloud, 'inpatients', id), { status: 'Active', admitDate: new Date().toISOString().slice(0, 10) }, { merge: true });
@@ -1594,7 +1593,7 @@
         implantDetails = prompt("Enter implant details:", "4 Pedicle Screws, 1 PEEK cage") || "";
       }
 
-      let isCloud = String(id).length > 10;
+      let isCloud = typeof id === 'string';
       if (isCloud && window.dbCloud) {
         const { doc, getDoc, setDoc } = window.fbModules;
         const snap = await getDoc(doc(window.dbCloud, 'inpatients', id));
@@ -1687,7 +1686,7 @@
       const dischargeDate = prompt(`Confirm Discharge Date (YYYY-MM-DD):`, new Date().toISOString().slice(0, 10));
       if (!dischargeDate) return;
 
-      let isCloud = String(id).length > 10;
+      let isCloud = typeof id === 'string';
       if (isCloud && window.dbCloud) {
         const { doc, setDoc } = window.fbModules;
         await setDoc(doc(window.dbCloud, 'inpatients', id), { status: 'Discharged', dischargeDate: dischargeDate }, { merge: true });
@@ -1701,7 +1700,7 @@
 
     async function deleteInpatient(id) {
       if (confirm('Delete this case?')) {
-        let isCloud = String(id).length > 10;
+        let isCloud = typeof id === 'string';
         if (isCloud && window.dbCloud) {
           const { doc, deleteDoc } = window.fbModules;
           await deleteDoc(doc(window.dbCloud, 'inpatients', id));
@@ -1837,7 +1836,7 @@
       }
 
       listEl.innerHTML = opdEntries.map((item, idx) => {
-        const recordId = item.id || `'${item.firestoreId}'`;
+        const recordId = item.firestoreId ? `'${item.firestoreId}'` : item.id;
         return `
           <div class="p-3.5 liquid-glass rounded-2xl space-y-1.5 border border-white/10">
             <div class="flex justify-between items-start">
@@ -1988,12 +1987,13 @@
 
     async function convertOpdToIpd(id) {
       let item = null;
-      if (typeof id === 'string') {
+      let isCloud = typeof id === 'string';
+      if (isCloud && window.dbCloud) {
         const { doc, getDoc } = window.fbModules;
         const snap = await getDoc(doc(window.dbCloud, 'entries', id));
         if (snap.exists()) item = { ...snap.data(), id: snap.id };
       } else {
-        item = await localDb.entries.get(id);
+        item = await localDb.entries.get(Number(id));
       }
       if (!item) return;
 
@@ -2010,18 +2010,19 @@
 
     async function editEntry(id) {
       let item = null;
-      if (typeof id === 'string') {
+      let isCloud = typeof id === 'string';
+      if (isCloud && window.dbCloud) {
         const { doc, getDoc } = window.fbModules;
         const snap = await getDoc(doc(window.dbCloud, 'entries', id));
         if (snap.exists()) item = { ...snap.data(), id: snap.id };
       } else {
-        item = await localDb.entries.get(id);
+        item = await localDb.entries.get(Number(id));
       }
       if (!item) return;
 
       closeModal('opdAuditModal');
       openManualEntryModal({
-        id: item.id,
+        id: item.id || item.firestoreId,
         date: item.date,
         category: item.category,
         hospital: item.hospital,
@@ -2083,7 +2084,7 @@
 
     async function deleteEntry(id) {
       if (confirm('Delete this entry?')) {
-        let isCloud = String(id).length > 10;
+        let isCloud = typeof id === 'string';
         if (isCloud && window.dbCloud) {
           const { doc, deleteDoc } = window.fbModules;
           await deleteDoc(doc(window.dbCloud, 'entries', id));
@@ -2145,7 +2146,6 @@
         document.getElementById('entrySubmitBtn').innerText = 'Save Entry';
       }
 
-      document.getElementById('entryModal').classList.add('hidden'); // Fix modal reference
       document.getElementById('entryModal').classList.remove('hidden');
     }
 
@@ -2314,7 +2314,7 @@
       let cleaned = text.replace(/^(name|patient name|nization|uhid|reg no|date|consultant)[\s:]*/i, '').trim();
       if (!cleaned) cleaned = text;
 
-      wizardData[activeWizardField] = wizardData[activeWizardField] ? wizardData[activeNavField = activeWizardField] + " " + cleaned : cleaned; // safe fallback
+      wizardData[activeWizardField] = wizardData[activeWizardField] ? wizardData[activeWizardField] + " " + cleaned : cleaned;
       const targetInput = document.getElementById('wzTargetInput');
       targetInput.value = wizardData[activeWizardField];
     }
