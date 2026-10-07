@@ -531,18 +531,19 @@
     </div>
   </div>
 
-  <!-- Add Dated Visit Modal -->
+  <!-- Add / Edit Dated Visit Modal -->
   <div id="addDatedVisitModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end justify-center p-0">
     <div class="frosted-card rounded-t-3xl p-5 w-full max-w-md max-h-[85vh] overflow-y-auto space-y-4 border-t border-white/20">
       <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
         <div>
-          <h3 class="text-base font-bold text-white">+ Log Dated Inpatient Visit</h3>
+          <h3 id="visitModalHeading" class="text-base font-bold text-white">+ Log Dated Inpatient Visit</h3>
           <p id="datedVisitPatientLabel" class="text-xs text-indigo-300 font-semibold"></p>
         </div>
         <button onclick="closeModal('addDatedVisitModal')" class="text-slate-400 hover:text-white text-2xl font-bold p-1">&times;</button>
       </div>
       <form id="datedVisitForm" onsubmit="saveDatedVisitToIpd(event)" class="space-y-3">
         <input type="hidden" id="targetVisitIpdId" value="" />
+        <input type="hidden" id="targetVisitIndex" value="" />
         <div>
           <label class="block text-[11px] font-bold text-slate-400 uppercase mb-1">Visit Date</label>
           <input type="date" id="visitDateInput" required class="w-full glass-input rounded-xl p-3" />
@@ -1313,14 +1314,18 @@
 
                   ${visits.length > 0 ? `
                     <div class="space-y-1.5 max-h-32 overflow-y-auto pr-1">
-                      ${visits.map((v) => `
+                      ${visits.map((v, vIdx) => `
                         <div class="flex justify-between items-center text-[11px] bg-slate-900/70 p-2 rounded-xl border border-white/5">
                           <div>
                             <span class="font-bold text-slate-200">${v.date}</span>
                             <span class="text-slate-400 ml-1">(${v.type})</span>
                             ${v.note ? `<span class="text-slate-500 ml-1 truncate max-w-[120px]">- ${escapeHtml(v.note)}</span>` : ''}
                           </div>
-                          <span class="font-bold text-emerald-300">₹${v.fee}</span>
+                          <div class="flex items-center gap-2">
+                            <span class="font-bold text-emerald-300">₹${v.fee}</span>
+                            <button onclick="editDatedVisit(${recordId}, ${vIdx})" class="text-indigo-300 hover:text-white px-1.5 py-0.5 rounded bg-indigo-950/60 border border-indigo-500/30 text-[10px]">✏️</button>
+                            <button onclick="deleteDatedVisit(${recordId}, ${vIdx})" class="text-rose-400 hover:text-rose-300 px-1 py-0.5 text-[10px]">🗑</button>
+                          </div>
                         </div>
                       `).join('')}
                     </div>
@@ -1528,6 +1533,8 @@
 
     function openAddDatedVisitModal(ipdId, patientName) {
       document.getElementById('targetVisitIpdId').value = ipdId;
+      document.getElementById('targetVisitIndex').value = '';
+      document.getElementById('visitModalHeading').innerText = '+ Log Dated Inpatient Visit';
       document.getElementById('datedVisitPatientLabel').innerText = `Patient: ${patientName}`;
       document.getElementById('visitDateInput').value = new Date().toISOString().slice(0, 10);
       document.getElementById('visitTypeSelect').value = 'Routine Round';
@@ -1536,13 +1543,40 @@
       document.getElementById('addDatedVisitModal').classList.remove('hidden');
     }
 
-    async function saveDatedVisitToIpd(event) {
-      event.preventDefault();
-      const ipdId = document.getElementById('targetVisitIpdId').value;
+    async function editDatedVisit(ipdId, visitIdx) {
       let patient = null;
       let isCloud = String(ipdId).length > 10;
 
-      const newVisit = {
+      if (isCloud && window.dbCloud) {
+        const { doc, getDoc } = window.fbModules;
+        const snap = await getDoc(doc(window.dbCloud, 'inpatients', ipdId));
+        if (snap.exists()) patient = snap.data();
+      } else {
+        patient = await localDb.inpatients.get(Number(ipdId));
+      }
+
+      if (!patient || !patient.datedVisits || !patient.datedVisits[visitIdx]) return;
+      const v = patient.datedVisits[visitIdx];
+
+      document.getElementById('targetVisitIpdId').value = ipdId;
+      document.getElementById('targetVisitIndex').value = visitIdx;
+      document.getElementById('visitModalHeading').innerText = '✏️ Edit Dated Visit';
+      document.getElementById('datedVisitPatientLabel').innerText = `Patient: ${patient.patientName}`;
+      document.getElementById('visitDateInput').value = v.date || new Date().toISOString().slice(0, 10);
+      document.getElementById('visitTypeSelect').value = v.type || 'Routine Round';
+      document.getElementById('visitFeeInput').value = v.fee || 800;
+      document.getElementById('visitNoteInput').value = v.note || '';
+      document.getElementById('addDatedVisitModal').classList.remove('hidden');
+    }
+
+    async function saveDatedVisitToIpd(event) {
+      event.preventDefault();
+      const ipdId = document.getElementById('targetVisitIpdId').value;
+      const visitIdxStr = document.getElementById('targetVisitIndex').value;
+      let patient = null;
+      let isCloud = String(ipdId).length > 10;
+
+      const visitData = {
         date: document.getElementById('visitDateInput').value,
         type: document.getElementById('visitTypeSelect').value,
         fee: Number(document.getElementById('visitFeeInput').value) || 0,
@@ -1555,19 +1589,53 @@
         if (snap.exists()) {
           patient = snap.data();
           const existingVisits = patient.datedVisits || [];
-          existingVisits.push(newVisit);
+          if (visitIdxStr !== '') {
+            existingVisits[Number(visitIdxStr)] = visitData;
+          } else {
+            existingVisits.push(visitData);
+          }
           await setDoc(doc(window.dbCloud, 'inpatients', ipdId), { datedVisits: existingVisits }, { merge: true });
         }
       } else {
         patient = await localDb.inpatients.get(Number(ipdId));
         if (patient) {
           const existingVisits = patient.datedVisits || [];
-          existingVisits.push(newVisit);
+          if (visitIdxStr !== '') {
+            existingVisits[Number(visitIdxStr)] = visitData;
+          } else {
+            existingVisits.push(visitData);
+          }
           await localDb.inpatients.update(Number(ipdId), { datedVisits: existingVisits });
         }
       }
 
       closeModal('addDatedVisitModal');
+      forceRefreshAll();
+    }
+
+    async function deleteDatedVisit(ipdId, visitIdx) {
+      if (!confirm('इस विजिट को डिलीट करना चाहते हैं?')) return;
+      let patient = null;
+      let isCloud = String(ipdId).length > 10;
+
+      if (isCloud && window.dbCloud) {
+        const { doc, getDoc, setDoc } = window.fbModules;
+        const snap = await getDoc(doc(window.dbCloud, 'inpatients', ipdId));
+        if (snap.exists()) {
+          patient = snap.data();
+          const existingVisits = patient.datedVisits || [];
+          existingVisits.splice(visitIdx, 1);
+          await setDoc(doc(window.dbCloud, 'inpatients', ipdId), { datedVisits: existingVisits }, { merge: true });
+        }
+      } else {
+        patient = await localDb.inpatients.get(Number(ipdId));
+        if (patient) {
+          const existingVisits = patient.datedVisits || [];
+          existingVisits.splice(visitIdx, 1);
+          await localDb.inpatients.update(Number(ipdId), { datedVisits: existingVisits });
+        }
+      }
+
       forceRefreshAll();
     }
 
