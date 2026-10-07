@@ -8,6 +8,28 @@
   <meta name="theme-color" content="#070a13" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+  
+  <!-- Firebase SDKs (Modular v10) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB3Z4PVl7TLsxijb1emIIs4fKt6SwwSuEE",
+      authDomain: "neuro-practice-backup.firebaseapp.com",
+      projectId: "neuro-practice-backup",
+      storageBucket: "neuro-practice-backup.firebasestorage.app",
+      messagingSenderId: "954333936452",
+      appId: "1:954333936452:web:88403a9c0e619cf816f511",
+      measurementId: "G-FKM11V9WM3"
+    };
+
+    const fbApp = initializeApp(firebaseConfig);
+    const dbCloud = getFirestore(fbApp);
+    window.dbCloud = dbCloud;
+    window.fbModules = { collection, addDoc, getDocs, doc, setDoc, deleteDoc };
+  </script>
+
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -78,7 +100,7 @@
           <span class="text-lg">🧠</span>
           <div>
             <h1 class="text-sm font-extrabold tracking-tight bg-gradient-to-r from-white via-indigo-200 to-slate-400 bg-clip-text text-transparent">
-              Neuro Logbook
+              Neuro Logbook (Cloud Sync)
             </h1>
             <p class="text-[10px] text-indigo-300/80 font-semibold">Dr. Nilesh Chaudhari</p>
           </div>
@@ -278,7 +300,7 @@
           <span id="wzActiveLabel">Target: Patient Name (टच करके जोड़ें)</span>
           <button onclick="clearActiveWizardField()" class="text-rose-400 hover:underline">Clear</button>
         </div>
-        <input type="text" id="wzTargetInput" readonly class="w-full glass-input rounded-xl p-2.5 text-xs font-bold text-white" placeholder="नीचे लिस्ट से टच करें..." />
+        <input type="text" id="wzTargetInput" class="w-full glass-input rounded-xl p-2.5 text-xs font-bold text-white" placeholder="नीचे लिस्ट से टच करें..." />
       </div>
 
       <!-- Scanned Line Options -->
@@ -721,8 +743,8 @@
       });
     }
 
-    const db = new Dexie('NeuroPracticeDB');
-    db.version(12).stores({
+    const localDb = new Dexie('NeuroPracticeDB');
+    localDb.version(12).stores({
       entries: '++id, date, category, hospital, name, referredBy, scheme, implantsUsed, implantDetails, note, amount, paymentStatus, paymentReceivedDate',
       inpatients: '++id, patientName, hospital, admissionType, primaryConsultant, referredBy, primaryScheme, isConverted, conversionDate, admitDate, mainSurgeryDate, icuOutDate, dischargeDate, wardBed, diagnosis, datedVisits, surgeries, status'
     });
@@ -964,21 +986,47 @@
       return days >= 0 ? days : 0;
     }
 
+    // HYBRID CLOUD SYNC FUNCTIONS (LOCAL + FIREBASE FIRESTORE)
     async function forceRefreshAll() {
       try {
         let directEntries = [];
         let inpatientsList = [];
+
         try {
-          directEntries = await db.entries.toArray();
-          inpatientsList = await db.inpatients.toArray();
-        } catch (dbErr) {
-          console.warn('Dexie read note:', dbErr);
+          directEntries = await localDb.entries.toArray();
+          inpatientsList = await localDb.inpatients.toArray();
+        } catch (e) {
+          console.warn('Local DB note:', e);
+        }
+
+        // Try syncing from Cloud Firestore if online
+        if (window.dbCloud && window.fbModules) {
+          try {
+            const { collection, getDocs } = window.fbModules;
+            const snapEntries = await getDocs(collection(window.dbCloud, 'entries'));
+            const cloudEntries = [];
+            snapEntries.forEach(d => cloudEntries.push({ ...d.data(), firestoreId: d.id }));
+
+            if (cloudEntries.length > 0) {
+              directEntries = cloudEntries;
+            }
+
+            const snapIpd = await getDocs(collection(window.dbCloud, 'inpatients'));
+            const cloudIpd = [];
+            snapIpd.forEach(d => cloudIpd.push({ ...d.data(), firestoreId: d.id }));
+
+            if (cloudIpd.length > 0) {
+              inpatientsList = cloudIpd;
+            }
+          } catch (cloudErr) {
+            console.log('Cloud sync offline mode:', cloudErr);
+          }
         }
 
         let combinedFeed = [];
 
         directEntries.forEach(e => {
-          const isMatchedWithIpd = inpatientsList.some(p => p.patientName.toLowerCase() === e.name.toLowerCase() && (e.category === 'Surgery' || e.category === 'Indoor'));
+          const isMatchedWithIpd = inpatientsList.some(p => (p.patientName || '').toLowerCase() === (e.name || '').toLowerCase() && (e.category === 'Surgery' || e.category === 'Indoor'));
           if (!isMatchedWithIpd) {
             combinedFeed.push(e);
           }
@@ -1002,7 +1050,7 @@
               : (p.diagnosis || 'Active Inpatient Stay');
 
             combinedFeed.push({
-              id: `master_ipd_${p.id}`,
+              id: `master_ipd_${p.id || p.firestoreId}`,
               date: p.admitDate,
               category: 'Surgery',
               hospital: p.hospital,
@@ -1015,7 +1063,7 @@
               amount: totalActiveDue,
               paymentStatus: (p.primaryScheme === 'PMJAY' || p.primaryScheme === 'TPA') ? 'Pending' : 'Received',
               isActiveInpatientMaster: true,
-              originalInpatientId: p.id
+              originalInpatientId: p.id || p.firestoreId
             });
           }
         });
@@ -1145,8 +1193,8 @@
                   Manage IPD ↗
                 </button>
               ` : `
-                <button onclick="editEntry(${e.id})" class="text-indigo-300 font-semibold text-xs px-2 py-1 liquid-glass rounded-lg hover:bg-slate-800 transition">✏️</button>
-                <button onclick="deleteEntry(${e.id})" class="text-rose-400 hover:text-rose-300 font-semibold text-xs px-1.5 py-1">🗑</button>
+                <button onclick="editEntry(${e.id || '\'' + e.firestoreId + '\''})" class="text-indigo-300 font-semibold text-xs px-2 py-1 liquid-glass rounded-lg hover:bg-slate-800 transition">✏️</button>
+                <button onclick="deleteEntry(${e.id || '\'' + e.firestoreId + '\''})" class="text-rose-400 hover:text-rose-300 font-semibold text-xs px-1.5 py-1">🗑</button>
               `}
             </div>
           </div>
@@ -1163,7 +1211,14 @@
     async function loadInpatients() {
       let allPatients = [];
       try {
-        allPatients = await db.inpatients.toArray();
+        allPatients = await localDb.inpatients.toArray();
+        if (window.dbCloud && window.fbModules) {
+          const { collection, getDocs } = window.fbModules;
+          const snap = await getDocs(collection(window.dbCloud, 'inpatients'));
+          const cloudList = [];
+          snap.forEach(d => cloudList.push({ ...d.data(), firestoreId: d.id }));
+          if (cloudList.length > 0) allPatients = cloudList;
+        }
       } catch (e) {
         allPatients = [];
       }
@@ -1207,6 +1262,7 @@
             visits.forEach(v => { visitsTotal += Number(v.fee) || 0; });
 
             const isCrossRef = p.admissionType === 'Cross-Ref';
+            const recordId = p.id || `'${p.firestoreId}'`;
 
             return `
               <div class="frosted-card p-4.5 rounded-3xl space-y-3.5 border border-white/10 shadow-xl">
@@ -1233,7 +1289,7 @@
                   <div class="text-right">
                     <span class="text-[10px] text-slate-400 uppercase font-semibold">Total Due</span>
                     <div class="text-base font-black text-emerald-300">₹${(surgeriesTotal + visitsTotal).toLocaleString('en-IN')}</div>
-                    <button onclick="editInpatientCase(${p.id})" class="text-[11px] text-indigo-300 font-bold mt-1.5 px-2.5 py-1 bg-indigo-900/40 border border-indigo-500/30 rounded-xl hover:bg-indigo-800/50 transition">
+                    <button onclick="editInpatientCase(${recordId})" class="text-[11px] text-indigo-300 font-bold mt-1.5 px-2.5 py-1 bg-indigo-900/40 border border-indigo-500/30 rounded-xl hover:bg-indigo-800/50 transition">
                       ✏️ Edit Case
                     </button>
                   </div>
@@ -1243,7 +1299,7 @@
                 <div class="liquid-glass p-3 rounded-2xl border border-white/10 space-y-2">
                   <div class="flex justify-between items-center text-xs">
                     <span class="font-extrabold text-slate-300">Dated Visits (${visits.length})</span>
-                    <button onclick="openAddDatedVisitModal(${p.id}, '${escapeHtml(p.patientName)}')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-2.5 py-1 rounded-xl text-[11px] shadow-sm transition">
+                    <button onclick="openAddDatedVisitModal(${recordId}, '${escapeHtml(p.patientName)}')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-2.5 py-1 rounded-xl text-[11px] shadow-sm transition">
                       + Log Visit
                     </button>
                   </div>
@@ -1268,7 +1324,7 @@
                 <div class="space-y-1.5">
                   <div class="flex justify-between items-center text-xs">
                     <span class="font-extrabold text-slate-300">Surgeries Linked (${surgeries.length})</span>
-                    <button onclick="openAddSurgeryToIpdModal(${p.id}, '${escapeHtml(p.patientName)}')" class="text-emerald-300 bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-500/30 font-bold px-2.5 py-1 rounded-xl text-xs transition">
+                    <button onclick="openAddSurgeryToIpdModal(${recordId}, '${escapeHtml(p.patientName)}')" class="text-emerald-300 bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-500/30 font-bold px-2.5 py-1 rounded-xl text-xs transition">
                       + Add Surgery
                     </button>
                   </div>
@@ -1303,10 +1359,10 @@
 
                 <!-- Bottom Actions -->
                 <div class="flex justify-end gap-2 pt-2 border-t border-white/10 text-xs">
-                  <button onclick="dischargeInpatient(${p.id})" class="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-bold px-3 py-1.5 rounded-xl shadow-lg shadow-emerald-900/30 transition">
+                  <button onclick="dischargeInpatient(${recordId})" class="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-bold px-3 py-1.5 rounded-xl shadow-lg shadow-emerald-900/30 transition">
                     ✓ Discharge & Settle
                   </button>
-                  <button onclick="deleteInpatient(${p.id})" class="text-rose-400 hover:text-rose-300 font-semibold px-2 py-1.5">Delete</button>
+                  <button onclick="deleteInpatient(${recordId})" class="text-rose-400 hover:text-rose-300 font-semibold px-2 py-1.5">Delete</button>
                 </div>
               </div>
             `;
@@ -1318,44 +1374,47 @@
         if (pipelinePatients.length === 0) {
           pipelineListEl.innerHTML = `<div class="liquid-glass rounded-3xl p-8 text-center text-slate-500 text-xs border border-white/5">No upcoming surgeries scheduled right now.</div>`;
         } else {
-          pipelineListEl.innerHTML = pipelinePatients.map(p => `
-            <div class="frosted-card p-4.5 rounded-3xl space-y-3.5 border border-white/10 shadow-xl">
-              <div class="flex justify-between items-start">
-                <div>
-                  <div class="flex items-center gap-1.5 flex-wrap">
-                    <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-900/60 text-amber-200 border border-amber-500/30">
-                      📅 Scheduled OT
-                    </span>
-                    <span class="text-[10px] font-semibold text-slate-300 bg-slate-800/60 px-2 py-0.5 rounded-md border border-white/5">
-                      🏥 ${escapeHtml(p.hospital)}
-                    </span>
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-900/50 text-blue-200 border border-blue-500/30">
-                      ${p.primaryScheme || 'PMJAY'}
-                    </span>
+          pipelineListEl.innerHTML = pipelinePatients.map(p => {
+            const recordId = p.id || `'${p.firestoreId}'`;
+            return `
+              <div class="frosted-card p-4.5 rounded-3xl space-y-3.5 border border-white/10 shadow-xl">
+                <div class="flex justify-between items-start">
+                  <div>
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-900/60 text-amber-200 border border-amber-500/30">
+                        📅 Scheduled OT
+                      </span>
+                      <span class="text-[10px] font-semibold text-slate-300 bg-slate-800/60 px-2 py-0.5 rounded-md border border-white/5">
+                        🏥 ${escapeHtml(p.hospital)}
+                      </span>
+                      <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-900/50 text-blue-200 border border-blue-500/30">
+                        ${p.primaryScheme || 'PMJAY'}
+                      </span>
+                    </div>
+                    <h3 class="text-base font-extrabold text-white mt-1.5">${escapeHtml(p.patientName)}</h3>
+                    <p class="text-xs font-bold text-indigo-300 mt-0.5">OT Date: ${p.mainSurgeryDate || p.admitDate}</p>
+                    ${p.referredBy ? `<p class="text-[11px] text-slate-400">👨‍⚕ Ref: ${escapeHtml(p.referredBy)}</p>` : ''}
+                    ${p.diagnosis ? `<p class="text-xs text-slate-300 mt-1 font-medium liquid-glass p-2 rounded-xl border border-white/5">🔹 Plan: ${escapeHtml(p.diagnosis)}</p>` : ''}
                   </div>
-                  <h3 class="text-base font-extrabold text-white mt-1.5">${escapeHtml(p.patientName)}</h3>
-                  <p class="text-xs font-bold text-indigo-300 mt-0.5">OT Date: ${p.mainSurgeryDate || p.admitDate}</p>
-                  ${p.referredBy ? `<p class="text-[11px] text-slate-400">👨‍⚕ Ref: ${escapeHtml(p.referredBy)}</p>` : ''}
-                  ${p.diagnosis ? `<p class="text-xs text-slate-300 mt-1 font-medium liquid-glass p-2 rounded-xl border border-white/5">🔹 Plan: ${escapeHtml(p.diagnosis)}</p>` : ''}
+                  <div class="text-right">
+                    <button onclick="editInpatientCase(${recordId})" class="text-xs text-indigo-300 font-bold px-2.5 py-1 liquid-glass border border-indigo-500/30 rounded-xl hover:bg-indigo-900/40 transition">
+                      ✏️ Edit
+                    </button>
+                  </div>
                 </div>
-                <div class="text-right">
-                  <button onclick="editInpatientCase(${p.id})" class="text-xs text-indigo-300 font-bold px-2.5 py-1 liquid-glass border border-indigo-500/30 rounded-xl hover:bg-indigo-900/40 transition">
-                    ✏️ Edit
-                  </button>
-                </div>
-              </div>
 
-              <div class="flex justify-end gap-2 pt-2 border-t border-white/10 text-xs">
-                <button onclick="markPatientAdmitted(${p.id})" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 rounded-xl shadow-lg shadow-indigo-600/30 transition">
-                  🛏️ Mark Admitted (Pre-op)
-                </button>
-                <button onclick="markSurgeryCompletedDirectly(${p.id})" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-xl shadow-lg shadow-emerald-700/30 transition">
-                  ✓ Mark Surgery Done
-                </button>
-                <button onclick="deleteInpatient(${p.id})" class="text-rose-400 hover:text-rose-300 font-semibold px-2 py-1.5">Cancel</button>
+                <div class="flex justify-end gap-2 pt-2 border-t border-white/10 text-xs">
+                  <button onclick="markPatientAdmitted(${recordId})" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 rounded-xl shadow-lg shadow-indigo-600/30 transition">
+                    🛏️ Mark Admitted (Pre-op)
+                  </button>
+                  <button onclick="markSurgeryCompletedDirectly(${recordId})" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-1.5 rounded-xl shadow-lg shadow-emerald-700/30 transition">
+                    ✓ Mark Surgery Done
+                  </button>
+                  <button onclick="deleteInpatient(${recordId})" class="text-rose-400 hover:text-rose-300 font-semibold px-2 py-1.5">Cancel</button>
+                </div>
               </div>
-            </div>
-          `).join('');
+            `;
+          }).join('');
         }
       }
     }
@@ -1385,11 +1444,18 @@
     }
 
     async function editInpatientCase(id) {
-      const p = await db.inpatients.get(id);
+      let p = null;
+      if (typeof id === 'string') {
+        const { doc, getDoc } = window.fbModules;
+        const snap = await getDoc(doc(window.dbCloud, 'inpatients', id));
+        if (snap.exists()) p = { ...snap.data(), firestoreId: snap.id };
+      } else {
+        p = await localDb.inpatients.get(id);
+      }
       if (!p) return;
 
       openInpatientModal({
-        id: p.id,
+        id: p.id || p.firestoreId,
         name: p.patientName,
         hospital: p.hospital,
         admissionType: p.admissionType,
@@ -1430,11 +1496,20 @@
       };
 
       if (id) {
-        await db.inpatients.update(Number(id), data);
+        if (String(id).length > 10 && window.dbCloud) {
+          const { doc, setDoc } = window.fbModules;
+          await setDoc(doc(window.dbCloud, 'inpatients', id), data, { merge: true });
+        } else {
+          await localDb.inpatients.update(Number(id), data);
+        }
       } else {
         data.surgeries = [];
         data.datedVisits = [];
-        await db.inpatients.add(data);
+        if (window.dbCloud && window.fbModules) {
+          const { collection, addDoc } = window.fbModules;
+          await addDoc(collection(window.dbCloud, 'inpatients'), data);
+        }
+        await localDb.inpatients.add(data);
       }
 
       closeModal('inpatientModal');
@@ -1455,67 +1530,100 @@
 
     async function saveDatedVisitToIpd(event) {
       event.preventDefault();
-      const ipdId = Number(document.getElementById('targetVisitIpdId').value);
-      const patient = await db.inpatients.get(ipdId);
-      if (!patient) return;
+      const ipdId = document.getElementById('targetVisitIpdId').value;
+      let patient = null;
+      let isCloud = String(ipdId).length > 10;
 
-      const newVisit = {
-        date: document.getElementById('visitDateInput').value,
-        type: document.getElementById('visitTypeSelect').value,
-        fee: Number(document.getElementById('visitFeeInput').value) || 0,
-        note: document.getElementById('visitNoteInput').value.trim()
-      };
+      if (isCloud && window.dbCloud) {
+        const { doc, getDoc, setDoc } = window.fbModules;
+        const snap = await getDoc(doc(window.dbCloud, 'inpatients', ipdId));
+        if (snap.exists()) patient = { ...snap.data(), firestoreId: snap.id };
+        if (!patient) return;
 
-      const existingVisits = patient.datedVisits || [];
-      existingVisits.push(newVisit);
+        const newVisit = {
+          date: document.getElementById('visitDateInput').value,
+          type: document.getElementById('visitTypeSelect').value,
+          fee: Number(document.getElementById('visitFeeInput').value) || 0,
+          note: document.getElementById('visitNoteInput').value.trim()
+        };
 
-      await db.inpatients.update(ipdId, { datedVisits: existingVisits });
+        const existingVisits = patient.datedVisits || [];
+        existingVisits.push(newVisit);
+        await setDoc(doc(window.dbCloud, 'inpatients', ipdId), { datedVisits: existingVisits }, { merge: true });
+      } else {
+        patient = await localDb.inpatients.get(Number(ipdId));
+        if (!patient) return;
+        const newVisit = {
+          date: document.getElementById('visitDateInput').value,
+          type: document.getElementById('visitTypeSelect').value,
+          fee: Number(document.getElementById('visitFeeInput').value) || 0,
+          note: document.getElementById('visitNoteInput').value.trim()
+        };
+        const existingVisits = patient.datedVisits || [];
+        existingVisits.push(newVisit);
+        await localDb.inpatients.update(Number(ipdId), { datedVisits: existingVisits });
+      }
+
       closeModal('addDatedVisitModal');
       forceRefreshAll();
     }
 
     async function markPatientAdmitted(id) {
-      const p = await db.inpatients.get(id);
-      if (!p) return;
-      if (confirm(`Mark ${p.patientName} as Admitted for Pre-op Workup?`)) {
-        await db.inpatients.update(id, { 
-          status: 'Active', 
-          admitDate: new Date().toISOString().slice(0, 10) 
-        });
-        switchIpdSubTab('active');
-        forceRefreshAll();
+      let isCloud = String(id).length > 10;
+      if (isCloud && window.dbCloud) {
+        const { doc, setDoc } = window.fbModules;
+        await setDoc(doc(window.dbCloud, 'inpatients', id), { status: 'Active', admitDate: new Date().toISOString().slice(0, 10) }, { merge: true });
+      } else {
+        await localDb.inpatients.update(Number(id), { status: 'Active', admitDate: new Date().toISOString().slice(0, 10) });
       }
+      switchIpdSubTab('active');
+      forceRefreshAll();
     }
 
     async function markSurgeryCompletedDirectly(id) {
-      const p = await db.inpatients.get(id);
-      if (!p) return;
-
-      const feeStr = prompt(`Surgery completed for ${p.patientName}!\nEnter professional fee (₹):`, "25000");
+      const feeStr = prompt(`Enter professional fee (₹):`, "25000");
       if (feeStr === null) return;
 
-      const implants = confirm("Were implants used in this surgery?") ? "Yes" : "No";
+      const implants = confirm("Were implants used?") ? "Yes" : "No";
       let implantDetails = "";
       if (implants === "Yes") {
-        implantDetails = prompt("Enter implant details (e.g. 4 Screws + 1 PEEK cage):", "4 Pedicle Screws, 1 PEEK cage") || "";
+        implantDetails = prompt("Enter implant details:", "4 Pedicle Screws, 1 PEEK cage") || "";
       }
 
-      const completedSurgery = {
-        date: p.mainSurgeryDate || new Date().toISOString().slice(0, 10),
-        procedure: p.diagnosis || 'Surgical Procedure',
-        scheme: p.primaryScheme || 'PMJAY',
-        fee: Number(feeStr) || 0,
-        implantsUsed: implants,
-        implantDetails: implantDetails
-      };
-
-      const existingSurgeries = p.surgeries || [];
-      existingSurgeries.push(completedSurgery);
-
-      await db.inpatients.update(id, { 
-        status: 'Active', 
-        surgeries: existingSurgeries 
-      });
+      let isCloud = String(id).length > 10;
+      if (isCloud && window.dbCloud) {
+        const { doc, getDoc, setDoc } = window.fbModules;
+        const snap = await getDoc(doc(window.dbCloud, 'inpatients', id));
+        if (snap.exists()) {
+          const p = snap.data();
+          const completedSurgery = {
+            date: p.mainSurgeryDate || new Date().toISOString().slice(0, 10),
+            procedure: p.diagnosis || 'Surgical Procedure',
+            scheme: p.primaryScheme || 'PMJAY',
+            fee: Number(feeStr) || 0,
+            implantsUsed: implants,
+            implantDetails: implantDetails
+          };
+          const existingSurgeries = p.surgeries || [];
+          existingSurgeries.push(completedSurgery);
+          await setDoc(doc(window.dbCloud, 'inpatients', id), { status: 'Active', surgeries: existingSurgeries }, { merge: true });
+        }
+      } else {
+        const p = await localDb.inpatients.get(Number(id));
+        if (p) {
+          const completedSurgery = {
+            date: p.mainSurgeryDate || new Date().toISOString().slice(0, 10),
+            procedure: p.diagnosis || 'Surgical Procedure',
+            scheme: p.primaryScheme || 'PMJAY',
+            fee: Number(feeStr) || 0,
+            implantsUsed: implants,
+            implantDetails: implantDetails
+          };
+          const existingSurgeries = p.surgeries || [];
+          existingSurgeries.push(completedSurgery);
+          await localDb.inpatients.update(Number(id), { status: 'Active', surgeries: existingSurgeries });
+        }
+      }
 
       alert('Surgery marked completed!');
       switchIpdSubTab('active');
@@ -1536,9 +1644,8 @@
 
     async function saveSurgeryToIpd(event) {
       event.preventDefault();
-      const ipdId = Number(document.getElementById('targetIpdId').value);
-      const patient = await db.inpatients.get(ipdId);
-      if (!patient) return;
+      const ipdId = document.getElementById('targetIpdId').value;
+      let isCloud = String(ipdId).length > 10;
 
       const newSurgery = {
         date: document.getElementById('ipdSurgeryDate').value,
@@ -1549,13 +1656,23 @@
         implantDetails: document.getElementById('ipdSurgeryImplantDetails').value.trim()
       };
 
-      const existingSurgeries = patient.surgeries || [];
-      existingSurgeries.push(newSurgery);
-
-      await db.inpatients.update(ipdId, { 
-        surgeries: existingSurgeries,
-        mainSurgeryDate: newSurgery.date
-      });
+      if (isCloud && window.dbCloud) {
+        const { doc, getDoc, setDoc } = window.fbModules;
+        const snap = await getDoc(doc(window.dbCloud, 'inpatients', ipdId));
+        if (snap.exists()) {
+          const p = snap.data();
+          const existingSurgeries = p.surgeries || [];
+          existingSurgeries.push(newSurgery);
+          await setDoc(doc(window.dbCloud, 'inpatients', ipdId), { surgeries: existingSurgeries, mainSurgeryDate: newSurgery.date }, { merge: true });
+        }
+      } else {
+        const p = await localDb.inpatients.get(Number(ipdId));
+        if (p) {
+          const existingSurgeries = p.surgeries || [];
+          existingSurgeries.push(newSurgery);
+          await localDb.inpatients.update(Number(ipdId), { surgeries: existingSurgeries, mainSurgeryDate: newSurgery.date });
+        }
+      }
 
       closeModal('addSurgeryToIpdModal');
       forceRefreshAll();
@@ -1563,16 +1680,16 @@
     }
 
     async function dischargeInpatient(id) {
-      const p = await db.inpatients.get(id);
-      if (!p) return;
-
-      const dischargeDate = prompt(`Confirm Discharge Date (YYYY-MM-DD):`, p.dischargeDate || new Date().toISOString().slice(0, 10));
+      const dischargeDate = prompt(`Confirm Discharge Date (YYYY-MM-DD):`, new Date().toISOString().slice(0, 10));
       if (!dischargeDate) return;
 
-      await db.inpatients.update(id, { 
-        status: 'Discharged', 
-        dischargeDate: dischargeDate 
-      });
+      let isCloud = String(id).length > 10;
+      if (isCloud && window.dbCloud) {
+        const { doc, setDoc } = window.fbModules;
+        await setDoc(doc(window.dbCloud, 'inpatients', id), { status: 'Discharged', dischargeDate: dischargeDate }, { merge: true });
+      } else {
+        await localDb.inpatients.update(Number(id), { status: 'Discharged', dischargeDate: dischargeDate });
+      }
 
       alert('Patient discharged successfully!');
       forceRefreshAll();
@@ -1580,7 +1697,13 @@
 
     async function deleteInpatient(id) {
       if (confirm('Delete this case?')) {
-        await db.inpatients.delete(id);
+        let isCloud = String(id).length > 10;
+        if (isCloud && window.dbCloud) {
+          const { doc, deleteDoc } = window.fbModules;
+          await deleteDoc(doc(window.dbCloud, 'inpatients', id));
+        } else {
+          await localDb.inpatients.delete(Number(id));
+        }
         forceRefreshAll();
       }
     }
@@ -1709,30 +1832,33 @@
         return;
       }
 
-      listEl.innerHTML = opdEntries.map((item, idx) => `
-        <div class="p-3.5 liquid-glass rounded-2xl space-y-1.5 border border-white/10">
-          <div class="flex justify-between items-start">
-            <div>
-              <span class="font-extrabold text-sm text-white">${idx+1}. ${escapeHtml(item.name)}</span>
-              <span class="text-[10px] ml-1.5 px-2 py-0.5 rounded-full bg-indigo-900/60 text-indigo-200 border border-indigo-500/20">OPD</span>
+      listEl.innerHTML = opdEntries.map((item, idx) => {
+        const recordId = item.id || `'${item.firestoreId}'`;
+        return `
+          <div class="p-3.5 liquid-glass rounded-2xl space-y-1.5 border border-white/10">
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="font-extrabold text-sm text-white">${idx+1}. ${escapeHtml(item.name)}</span>
+                <span class="text-[10px] ml-1.5 px-2 py-0.5 rounded-full bg-indigo-900/60 text-indigo-200 border border-indigo-500/20">OPD</span>
+              </div>
+              <span class="font-black text-sm text-emerald-300">₹${(Number(item.amount)||0).toLocaleString('en-IN')}</span>
             </div>
-            <span class="font-black text-sm text-emerald-300">₹${(Number(item.amount)||0).toLocaleString('en-IN')}</span>
+            <div class="text-[11px] text-slate-400 flex items-center gap-2">
+              <span>📅 ${item.date}</span>
+              <span>🏥 ${escapeHtml(item.hospital)}</span>
+            </div>
+            ${item.referredBy ? `<div class="text-[11px] font-semibold text-indigo-300">👨‍⚕ Ref: ${escapeHtml(item.referredBy)}</div>` : ''}
+            ${item.note ? `<div class="text-xs text-slate-300">📋 Note / Advice: ${escapeHtml(item.note)}</div>` : ''}
+            <div class="flex justify-end gap-1.5 pt-1.5 border-t border-white/5">
+              <button onclick="convertOpdToIpd(${recordId})" class="text-[11px] font-bold px-2.5 py-1 bg-indigo-900/60 hover:bg-indigo-800/60 text-indigo-200 border border-indigo-500/30 rounded-lg transition">
+                🛏 Admit to IPD
+              </button>
+              <button onclick="editEntry(${recordId})" class="text-indigo-300 font-semibold text-xs px-2 py-1 liquid-glass rounded-lg hover:bg-slate-800 transition">✏️ Edit</button>
+              <button onclick="deleteEntry(${recordId})" class="text-rose-400 hover:text-rose-300 font-semibold text-xs px-2 py-1">🗑</button>
+            </div>
           </div>
-          <div class="text-[11px] text-slate-400 flex items-center gap-2">
-            <span>📅 ${item.date}</span>
-            <span>🏥 ${escapeHtml(item.hospital)}</span>
-          </div>
-          ${item.referredBy ? `<div class="text-[11px] font-semibold text-indigo-300">👨‍⚕ Ref: ${escapeHtml(item.referredBy)}</div>` : ''}
-          ${item.note ? `<div class="text-xs text-slate-300">📋 Note / Advice: ${escapeHtml(item.note)}</div>` : ''}
-          <div class="flex justify-end gap-1.5 pt-1.5 border-t border-white/5">
-            <button onclick="convertOpdToIpd(${item.id})" class="text-[11px] font-bold px-2.5 py-1 bg-indigo-900/60 hover:bg-indigo-800/60 text-indigo-200 border border-indigo-500/30 rounded-lg transition">
-              🛏 Admit to IPD
-            </button>
-            <button onclick="editEntry(${item.id})" class="text-indigo-300 font-semibold text-xs px-2 py-1 liquid-glass rounded-lg hover:bg-slate-800 transition">✏️ Edit</button>
-            <button onclick="deleteEntry(${item.id})" class="text-rose-400 hover:text-rose-300 font-semibold text-xs px-2 py-1">🗑</button>
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     async function shareOpdAuditWhatsApp() {
@@ -1857,22 +1983,36 @@
     }
 
     async function convertOpdToIpd(id) {
-      const entry = await db.entries.get(id);
-      if (!entry) return;
+      let item = null;
+      if (typeof id === 'string') {
+        const { doc, getDoc } = window.fbModules;
+        const snap = await getDoc(doc(window.dbCloud, 'entries', id));
+        if (snap.exists()) item = { ...snap.data(), id: snap.id };
+      } else {
+        item = await localDb.entries.get(id);
+      }
+      if (!item) return;
 
       closeModal('opdAuditModal');
       openInpatientModal({
-        name: entry.name,
-        hospital: entry.hospital,
-        referredBy: entry.referredBy,
-        diagnosis: entry.note || '',
+        name: item.name,
+        hospital: item.hospital,
+        referredBy: item.referredBy,
+        diagnosis: item.note || '',
         admitDate: new Date().toISOString().slice(0, 10),
         status: 'Active'
       });
     }
 
     async function editEntry(id) {
-      const item = await db.entries.get(id);
+      let item = null;
+      if (typeof id === 'string') {
+        const { doc, getDoc } = window.fbModules;
+        const snap = await getDoc(doc(window.dbCloud, 'entries', id));
+        if (snap.exists()) item = { ...snap.data(), id: snap.id };
+      } else {
+        item = await localDb.entries.get(id);
+      }
       if (!item) return;
 
       closeModal('opdAuditModal');
@@ -1919,9 +2059,18 @@
       };
 
       if (id) {
-        await db.entries.update(Number(id), data);
+        if (String(id).length > 10 && window.dbCloud) {
+          const { doc, setDoc } = window.fbModules;
+          await setDoc(doc(window.dbCloud, 'entries', id), data, { merge: true });
+        } else {
+          await localDb.entries.update(Number(id), data);
+        }
       } else {
-        await db.entries.add(data);
+        if (window.dbCloud && window.fbModules) {
+          const { collection, addDoc } = window.fbModules;
+          await addDoc(collection(window.dbCloud, 'entries'), data);
+        }
+        await localDb.entries.add(data);
       }
 
       closeModal('entryModal');
@@ -1930,7 +2079,13 @@
 
     async function deleteEntry(id) {
       if (confirm('Delete this entry?')) {
-        await db.entries.delete(id);
+        let isCloud = String(id).length > 10;
+        if (isCloud && window.dbCloud) {
+          const { doc, deleteDoc } = window.fbModules;
+          await deleteDoc(doc(window.dbCloud, 'entries', id));
+        } else {
+          await localDb.entries.delete(Number(id));
+        }
         forceRefreshAll();
         if (!document.getElementById('opdAuditModal').classList.contains('hidden')) {
           filterOpdAuditList();
@@ -1989,9 +2144,9 @@
       document.getElementById('entryModal').classList.remove('hidden');
     }
 
-    // MULTI-FIELD SMART WIZARD SYSTEM WITH FULL MANUAL EDITING FIX
+    // MULTI-FIELD SMART WIZARD SYSTEM WITH HYBRID CLOUD
     let scannedLinesGlobal = [];
-    let activeWizardField = 'name'; // 'name', 'date', 'note'
+    let activeWizardField = 'name'; 
     let wizardData = { name: '', date: new Date().toISOString().slice(0, 10), note: '', hospital: 'Orange Hospital, Navsari' };
 
     async function handleImageSelected(event) {
@@ -2050,7 +2205,7 @@
           wizardData.hospital = "Atmiya Hospital, Mandvi";
         }
 
-        // तारीख ऑटो-डिटेक्ट (YYYY-MM-DD फॉर्मेट में ठीक से कन्वर्ट करना)
+        // तारीख ऑटो-डिटेक्ट
         const dateMatch = fullText.match(/(\d{1,2})[\/\.-](\d{1,2})[\/\.-](\d{2,4})/);
         if (dateMatch) {
           let [_, d, m, y] = dateMatch;
@@ -2078,7 +2233,6 @@
     function setWizardTarget(field) {
       activeWizardField = field;
       
-      // टैब हाइलाइट बदलना
       ['name', 'date', 'note'].forEach(f => {
         const btn = document.getElementById(`wzTab-${f}`);
         if (f === field) {
@@ -2091,17 +2245,14 @@
       const labelMap = { name: 'Patient Name (नाम चुनें)', date: 'Date (तारीख चुनें)', note: 'Procedure / Note (नोट चुनें)' };
       document.getElementById('wzActiveLabel').innerText = `Target: ${labelMap[field]}`;
 
-      // करंट इनपुट अपडेट (अब यह readonly नहीं है, डॉक्टर साहब इसे कीबोर्ड से भी एडिट कर सकते हैं)
       const targetInput = document.getElementById('wzTargetInput');
-      targetInput.readOnly = false; // मैनुअल टाइपिंग की अनुमति दी गई
+      targetInput.readOnly = false;
       targetInput.value = wizardData[field] || '';
       
-      // जब डॉक्टर साहब इनपुट में टाइप करके बदलें, तो वह डेटा सेव हो जाए
       targetInput.oninput = function() {
         wizardData[activeWizardField] = targetInput.value;
       };
 
-      // ऑप्शन लिस्ट रेंडर करना
       const container = document.getElementById('wzOptionsContainer');
       container.innerHTML = scannedLinesGlobal.map(line => `
         <button type="button" onclick="appendWizardText('${escapeHtml(line).replace(/'/g, "\\'")}')" class="w-full text-left p-2.5 rounded-xl bg-slate-900/80 hover:bg-indigo-900/50 border border-white/10 text-xs text-slate-200 font-medium active:scale-98 transition flex justify-between items-center">
@@ -2184,8 +2335,8 @@
     }
 
     async function exportDataBackup() {
-      const entries = await db.entries.toArray();
-      const inpatients = await db.inpatients.toArray();
+      const entries = await localDb.entries.toArray();
+      const inpatients = await localDb.inpatients.toArray();
       const backup = { entries, inpatients, exportedAt: new Date().toISOString() };
       const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
