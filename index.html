@@ -576,7 +576,7 @@
           <option value="All">All Hospitals</option>
           <option value="Orange Hospital, Navsari">Orange Hospital, Navsari</option>
           <option value="Parsi Hospital, Navsari">Parsi Hospital, Navsari</option>
-          <option value="Kejal Lifeline Hospital, Navsari">Kejal Lifeline Hospital, Navsari</option>
+          <option value="Kejal Lifeline Hospital, Navsari">Kejal Lifeline, Navsari</option>
           <option value="Alipore Hospital">Alipore Hospital</option>
           <option value="Rhythm Hospital, Vyara">Rhythm Hospital, Vyara</option>
           <option value="Atmiya Hospital, Mandvi">Atmiya Hospital, Mandvi</option>
@@ -648,11 +648,10 @@
           <option value="All">All Hospitals</option>
           <option value="Orange Hospital, Navsari">Orange Hospital, Navsari</option>
           <option value="Parsi Hospital, Navsari">Parsi Hospital, Navsari</option>
-          <option value="Kejal Lifeline Hospital, Navsari">Kejal Lifeline Hospital, Navsari</option>
+          <option value="Kejal Lifeline Hospital, Navsari">Kejal Lifeline, Navsari</option>
           <option value="Alipore Hospital">Alipore Hospital</option>
           <option value="Rhythm Hospital, Vyara">Rhythm Hospital, Vyara</option>
-          <option value="Atmiya Hospital, Mandvi">Atmiya Hospital, Mandvi</option>
-          <option value="Aatithyam Hospital, Navsari">Aatithyam Hospital, Navsari</option>
+          <option value="Atmiya Hospital, Navsari">Aatithyam Hospital, Navsari</option>
         </select>
       </div>
 
@@ -1949,7 +1948,7 @@
       document.getElementById('entryModal').classList.remove('hidden');
     }
 
-    // गूगल क्लाउड विजन API इंटीग्रेशन (आपकी नई API Key के साथ)
+    // स्मार्ट एआई स्कैनर (Google Cloud Vision API with correct key)
     async function handleImageSelected(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -1958,7 +1957,7 @@
 
       try {
         const base64Data = await resizeImageAndGetBase64(file);
-        // आपकी नई API Key यहाँ बिल्कुल सही तरह से सेट कर दी गई है
+        // आपकी नई API Key यहाँ बिल्कुल सही तरीके से जोड़ दी गई है
         const apiKey = 'AIzaSyAxDoA07tLYB_NC4m_91EZWh_rbE_Bj2xw';
 
         const response = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`, {
@@ -1995,10 +1994,11 @@
         const lines = fullText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
 
         let detectedName = '';
-        let detectedDate = "2026-10-06";
+        let detectedDate = new Date().toISOString().slice(0, 10);
         let detectedHospital = "Orange Hospital, Navsari";
         let detectedConsultant = "";
 
+        // आपके द्वारा भेजी गई पर्ची (जैसे MOHAMMADIQBAL SHAIKH वाली स्लिप) के हिसाब से बेहतर पार्सर
         for (let i = 0; i < lines.length; i++) {
           let line = lines[i];
           let upperLine = line.toUpperCase();
@@ -2013,8 +2013,18 @@
           }
 
           if (upperLine.includes('CONSULTANT') || upperLine.includes('DR.')) {
-            if (upperLine.includes('DR. NILESH')) {
+            if (upperLine.includes('NILESH')) {
               detectedConsultant = "Dr. Nilesh Chaudhari";
+            }
+          }
+        }
+
+        // यदि 'Name' कीवर्ड सीधा नहीं मिला, तो बड़े अक्षरों वाले संभावित नाम को ढूंढना
+        if (!detectedName) {
+          for (let line of lines) {
+            if (line === line.toUpperCase() && line.length > 5 && !/HOSPITAL|UHID|NAVBAR|ADDRESS|MOBILE|CONSULTANT|DATE/i.test(line)) {
+              detectedName = line;
+              break;
             }
           }
         }
@@ -2089,7 +2099,7 @@
     async function exportDataBackup() {
       const entries = await db.entries.toArray();
       const inpatients = await db.inpatients.toArray();
-    const backup = { entries, inpatients, exportedAt: new Date().toISOString() };
+      const backup = { entries, inpatients, exportedAt: new Date().toISOString() };
       const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
