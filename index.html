@@ -130,7 +130,7 @@
           <div class="grid grid-cols-2 gap-2.5">
             
             <!-- Card 1: Total Revenue -->
-            <div class="liquid-glass rounded-2xl p-3.5 border border-indigo-500/20 relative overflow-hidden flex flex-col justify-between h-28">
+            <div class="liquid-glass rounded-2xl p-3.5 border border-indigo-500/25 relative overflow-hidden flex flex-col justify-between h-28">
               <div class="flex justify-between items-start">
                 <span id="revenuePeriodLabel" class="text-[10px] font-bold text-indigo-300 uppercase tracking-wider">Revenue</span>
                 <span class="text-xs">💰</span>
@@ -245,27 +245,31 @@
 
       <!-- View 2: Unified IPD & Surgeries Hub -->
       <div id="viewInpatients" class="hidden space-y-4">
-        <div class="liquid-glass p-1 rounded-2xl grid grid-cols-2 text-xs font-bold border border-white/10 shadow-lg">
-          <button onclick="switchIpdSubTab('active')" id="subTabActiveBtn" class="py-2.5 rounded-xl bg-indigo-600 text-white shadow transition">
-            🛏️ Active Inpatients (<span id="activeCountBadge">0</span>)
+        <div class="liquid-glass p-1 rounded-2xl grid grid-cols-3 text-[11px] font-bold border border-white/10 shadow-lg gap-1">
+          <button onclick="switchIpdSubTab('active')" id="subTabActiveBtn" class="py-2.5 rounded-xl bg-indigo-600 text-white shadow transition text-center px-1">
+            🛏️ Active (<span id="activeCountBadge">0</span>)
           </button>
-          <button onclick="switchIpdSubTab('pipeline')" id="subTabPipelineBtn" class="py-2.5 rounded-xl text-slate-400 hover:text-white transition">
-            📅 Upcoming Pipeline (<span id="pipelineCountBadge">0</span>)
+          <button onclick="switchIpdSubTab('pipeline')" id="subTabPipelineBtn" class="py-2.5 rounded-xl text-slate-400 hover:text-white transition text-center px-1">
+            📅 Pipeline (<span id="pipelineCountBadge">0</span>)
+          </button>
+          <button onclick="switchIpdSubTab('discharged')" id="subTabDischargedBtn" class="py-2.5 rounded-xl text-slate-400 hover:text-white transition text-center px-1">
+            📁 Settled (<span id="dischargedCountBadge">0</span>)
           </button>
         </div>
 
         <div class="flex justify-between items-center px-1">
           <div>
             <h2 id="ipdSectionHeading" class="text-base font-extrabold text-white">Active Inpatients (IPD)</h2>
-            <p id="ipdSectionSubheading" class="text-[11px] text-slate-400">Live Stay, Dated Visits & Surgeries</p>
+            <p id="ipdSectionSubheading" class="text-[11px] text-slate-400">Oldest admitted cases displayed on top</p>
           </div>
           <button onclick="openInpatientModal()" class="bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white px-3 py-2 rounded-xl text-xs font-bold shadow-lg shadow-indigo-600/30 border border-indigo-400/30 transition">
-            + Add / Plan Patient
+            + Add Patient
           </button>
         </div>
 
         <div id="inpatientsActiveList" class="space-y-3"></div>
         <div id="inpatientsPipelineList" class="hidden space-y-3"></div>
+        <div id="inpatientsDischargedList" class="hidden space-y-3"></div>
       </div>
     </main>
 
@@ -461,7 +465,7 @@
             <select id="ipdHospital" class="w-full glass-input rounded-xl p-3 text-xs">
               <option value="Orange Hospital, Navsari">Orange Hospital, Navsari</option>
               <option value="Parsi Hospital, Navsari">Parsi Hospital, Navsari</option>
-              <option value="Kejal Lifeline Hospital, Navsari">Kejal Lifeline Hospital, Navsari</option>
+              <option value="Kejal Lifeline Hospital, Navsari">Kejal Lifeline, Navsari</option>
               <option value="Alipore Hospital">Alipore Hospital</option>
               <option value="Rhythm Hospital, Vyara">Rhythm Hospital, Vyara</option>
               <option value="Atmiya Hospital, Mandvi">Atmiya Hospital, Mandvi</option>
@@ -868,25 +872,66 @@
     function switchIpdSubTab(subTab) {
       const activeList = document.getElementById('inpatientsActiveList');
       const pipelineList = document.getElementById('inpatientsPipelineList');
+      const dischargedList = document.getElementById('inpatientsDischargedList');
       const activeBtn = document.getElementById('subTabActiveBtn');
       const pipelineBtn = document.getElementById('subTabPipelineBtn');
+      const dischargedBtn = document.getElementById('subTabDischargedBtn');
       const heading = document.getElementById('ipdSectionHeading');
       const subheading = document.getElementById('ipdSectionSubheading');
 
       if (subTab === 'active') {
         if (activeList) activeList.classList.remove('hidden');
         if (pipelineList) pipelineList.classList.add('hidden');
-        if (activeBtn) activeBtn.className = 'py-2.5 rounded-xl bg-indigo-600 text-white shadow transition';
-        if (pipelineBtn) pipelineBtn.className = 'py-2.5 rounded-xl text-slate-400 hover:text-white transition';
+        if (dischargedList) dischargedList.classList.add('hidden');
+        if (activeBtn) activeBtn.className = 'py-2.5 rounded-xl bg-indigo-600 text-white shadow transition text-center px-1';
+        if (pipelineBtn) pipelineBtn.className = 'py-2.5 rounded-xl text-slate-400 hover:text-white transition text-center px-1';
+        if (dischargedBtn) dischargedBtn.className = 'py-2.5 rounded-xl text-slate-400 hover:text-white transition text-center px-1';
         if (heading) heading.innerText = 'Active Inpatients (IPD)';
-        if (subheading) subheading.innerText = 'Live Stay, Dated Visits & Surgeries';
-      } else {
+        if (subheading) subheading.innerText = 'Oldest admitted cases displayed on top';
+      } else if (subTab === 'pipeline') {
         if (activeList) activeList.classList.add('hidden');
         if (pipelineList) pipelineList.classList.remove('hidden');
-        if (pipelineBtn) pipelineBtn.className = 'py-2.5 rounded-xl bg-indigo-600 text-white shadow transition';
-        if (activeBtn) activeBtn.className = 'py-2.5 rounded-xl text-slate-400 hover:text-white transition';
+        if (dischargedList) dischargedList.classList.add('hidden');
+        if (pipelineBtn) pipelineBtn.className = 'py-2.5 rounded-xl bg-indigo-600 text-white shadow transition text-center px-1';
+        if (activeBtn) activeBtn.className = 'py-2.5 rounded-xl text-slate-400 hover:text-white transition text-center px-1';
+        if (dischargedBtn) dischargedBtn.className = 'py-2.5 rounded-xl text-slate-400 hover:text-white transition text-center px-1';
         if (heading) heading.innerText = 'Upcoming OT Pipeline';
         if (subheading) subheading.innerText = 'Scheduled surgeries, workup and fitness';
+      } else {
+        if (activeList) activeList.classList.add('hidden');
+        if (pipelineList) pipelineList.classList.add('hidden');
+        if (dischargedList) dischargedList.classList.remove('hidden');
+        if (dischargedBtn) dischargedBtn.className = 'py-2.5 rounded-xl bg-indigo-600 text-white shadow transition text-center px-1';
+        if (activeBtn) activeBtn.className = 'py-2.5 rounded-xl text-slate-400 hover:text-white transition text-center px-1';
+        if (pipelineBtn) pipelineBtn.className = 'py-2.5 rounded-xl text-slate-400 hover:text-white transition text-center px-1';
+        if (heading) heading.innerText = 'Discharged & Settled Cases';
+        if (subheading) subheading.innerText = 'Archived stays, total length & revenue';
+      }
+    }
+
+    function toggleEntryCardExpand(recordId) {
+      const detailsEl = document.getElementById(`entry-details-${recordId}`);
+      const iconEl = document.getElementById(`entry-chevron-${recordId}`);
+      if (!detailsEl) return;
+      if (detailsEl.classList.contains('hidden')) {
+        detailsEl.classList.remove('hidden');
+        if (iconEl) iconEl.innerText = '▲';
+      } else {
+        detailsEl.classList.add('hidden');
+        if (iconEl) iconEl.innerText = '▼';
+      }
+    }
+
+    function toggleDischargedCardExpand(recordId) {
+      const detailsEl = document.getElementById(`discharged-details-${recordId}`);
+      const iconEl = document.getElementById(`discharged-chevron-${recordId}`);
+      if (!detailsEl) return;
+      if (detailsEl.classList.contains('hidden')) {
+        detailsEl.classList.remove('hidden');
+        if (iconEl) iconEl.innerText = '▲';
+      } else {
+        detailsEl.classList.add('hidden');
+        if (iconEl) iconEl.innerText = '▼';
       }
     }
 
@@ -1176,33 +1221,44 @@
 
       listEl.innerHTML = displayList.map(e => {
         const editId = e.firestoreId ? `'${e.firestoreId}'` : e.id;
+        const uniqueKey = e.id || e.firestoreId || Math.random();
         return `
-          <div class="frosted-card p-3.5 rounded-2xl flex items-center justify-between border border-white/10 shadow-lg">
-            <div class="space-y-1 max-w-[65%]">
-              <div class="flex items-center gap-1.5 flex-wrap">
-                <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full ${getCategoryBadge(e.category)}">${e.category}</span>
-                ${e.scheme ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-900/60 text-blue-200 border border-blue-500/20">${e.scheme}</span>` : ''}
-                ${e.paymentStatus === 'Pending' ? `<span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-900/60 text-amber-200 border border-amber-500/20">⏳ Pending</span>` : ''}
-                <span class="text-[10px] font-semibold bg-slate-800/60 text-slate-300 px-1.5 py-0.5 rounded truncate max-w-[120px]">
-                  🏥 ${escapeHtml(e.hospital || 'General')}
-                </span>
-                <span class="text-[10px] text-slate-400">${e.date || ''}</span>
+          <div class="frosted-card rounded-2xl border border-white/10 shadow-lg overflow-hidden">
+            <!-- Compact Single-Line Header (Click to Toggle Detail) -->
+            <div onclick="toggleEntryCardExpand('${uniqueKey}')" class="p-3 flex items-center justify-between cursor-pointer hover:bg-slate-800/40 transition">
+              <div class="flex items-center gap-2.5 truncate pr-2">
+                <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full shrink-0 ${getCategoryBadge(e.category)}">${e.category}</span>
+                <span class="text-xs font-black text-white truncate">${escapeHtml(e.name || 'Unnamed Patient')}</span>
+                <span class="text-[10px] text-slate-400 shrink-0">${e.date || ''}</span>
               </div>
-              <div class="text-sm font-extrabold text-white truncate">${escapeHtml(e.name || 'Unnamed Patient')}</div>
-              ${e.referredBy ? `<div class="text-[11px] font-semibold text-indigo-300 flex items-center gap-1 truncate">👨‍⚕ Ref: ${escapeHtml(e.referredBy)}</div>` : ''}
-              <div class="text-xs text-slate-300 truncate">${escapeHtml(e.note || 'Clinical Record')}</div>
+              <div class="flex items-center gap-2 shrink-0">
+                <span class="text-xs font-black text-emerald-300">₹${(Number(e.amount)||0).toLocaleString('en-IN')}</span>
+                <span id="entry-chevron-${uniqueKey}" class="text-xs text-indigo-300 font-bold">▼</span>
+              </div>
             </div>
-            <div class="text-right flex flex-col items-end">
-              <div class="text-sm font-black text-white">₹${(Number(e.amount)||0).toLocaleString('en-IN')}</div>
-              <div class="flex items-center gap-1.5 mt-1.5">
-                ${e.isActiveInpatientMaster ? `
-                  <button onclick="switchTab('inpatients')" class="text-[10px] font-bold text-indigo-200 bg-indigo-900/80 px-2.5 py-1 rounded-lg border border-indigo-400/40 shadow">
-                    Manage IPD ↗
-                  </button>
-                ` : `
-                  <button onclick="editEntry(${editId})" class="text-indigo-300 font-semibold text-xs px-2 py-1 liquid-glass rounded-lg hover:bg-slate-800 transition">✏️</button>
-                  <button onclick="deleteEntry(${editId})" class="text-rose-400 hover:text-rose-300 font-semibold text-xs px-1.5 py-1">🗑</button>
-                `}
+
+            <!-- Expandable Detailed View (Hidden by Default) -->
+            <div id="entry-details-${uniqueKey}" class="hidden p-3 pt-0 border-t border-white/5 bg-slate-900/40 space-y-2 text-xs">
+              <div class="flex justify-between items-center text-[11px] text-slate-300 pt-2">
+                <span>🏥 Hospital: <strong class="text-white">${escapeHtml(e.hospital || 'General')}</strong></span>
+                ${e.scheme ? `<span class="font-bold text-blue-300 bg-blue-900/60 px-2 py-0.5 rounded border border-blue-500/20">${e.scheme}</span>` : ''}
+              </div>
+              ${e.referredBy ? `<div class="text-[11px] text-indigo-300 font-semibold">👨‍⚕ Ref: ${escapeHtml(e.referredBy)}</div>` : ''}
+              <div class="text-slate-300 text-xs">📋 Note: ${escapeHtml(e.note || 'Clinical Record')}</div>
+              <div class="flex justify-between items-center pt-2 border-t border-white/5">
+                <span class="text-[10px] ${e.paymentStatus === 'Pending' ? 'text-amber-300 font-bold' : 'text-emerald-400 font-semibold'}">
+                  Payment: ${e.paymentStatus || 'Received'}
+                </span>
+                <div class="flex items-center gap-2">
+                  ${e.isActiveInpatientMaster ? `
+                    <button onclick="switchTab('inpatients')" class="text-[10px] font-bold text-indigo-200 bg-indigo-900/80 px-2.5 py-1 rounded-lg border border-indigo-400/40 shadow">
+                      Manage IPD ↗
+                    </button>
+                  ` : `
+                    <button onclick="editEntry(${editId})" class="text-indigo-300 font-semibold text-xs px-2.5 py-1 liquid-glass rounded-lg hover:bg-slate-800 transition">✏️ Edit</button>
+                    <button onclick="deleteEntry(${editId})" class="text-rose-400 hover:text-rose-300 font-semibold text-xs px-2 py-1">🗑 Delete</button>
+                  `}
+                </div>
               </div>
             </div>
           </div>
@@ -1231,23 +1287,34 @@
         allPatients = [];
       }
 
+      // Sorting active patients: Oldest admission first (ascending order by admitDate)
       const activePatients = allPatients.filter(p => p.status === 'Active');
+      activePatients.sort((a, b) => {
+        const da = a.admitDate ? new Date(a.admitDate).getTime() : 0;
+        const db_ = b.admitDate ? new Date(b.admitDate).getTime() : 0;
+        return da - db_;
+      });
+
       const pipelinePatients = allPatients.filter(p => p.status === 'Scheduled');
+      const dischargedPatients = allPatients.filter(p => p.status === 'Discharged');
 
       const activeBadge = document.getElementById('activeCountBadge');
       const pipeBadge = document.getElementById('pipelineCountBadge');
+      const discBadge = document.getElementById('dischargedCountBadge');
       if (activeBadge) activeBadge.innerText = activePatients.length;
       if (pipeBadge) pipeBadge.innerText = pipelinePatients.length;
+      if (discBadge) discBadge.innerText = dischargedPatients.length;
 
       const activeListEl = document.getElementById('inpatientsActiveList');
       const pipelineListEl = document.getElementById('inpatientsPipelineList');
+      const dischargedListEl = document.getElementById('inpatientsDischargedList');
       const todayStr = "2026-10-06";
 
       if (activeListEl) {
         if (activePatients.length === 0) {
           activeListEl.innerHTML = `<div class="liquid-glass rounded-3xl p-8 text-center text-slate-500 text-xs border border-white/5">No active admitted patients currently.</div>`;
         } else {
-          activeListEl.innerHTML = activePatients.map(p => {
+          activeListEl.innerHTML = activePatients.map((p, pIdx) => {
             const stayDays = calculateDaysDifference(p.admitDate, todayStr) + 1;
             
             let preopDays = 0;
@@ -1277,6 +1344,9 @@
                 <div class="flex justify-between items-start">
                   <div>
                     <div class="flex items-center gap-1.5 flex-wrap">
+                      <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-white/10">
+                        #${pIdx + 1}
+                      </span>
                       <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full ${isCrossRef ? 'bg-purple-900/60 text-purple-200 border border-purple-500/30' : 'bg-indigo-900/60 text-indigo-200 border border-indigo-500/30'}">
                         ${isCrossRef ? 'Cross-Ref Call' : 'Direct IPD'}
                       </span>
@@ -1423,6 +1493,63 @@
                     ✓ Mark Surgery Done
                   </button>
                   <button onclick="deleteInpatient(${recordId})" class="text-rose-400 hover:text-rose-300 font-semibold px-2 py-1.5">Cancel</button>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+
+      if (dischargedListEl) {
+        if (dischargedPatients.length === 0) {
+          dischargedListEl.innerHTML = `<div class="liquid-glass rounded-3xl p-8 text-center text-slate-500 text-xs border border-white/5">No discharged or settled cases in archive.</div>`;
+        } else {
+          dischargedListEl.innerHTML = dischargedPatients.map(p => {
+            const stayLength = calculateDaysDifference(p.admitDate, p.dischargeDate || todayStr) + 1;
+            
+            let surgeriesTotal = 0;
+            if (p.surgeries && Array.isArray(p.surgeries)) {
+              p.surgeries.forEach(s => { surgeriesTotal += Number(s.fee) || 0; });
+            }
+
+            let visitsTotal = 0;
+            if (p.datedVisits && Array.isArray(p.datedVisits)) {
+              p.datedVisits.forEach(v => { visitsTotal += Number(v.fee) || 0; });
+            }
+
+            const totalRevenue = surgeriesTotal + visitsTotal;
+            const recordId = p.firestoreId ? `'${p.firestoreId}'` : p.id;
+            const uniqueKey = p.id || p.firestoreId || Math.random();
+
+            return `
+              <div class="frosted-card rounded-2xl border border-white/10 shadow-lg overflow-hidden">
+                <!-- Compact Single Line for Discharged Case -->
+                <div onclick="toggleDischargedCardExpand('${uniqueKey}')" class="p-3 flex items-center justify-between cursor-pointer hover:bg-slate-800/40 transition">
+                  <div class="flex items-center gap-2 truncate pr-2">
+                    <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-500/30 shrink-0">Settled</span>
+                    <span class="text-xs font-black text-white truncate">${escapeHtml(p.patientName)}</span>
+                    <span class="text-[10px] text-slate-400 shrink-0">(${stayLength} Days)</span>
+                  </div>
+                  <div class="flex items-center gap-2 shrink-0">
+                    <span class="text-xs font-black text-emerald-300">₹${totalRevenue.toLocaleString('en-IN')}</span>
+                    <span id="discharged-chevron-${uniqueKey}" class="text-xs text-indigo-300 font-bold">▼</span>
+                  </div>
+                </div>
+
+                <!-- Expandable Details for Discharged Case -->
+                <div id="discharged-details-${uniqueKey}" class="hidden p-3 pt-0 border-t border-white/5 bg-slate-900/40 space-y-2 text-xs">
+                  <div class="flex justify-between items-center text-[11px] text-slate-300 pt-2">
+                    <span>🏥 Hospital: <strong class="text-white">${escapeHtml(p.hospital)}</strong></span>
+                    <span class="text-slate-400">Admit: ${p.admitDate} → Disch: ${p.dischargeDate || 'N/A'}</span>
+                  </div>
+                  ${p.diagnosis ? `<div class="text-xs text-slate-300">📋 Diagnosis: ${escapeHtml(p.diagnosis)}</div>` : ''}
+                  <div class="text-[11px] text-indigo-300 font-semibold">
+                    Surgeries: ${p.surgeries ? p.surgeries.length : 0} | Visits: ${p.datedVisits ? p.datedVisits.length : 0}
+                  </div>
+                  <div class="flex justify-end gap-2 pt-2 border-t border-white/5">
+                    <button onclick="editInpatientCase(${recordId})" class="text-indigo-300 font-semibold text-xs px-2.5 py-1 liquid-glass rounded-lg hover:bg-slate-800 transition">✏️ Edit Case</button>
+                    <button onclick="deleteInpatient(${recordId})" class="text-rose-400 hover:text-rose-300 font-semibold text-xs px-2 py-1">🗑 Delete</button>
+                  </div>
                 </div>
               </div>
             `;
@@ -1762,7 +1889,8 @@
         await localDb.inpatients.update(Number(id), { status: 'Discharged', dischargeDate: dischargeDate });
       }
 
-      alert('Patient discharged successfully!');
+      alert('Patient discharged and moved to Settled Archive!');
+      switchIpdSubTab('discharged');
       forceRefreshAll();
     }
 
